@@ -4,6 +4,7 @@ import {
   DropdownMenu,
   DropdownMenuContent,
   DropdownMenuItem,
+  DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 import {
@@ -21,21 +22,46 @@ import {
 } from "@/components/ui/sidebar";
 import { getLoginUrl } from "@/const";
 import { useIsMobile } from "@/hooks/useMobile";
-import { LayoutDashboard, LogOut, PanelLeft, Users } from "lucide-react";
+import {
+  LayoutDashboard,
+  LogOut,
+  PanelLeft,
+  MapPin,
+  Calendar,
+  Wallet,
+  Building2,
+  Users,
+  Monitor,
+  Cpu,
+  Bell,
+  UserPlus,
+  Settings,
+  CreditCard,
+  Zap,
+} from "lucide-react";
 import { CSSProperties, useEffect, useRef, useState } from "react";
 import { useLocation } from "wouter";
-import { DashboardLayoutSkeleton } from './DashboardLayoutSkeleton';
+import { DashboardLayoutSkeleton } from "./DashboardLayoutSkeleton";
 import { Button } from "./ui/button";
 
 const menuItems = [
-  { icon: LayoutDashboard, label: "Page 1", path: "/" },
-  { icon: Users, label: "Page 2", path: "/some-path" },
+  { icon: LayoutDashboard, label: "Dashboard", path: "/dashboard" },
+  { icon: MapPin, label: "Locations", path: "/locations" },
+  { icon: Calendar, label: "Bookings", path: "/bookings" },
+  { icon: Wallet, label: "Credits & Wallet", path: "/wallet" },
+  { icon: CreditCard, label: "Bundles", path: "/bundles" },
+  { icon: Building2, label: "Companies", path: "/companies" },
+  { icon: Users, label: "Visitors", path: "/visitors" },
+  { icon: Monitor, label: "Signing", path: "/signing" },
+  { icon: Cpu, label: "Devices & IoT", path: "/devices" },
+  { icon: Bell, label: "Notifications", path: "/notifications" },
+  { icon: UserPlus, label: "Invites", path: "/invites" },
 ];
 
 const SIDEBAR_WIDTH_KEY = "sidebar-width";
-const DEFAULT_WIDTH = 280;
+const DEFAULT_WIDTH = 260;
 const MIN_WIDTH = 200;
-const MAX_WIDTH = 480;
+const MAX_WIDTH = 400;
 
 export default function DashboardLayout({
   children,
@@ -53,19 +79,23 @@ export default function DashboardLayout({
   }, [sidebarWidth]);
 
   if (loading) {
-    return <DashboardLayoutSkeleton />
+    return <DashboardLayoutSkeleton />;
   }
 
   if (!user) {
     return (
-      <div className="flex items-center justify-center min-h-screen">
+      <div className="flex items-center justify-center min-h-screen bg-background">
         <div className="flex flex-col items-center gap-8 p-8 max-w-md w-full">
-          <div className="flex flex-col items-center gap-6">
-            <h1 className="text-2xl font-semibold tracking-tight text-center">
+          <div className="flex flex-col items-center gap-2">
+            <div className="flex items-center gap-2 mb-4">
+              <Zap className="h-8 w-8 text-primary" />
+              <span className="text-2xl font-bold tracking-tight gradient-text">NET OS</span>
+            </div>
+            <h1 className="text-xl font-semibold tracking-tight text-center text-foreground">
               Sign in to continue
             </h1>
             <p className="text-sm text-muted-foreground text-center max-w-sm">
-              Access to this dashboard requires authentication. Continue to launch the login flow.
+              Access to the NET OS platform requires authentication.
             </p>
           </div>
           <Button
@@ -112,7 +142,7 @@ function DashboardLayoutContent({
   const isCollapsed = state === "collapsed";
   const [isResizing, setIsResizing] = useState(false);
   const sidebarRef = useRef<HTMLDivElement>(null);
-  const activeMenuItem = menuItems.find(item => item.path === location);
+  const activeMenuItem = menuItems.find((item) => location.startsWith(item.path));
   const isMobile = useIsMobile();
 
   useEffect(() => {
@@ -124,17 +154,14 @@ function DashboardLayoutContent({
   useEffect(() => {
     const handleMouseMove = (e: MouseEvent) => {
       if (!isResizing) return;
-
-      const sidebarLeft = sidebarRef.current?.getBoundingClientRect().left ?? 0;
+      const sidebarLeft =
+        sidebarRef.current?.getBoundingClientRect().left ?? 0;
       const newWidth = e.clientX - sidebarLeft;
       if (newWidth >= MIN_WIDTH && newWidth <= MAX_WIDTH) {
         setSidebarWidth(newWidth);
       }
     };
-
-    const handleMouseUp = () => {
-      setIsResizing(false);
-    };
+    const handleMouseUp = () => setIsResizing(false);
 
     if (isResizing) {
       document.addEventListener("mousemove", handleMouseMove);
@@ -142,7 +169,6 @@ function DashboardLayoutContent({
       document.body.style.cursor = "col-resize";
       document.body.style.userSelect = "none";
     }
-
     return () => {
       document.removeEventListener("mousemove", handleMouseMove);
       document.removeEventListener("mouseup", handleMouseUp);
@@ -170,8 +196,9 @@ function DashboardLayoutContent({
               </button>
               {!isCollapsed ? (
                 <div className="flex items-center gap-2 min-w-0">
-                  <span className="font-semibold tracking-tight truncate">
-                    Navigation
+                  <Zap className="h-5 w-5 text-primary shrink-0" />
+                  <span className="font-bold tracking-tight truncate text-foreground">
+                    NET OS
                   </span>
                 </div>
               ) : null}
@@ -180,15 +207,15 @@ function DashboardLayoutContent({
 
           <SidebarContent className="gap-0">
             <SidebarMenu className="px-2 py-1">
-              {menuItems.map(item => {
-                const isActive = location === item.path;
+              {menuItems.map((item) => {
+                const isActive = location.startsWith(item.path);
                 return (
                   <SidebarMenuItem key={item.path}>
                     <SidebarMenuButton
                       isActive={isActive}
                       onClick={() => setLocation(item.path)}
                       tooltip={item.label}
-                      className={`h-10 transition-all font-normal`}
+                      className="h-10 transition-all font-normal"
                     >
                       <item.icon
                         className={`h-4 w-4 ${isActive ? "text-primary" : ""}`}
@@ -205,13 +232,13 @@ function DashboardLayoutContent({
             <DropdownMenu>
               <DropdownMenuTrigger asChild>
                 <button className="flex items-center gap-3 rounded-lg px-1 py-1 hover:bg-accent/50 transition-colors w-full text-left group-data-[collapsible=icon]:justify-center focus:outline-none focus-visible:ring-2 focus-visible:ring-ring">
-                  <Avatar className="h-9 w-9 border shrink-0">
-                    <AvatarFallback className="text-xs font-medium">
-                      {user?.name?.charAt(0).toUpperCase()}
+                  <Avatar className="h-9 w-9 border border-primary/30 shrink-0">
+                    <AvatarFallback className="text-xs font-medium bg-primary/10 text-primary">
+                      {user?.name?.charAt(0).toUpperCase() ?? "U"}
                     </AvatarFallback>
                   </Avatar>
                   <div className="flex-1 min-w-0 group-data-[collapsible=icon]:hidden">
-                    <p className="text-sm font-medium truncate leading-none">
+                    <p className="text-sm font-medium truncate leading-none text-foreground">
                       {user?.name || "-"}
                     </p>
                     <p className="text-xs text-muted-foreground truncate mt-1.5">
@@ -221,6 +248,14 @@ function DashboardLayoutContent({
                 </button>
               </DropdownMenuTrigger>
               <DropdownMenuContent align="end" className="w-48">
+                <DropdownMenuItem
+                  onClick={() => setLocation("/settings")}
+                  className="cursor-pointer"
+                >
+                  <Settings className="mr-2 h-4 w-4" />
+                  <span>Settings</span>
+                </DropdownMenuItem>
+                <DropdownMenuSeparator />
                 <DropdownMenuItem
                   onClick={logout}
                   className="cursor-pointer text-destructive focus:text-destructive"
@@ -248,16 +283,15 @@ function DashboardLayoutContent({
             <div className="flex items-center gap-2">
               <SidebarTrigger className="h-9 w-9 rounded-lg bg-background" />
               <div className="flex items-center gap-3">
-                <div className="flex flex-col gap-1">
-                  <span className="tracking-tight text-foreground">
-                    {activeMenuItem?.label ?? "Menu"}
-                  </span>
-                </div>
+                <Zap className="h-4 w-4 text-primary" />
+                <span className="tracking-tight text-foreground font-medium">
+                  {activeMenuItem?.label ?? "NET OS"}
+                </span>
               </div>
             </div>
           </div>
         )}
-        <main className="flex-1 p-4">{children}</main>
+        <main className="flex-1 p-6">{children}</main>
       </SidebarInset>
     </>
   );
