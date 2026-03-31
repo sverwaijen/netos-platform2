@@ -17,6 +17,7 @@ import SigningPage from "./pages/SigningPage";
 import DevicesPage from "./pages/DevicesPage";
 import NotificationsPage from "./pages/NotificationsPage";
 import InvitesPage from "./pages/InvitesPage";
+import SettingsPage from "./pages/SettingsPage";
 import DashboardLayout from "./components/DashboardLayout";
 
 function WrappedPage({ component: Component }: { component: React.ComponentType }) {
@@ -43,6 +44,7 @@ function Router() {
       <Route path="/devices">{() => <WrappedPage component={DevicesPage} />}</Route>
       <Route path="/notifications">{() => <WrappedPage component={NotificationsPage} />}</Route>
       <Route path="/invites">{() => <WrappedPage component={InvitesPage} />}</Route>
+      <Route path="/settings">{() => <WrappedPage component={SettingsPage} />}</Route>
       <Route path="/404" component={NotFound} />
       <Route component={NotFound} />
     </Switch>

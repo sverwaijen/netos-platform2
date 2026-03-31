@@ -56,6 +56,7 @@ const menuItems = [
   { icon: Cpu, label: "Devices & IoT", path: "/devices" },
   { icon: Bell, label: "Notifications", path: "/notifications" },
   { icon: UserPlus, label: "Invites", path: "/invites" },
+  { icon: Settings, label: "Settings", path: "/settings" },
 ];
 
 const SIDEBAR_WIDTH_KEY = "sidebar-width";
