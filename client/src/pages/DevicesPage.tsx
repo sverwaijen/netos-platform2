@@ -1,165 +1,161 @@
 import { trpc } from "@/lib/trpc";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { Badge } from "@/components/ui/badge";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { ScrollArea } from "@/components/ui/scroll-area";
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { Input } from "@/components/ui/input";
+import { Skeleton } from "@/components/ui/skeleton";
 import { useState, useMemo, useEffect } from "react";
-import {
-  Cpu, Wifi, WifiOff, Activity, Thermometer, Radio, Monitor,
-  Lock, Eye, Zap, AlertTriangle, CheckCircle2, BarChart3
-} from "lucide-react";
-
-const TYPE_ICONS: Record<string, any> = {
-  sensor: Radio, display: Monitor, lock: Lock, camera: Eye,
-  occupancy: Activity, hvac: Thermometer, netlink: Cpu,
-};
-const STATUS_STYLES: Record<string, { color: string; dot: string }> = {
-  online: { color: "bg-netos-green/20 text-netos-green", dot: "bg-netos-green" },
-  offline: { color: "bg-red-500/20 text-red-400", dot: "bg-red-400" },
-  maintenance: { color: "bg-amber-500/20 text-amber-400", dot: "bg-amber-400" },
-};
+import { Cpu, Wifi, WifiOff, Activity, Radio, Search, AlertTriangle, CheckCircle } from "lucide-react";
 
 export default function DevicesPage() {
   const { data: locations } = trpc.locations.list.useQuery();
   const { data: deviceStats } = trpc.devices.stats.useQuery();
   const [selectedLocation, setSelectedLocation] = useState<string>("");
+  const [search, setSearch] = useState("");
+  const [tab, setTab] = useState<"devices" | "occupancy" | "alerts">("devices");
 
-  const firstLocationId = useMemo(() => locations?.[0]?.id?.toString() ?? "", [locations]);
-  useEffect(() => { if (firstLocationId && !selectedLocation) setSelectedLocation(firstLocationId); }, [firstLocationId]);
+  const firstId = useMemo(() => locations?.[0]?.id?.toString() ?? "", [locations]);
+  useEffect(() => { if (firstId && !selectedLocation) setSelectedLocation(firstId); }, [firstId]);
 
-  const { data: devices } = trpc.devices.byLocation.useQuery(
+  const { data: devices, isLoading } = trpc.devices.byLocation.useQuery(
     { locationId: parseInt(selectedLocation || "0") },
     { enabled: !!selectedLocation }
   );
 
-  const onlineCount = devices?.filter((d: any) => d.status === "online").length ?? 0;
-  const offlineCount = devices?.filter((d: any) => d.status === "offline").length ?? 0;
-  const sensorCount = (deviceStats as any)?.totalSensors ?? 2478;
+  const filtered = useMemo(() => {
+    if (!devices) return [];
+    return devices.filter((d: any) => !search || d.name?.toLowerCase().includes(search.toLowerCase()) || d.serialNumber?.toLowerCase().includes(search.toLowerCase()));
+  }, [devices, search]);
+
+  const online = (devices ?? []).filter((d: any) => d.status === "online").length;
+  const totalSensors = parseInt(String((deviceStats as any)?.totalSensors ?? 0));
 
   return (
-    <div className="space-y-6 p-1">
-      <div className="flex items-center justify-between">
-        <div>
-          <h1 className="text-2xl font-bold tracking-tight">Devices & IoT</h1>
-          <p className="text-muted-foreground text-sm mt-1">Monitor NETOS Netlink devices and sensors across locations.</p>
-        </div>
-        <Badge variant="secondary" className="text-xs"><Wifi className="w-3 h-3 mr-1" />MQTT Connected</Badge>
+    <div className="space-y-8 p-1">
+      <div>
+        <div className="text-[9px] font-semibold tracking-[4px] uppercase text-[#627653] mb-3">IoT Infrastructure</div>
+        <h1 className="text-[clamp(24px,3vw,36px)] font-extralight tracking-[-0.5px]">
+          Device <strong className="font-semibold">management.</strong>
+        </h1>
       </div>
 
-      <div className="grid grid-cols-2 md:grid-cols-5 gap-3">
-        <Card className="glass-card border-border/50"><CardContent className="p-4"><div className="flex items-center gap-2 mb-1"><Cpu className="w-4 h-4 text-primary" /><span className="text-xs text-muted-foreground">Total Devices</span></div><p className="text-2xl font-bold">{deviceStats?.total ?? 0}</p></CardContent></Card>
-        <Card className="glass-card border-border/50"><CardContent className="p-4"><div className="flex items-center gap-2 mb-1"><Wifi className="w-4 h-4 text-netos-green" /><span className="text-xs text-muted-foreground">Online</span></div><p className="text-2xl font-bold text-netos-green">{deviceStats?.online ?? 0}</p></CardContent></Card>
-        <Card className="glass-card border-border/50"><CardContent className="p-4"><div className="flex items-center gap-2 mb-1"><WifiOff className="w-4 h-4 text-red-400" /><span className="text-xs text-muted-foreground">Offline</span></div><p className="text-2xl font-bold text-red-400">{deviceStats?.offline ?? 0}</p></CardContent></Card>
-        <Card className="glass-card border-border/50"><CardContent className="p-4"><div className="flex items-center gap-2 mb-1"><Radio className="w-4 h-4 text-purple-400" /><span className="text-xs text-muted-foreground">Sensors</span></div><p className="text-2xl font-bold text-purple-400">{sensorCount}</p></CardContent></Card>
-        <Card className="glass-card border-border/50"><CardContent className="p-4"><div className="flex items-center gap-2 mb-1"><Activity className="w-4 h-4 text-amber-400" /><span className="text-xs text-muted-foreground">Uptime</span></div><p className="text-2xl font-bold text-amber-400">99.2%</p></CardContent></Card>
+      <div className="grid grid-cols-2 md:grid-cols-5 gap-[1px] bg-white/[0.04]">
+        {[
+          { label: "Devices", value: deviceStats?.total ?? 0, icon: Cpu },
+          { label: "Online", value: deviceStats?.online ?? 0, icon: Wifi, accent: true },
+          { label: "Offline", value: deviceStats?.offline ?? 0, icon: WifiOff },
+          { label: "Sensors", value: totalSensors, icon: Radio },
+          { label: "Uptime", value: "99.2%", icon: Activity },
+        ].map((kpi, i) => (
+          <div key={i} className="bg-[#111] p-5 flex items-center gap-3">
+            <kpi.icon className={`w-4 h-4 ${kpi.accent ? "text-[#627653]" : "text-[#888]"}`} />
+            <div>
+              <div className="text-[10px] text-[#888] tracking-[1px] uppercase">{kpi.label}</div>
+              <div className={`text-xl font-extralight ${kpi.accent ? "text-[#627653]" : ""}`}>{kpi.value}</div>
+            </div>
+          </div>
+        ))}
       </div>
 
-      <div className="flex items-center gap-3">
+      <div className="flex gap-4 items-center flex-wrap">
         <Select value={selectedLocation} onValueChange={setSelectedLocation}>
-          <SelectTrigger className="w-64 bg-secondary/50 border-border/50"><SelectValue placeholder="Select location" /></SelectTrigger>
+          <SelectTrigger className="w-56 bg-white/[0.03] border-white/[0.06]"><SelectValue placeholder="Select location" /></SelectTrigger>
           <SelectContent>{(locations ?? []).map((l: any) => <SelectItem key={l.id} value={String(l.id)}>{l.name}</SelectItem>)}</SelectContent>
         </Select>
-        <div className="text-xs text-muted-foreground">
-          {devices ? `${devices.length} devices · ${onlineCount} online · ${offlineCount} offline` : "Select a location"}
+        <div className="relative flex-1 max-w-xs">
+          <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-[#888]" />
+          <Input placeholder="Search devices..." value={search} onChange={(e) => setSearch(e.target.value)} className="pl-9 bg-white/[0.03] border-white/[0.06]" />
         </div>
+        <span className="text-[11px] text-[#888]">{filtered.length} devices</span>
       </div>
 
-      <Tabs defaultValue="devices">
-        <TabsList>
-          <TabsTrigger value="devices">Devices ({devices?.length ?? 0})</TabsTrigger>
-          <TabsTrigger value="occupancy">Occupancy</TabsTrigger>
-          <TabsTrigger value="alerts">Alerts</TabsTrigger>
-        </TabsList>
+      <div className="flex gap-0 border-b border-white/[0.06]">
+        {([
+          { key: "devices", label: `Devices (${devices?.length ?? 0})` },
+          { key: "occupancy", label: "Occupancy" },
+          { key: "alerts", label: "Alerts" },
+        ] as const).map((t) => (
+          <button key={t.key} onClick={() => setTab(t.key)} className={`px-6 py-3 text-[10px] font-semibold tracking-[3px] uppercase transition-all border-b-2 ${tab === t.key ? "border-[#627653] text-white" : "border-transparent text-[#888] hover:text-white"}`}>
+            {t.label}
+          </button>
+        ))}
+      </div>
 
-        <TabsContent value="devices" className="mt-4">
-          <Card className="glass-card border-border/50">
-            <CardContent className="p-4">
-              <ScrollArea className="h-[500px]">
-                <div className="space-y-2">
-                  {(devices ?? []).map((d: any) => {
-                    const Icon = TYPE_ICONS[d.type] || Cpu;
-                    const status = STATUS_STYLES[d.status] || STATUS_STYLES.online;
-                    return (
-                      <div key={d.id} className="flex items-center justify-between p-3 rounded-xl bg-secondary/20 hover:bg-secondary/40 transition-colors border border-border/20">
-                        <div className="flex items-center gap-3">
-                          <div className="w-10 h-10 rounded-lg bg-primary/10 flex items-center justify-center"><Icon className="w-5 h-5 text-primary" /></div>
-                          <div>
-                            <div className="flex items-center gap-2">
-                              <h3 className="text-sm font-medium">{d.name}</h3>
-                              <Badge className={`text-[10px] ${status.color}`}><div className={`w-1.5 h-1.5 rounded-full ${status.dot} mr-1`} />{d.status}</Badge>
-                            </div>
-                            <div className="flex items-center gap-3 text-xs text-muted-foreground">
-                              <span>{d.serialNumber}</span>
-                              <span>{d.type}</span>
-                              <span>v{d.firmwareVersion}</span>
-                              {d.sensorCount > 0 && <span className="flex items-center gap-1"><Radio className="w-3 h-3" />{d.sensorCount} sensors</span>}
-                            </div>
-                          </div>
-                        </div>
-                        <div className="text-right text-xs text-muted-foreground">
-                          {d.lastPing && <p>Last ping: {new Date(d.lastPing).toLocaleTimeString("nl-NL", { hour: "2-digit", minute: "2-digit" })}</p>}
-                        </div>
-                      </div>
-                    );
-                  })}
-                  {(!devices || devices.length === 0) && (
-                    <div className="text-center py-16"><Cpu className="w-12 h-12 text-muted-foreground mx-auto mb-4 opacity-50" /><h3 className="text-lg font-medium mb-2">No devices</h3><p className="text-sm text-muted-foreground">Select a location to view devices.</p></div>
-                  )}
-                </div>
-              </ScrollArea>
-            </CardContent>
-          </Card>
-        </TabsContent>
-
-        <TabsContent value="occupancy" className="mt-4">
-          <Card className="glass-card border-border/50">
-            <CardContent className="p-6">
-              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-                {(locations ?? []).map((l: any) => {
-                  const occ = Math.floor(Math.random() * 80) + 10;
-                  return (
-                    <div key={l.id} className="p-4 rounded-xl bg-secondary/30 border border-border/20">
-                      <div className="flex items-center justify-between mb-3">
-                        <h3 className="text-sm font-medium">{l.name}</h3>
-                        <Badge variant="secondary" className="text-[10px]">{occ}%</Badge>
-                      </div>
-                      <div className="w-full h-2 bg-secondary rounded-full overflow-hidden">
-                        <div className="h-full rounded-full transition-all" style={{ width: `${occ}%`, backgroundColor: occ > 80 ? "#ef4444" : occ > 50 ? "#f59e0b" : "#00C853" }} />
-                      </div>
-                      <p className="text-xs text-muted-foreground mt-2">{l.totalDesks ?? 0} desks · Real-time sensor data</p>
+      {tab === "devices" && (
+        isLoading ? <div className="space-y-3">{Array.from({ length: 5 }).map((_, i) => <Skeleton key={i} className="h-16" />)}</div> :
+        filtered.length === 0 ? (
+          <div className="text-center py-16"><Cpu className="w-8 h-8 text-[#888] mx-auto mb-3 opacity-30" /><p className="text-sm text-[#888] font-light">No devices found.</p></div>
+        ) : (
+          <div className="space-y-0">
+            {filtered.map((d: any) => {
+              const isOnline = d.status === "online";
+              return (
+                <div key={d.id} className="flex items-center justify-between py-4 border-b border-white/[0.03] hover:bg-white/[0.02] transition-colors">
+                  <div className="flex items-center gap-4">
+                    <div className={`w-10 h-10 rounded flex items-center justify-center ${isOnline ? "bg-[#627653]/10" : "bg-white/[0.04]"}`}>
+                      <Cpu className={`w-5 h-5 ${isOnline ? "text-[#627653]" : "text-[#888]"}`} />
                     </div>
-                  );
-                })}
-              </div>
-            </CardContent>
-          </Card>
-        </TabsContent>
-
-        <TabsContent value="alerts" className="mt-4">
-          <Card className="glass-card border-border/50">
-            <CardContent className="p-6">
-              <div className="space-y-3">
-                {[
-                  { level: "warning", msg: "NETOS Netlink #1042 - Sensor battery low (12%)", time: "2 hours ago" },
-                  { level: "info", msg: "Firmware update v3.2.1 available for 12 devices", time: "5 hours ago" },
-                  { level: "success", msg: "All Amsterdam devices back online after maintenance", time: "1 day ago" },
-                ].map((a, i) => (
-                  <div key={i} className="flex items-center gap-3 p-3 rounded-lg bg-secondary/30 border border-border/20">
-                    {a.level === "warning" ? <AlertTriangle className="w-4 h-4 text-amber-400 shrink-0" /> :
-                     a.level === "success" ? <CheckCircle2 className="w-4 h-4 text-netos-green shrink-0" /> :
-                     <Activity className="w-4 h-4 text-blue-400 shrink-0" />}
-                    <div className="flex-1">
-                      <p className="text-sm">{a.msg}</p>
-                      <p className="text-xs text-muted-foreground">{a.time}</p>
+                    <div>
+                      <p className="text-sm font-light">{d.name || d.serialNumber}</p>
+                      <div className="flex items-center gap-3 text-[11px] text-[#888] mt-0.5">
+                        <span>{d.type || "netlink"}</span>
+                        <span className="font-mono">{d.serialNumber}</span>
+                        <span>v{d.firmwareVersion}</span>
+                        {d.sensorCount > 0 && <span className="flex items-center gap-1"><Radio className="w-3 h-3" />{d.sensorCount} sensors</span>}
+                      </div>
                     </div>
                   </div>
-                ))}
+                  <div className="flex items-center gap-4">
+                    {d.lastPing && <span className="text-[11px] text-[#888]">{new Date(d.lastPing).toLocaleTimeString("nl-NL", { hour: "2-digit", minute: "2-digit" })}</span>}
+                    <div className="flex items-center gap-1.5">
+                      <div className={`w-2 h-2 rounded-full ${isOnline ? "bg-[#627653] animate-pulse" : "bg-[#888]/30"}`} />
+                      <span className={`text-[10px] font-semibold tracking-[2px] uppercase ${isOnline ? "text-[#627653]" : "text-[#888]"}`}>{d.status}</span>
+                    </div>
+                  </div>
+                </div>
+              );
+            })}
+          </div>
+        )
+      )}
+
+      {tab === "occupancy" && (
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+          {(locations ?? []).map((l: any) => {
+            const occ = Math.floor(Math.random() * 80) + 10;
+            return (
+              <div key={l.id} className="bg-[#111] p-5 border border-white/[0.06]">
+                <div className="flex items-center justify-between mb-3">
+                  <p className="text-sm font-light">{l.name}</p>
+                  <span className="text-[10px] font-semibold tracking-[2px] uppercase text-[#627653]">{occ}%</span>
+                </div>
+                <div className="w-full h-1 bg-white/[0.04] overflow-hidden">
+                  <div className="h-full transition-all" style={{ width: `${occ}%`, backgroundColor: occ > 80 ? "#ef4444" : occ > 50 ? "#f59e0b" : "#627653" }} />
+                </div>
+                <p className="text-[11px] text-[#888] mt-2">{l.totalDesks ?? 0} desks &middot; Real-time</p>
               </div>
-            </CardContent>
-          </Card>
-        </TabsContent>
-      </Tabs>
+            );
+          })}
+        </div>
+      )}
+
+      {tab === "alerts" && (
+        <div className="space-y-0">
+          {[
+            { level: "warning", msg: "NETOS Netlink #1042 — Sensor battery low (12%)", time: "2 hours ago" },
+            { level: "info", msg: "Firmware update v3.2.1 available for 12 devices", time: "5 hours ago" },
+            { level: "success", msg: "All Amsterdam devices back online after maintenance", time: "1 day ago" },
+          ].map((a, i) => (
+            <div key={i} className="flex items-center gap-4 py-4 border-b border-white/[0.03]">
+              {a.level === "warning" ? <AlertTriangle className="w-4 h-4 text-amber-400 shrink-0" /> :
+               a.level === "success" ? <CheckCircle className="w-4 h-4 text-[#627653] shrink-0" /> :
+               <Activity className="w-4 h-4 text-blue-400 shrink-0" />}
+              <div className="flex-1">
+                <p className="text-sm font-light">{a.msg}</p>
+                <p className="text-[11px] text-[#888]">{a.time}</p>
+              </div>
+            </div>
+          ))}
+        </div>
+      )}
     </div>
   );
 }

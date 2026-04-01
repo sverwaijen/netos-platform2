@@ -1,98 +1,106 @@
 import { trpc } from "@/lib/trpc";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { Button } from "@/components/ui/button";
-import { Badge } from "@/components/ui/badge";
 import { Skeleton } from "@/components/ui/skeleton";
 import { toast } from "sonner";
-import { Check, Zap, ArrowRight, HelpCircle, CreditCard, RefreshCw, TrendingUp } from "lucide-react";
-
-const TIER_GLOW: Record<string, string> = {
-  "Basic Access": "", "Flex": "", "Professional": "border-primary/50",
-  "Business": "border-amber-500/30", "Enterprise": "border-purple-500/30", "Full Time": "border-netos-green/50",
-};
+import { Check } from "lucide-react";
 
 export default function BundlesPage() {
   const { data: bundles, isLoading } = trpc.bundles.list.useQuery();
 
-  if (isLoading) return <div className="space-y-4 p-1">{Array.from({ length: 3 }).map((_, i) => <Skeleton key={i} className="h-64 rounded-xl" />)}</div>;
+  if (isLoading) return <div className="space-y-4 p-1">{Array.from({ length: 3 }).map((_, i) => <Skeleton key={i} className="h-64" />)}</div>;
+
+  const sorted = [...(bundles ?? [])].sort((a: any, b: any) => parseFloat(a.priceEur) - parseFloat(b.priceEur));
+  const popular = sorted.find((b: any) => b.isPopular) || sorted[2];
 
   return (
-    <div className="space-y-8 p-1">
-      <div className="text-center max-w-2xl mx-auto">
-        <h1 className="text-3xl font-bold tracking-tight mb-2">Credit Bundles</h1>
-        <p className="text-muted-foreground">Choose a plan that fits your workstyle. All plans include rollover credits and dynamic pricing.</p>
+    <div className="space-y-12 p-1">
+      {/* Header */}
+      <div className="text-center max-w-xl mx-auto">
+        <div className="text-[9px] font-semibold tracking-[4px] uppercase text-[#627653] mb-4">Pricing</div>
+        <h1 className="text-[clamp(28px,3vw,42px)] font-extralight tracking-[-0.5px] leading-tight">
+          Choose your <strong className="font-semibold">plan.</strong>
+        </h1>
+        <p className="text-[13px] text-[#888] font-light mt-4 leading-[1.7]">
+          Predictable costs. Flexible credits. Every plan includes access to all seven locations.
+        </p>
       </div>
 
-      {/* Key info */}
-      <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 max-w-3xl mx-auto">
-        <Card className="glass-card border-border/50"><CardContent className="p-4 text-center"><CreditCard className="w-5 h-5 text-primary mx-auto mb-2" /><p className="text-sm font-medium">1 Credit = &euro;5</p><p className="text-xs text-muted-foreground">Fixed exchange rate</p></CardContent></Card>
-        <Card className="glass-card border-border/50"><CardContent className="p-4 text-center"><RefreshCw className="w-5 h-5 text-amber-400 mx-auto mb-2" /><p className="text-sm font-medium">Rollover</p><p className="text-xs text-muted-foreground">Max = bundle size</p></CardContent></Card>
-        <Card className="glass-card border-border/50"><CardContent className="p-4 text-center"><TrendingUp className="w-5 h-5 text-netos-green mx-auto mb-2" /><p className="text-sm font-medium">0.45x - 1.4x</p><p className="text-xs text-muted-foreground">Dynamic multiplier</p></CardContent></Card>
+      {/* Key info strip */}
+      <div className="grid grid-cols-3 gap-[1px] bg-white/[0.04] max-w-3xl mx-auto">
+        {[
+          { label: "Exchange Rate", value: "1 credit = \u20AC5" },
+          { label: "Rollover", value: "Max = bundle size" },
+          { label: "Multiplier Range", value: "0.45x \u2013 1.4x" },
+        ].map((item, i) => (
+          <div key={i} className="bg-[#111] p-5 text-center">
+            <div className="text-[10px] font-medium tracking-[2px] uppercase text-[#888] mb-1">{item.label}</div>
+            <div className="text-sm font-light">{item.value}</div>
+          </div>
+        ))}
       </div>
 
-      {/* Bundle Cards */}
-      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
-        {(bundles ?? []).map((bundle: any) => {
-          const glow = TIER_GLOW[bundle.name] || "";
+      {/* Pricing grid */}
+      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-[1px] bg-white/[0.04] max-w-5xl mx-auto">
+        {sorted.map((bundle: any) => {
+          const isPopular = bundle.id === popular?.id;
           return (
-            <Card key={bundle.id} className={`glass-card border-border/50 transition-all duration-300 relative overflow-hidden ${bundle.isPopular ? "border-primary/50" : glow} hover:border-primary/30`}>
-              {bundle.isPopular && (
-                <div className="absolute top-0 left-0 right-0 h-1 bg-gradient-to-r from-netos-green to-emerald-400" />
+            <div key={bundle.id} className={`bg-[#111] p-8 flex flex-col relative ${isPopular ? "ring-1 ring-[#627653]/40" : ""}`}>
+              {isPopular && <div className="absolute top-0 left-0 right-0 h-[2px] bg-[#627653]" />}
+              {isPopular && <span className="text-[9px] font-semibold tracking-[3px] uppercase text-[#627653] mb-4">Most popular</span>}
+              <h3 className="text-lg font-light tracking-[0.5px]">{bundle.name}</h3>
+              <p className="text-[12px] text-[#888] font-light mt-1 mb-4 min-h-[32px]">{bundle.description}</p>
+              <div className="mt-2 mb-6">
+                <span className="text-[clamp(32px,4vw,48px)] font-extralight tracking-[-1px]">
+                  {parseFloat(bundle.priceEur) === 0 ? "Free" : `\u20AC${parseFloat(bundle.priceEur).toFixed(0)}`}
+                </span>
+                {parseFloat(bundle.priceEur) > 0 && <span className="text-sm text-[#888] font-light ml-1">/month</span>}
+              </div>
+              <div className="text-sm text-[#627653] font-medium mb-1">{bundle.creditsPerMonth} credits/month</div>
+              {parseFloat(bundle.creditsPerMonth) > 0 && (
+                <div className="text-[11px] text-[#888] font-light mb-6">
+                  Rollover: up to {bundle.creditsPerMonth} credits
+                </div>
               )}
-              <CardContent className="p-6">
-                <div className="flex items-center justify-between mb-3">
-                  <h3 className="text-lg font-bold">{bundle.name}</h3>
-                  {bundle.isPopular && <Badge className="bg-primary/20 text-primary text-[10px]"><Zap className="w-3 h-3 mr-1" />Popular</Badge>}
-                </div>
-                <p className="text-sm text-muted-foreground mb-4 min-h-[40px]">{bundle.description}</p>
-
-                <div className="mb-1">
-                  <span className="text-3xl font-bold">{parseFloat(bundle.priceEur) === 0 ? "Free" : `€${parseFloat(bundle.priceEur)}`}</span>
-                  {parseFloat(bundle.priceEur) > 0 && <span className="text-sm text-muted-foreground">/month</span>}
-                </div>
-                <div className="text-sm text-primary font-semibold mb-1">{bundle.creditsPerMonth} credits/month</div>
-                {bundle.creditsPerMonth > 0 && (
-                  <div className="text-xs text-muted-foreground mb-4">
-                    &euro;{(parseFloat(bundle.priceEur) / bundle.creditsPerMonth).toFixed(2)}/credit · Rollover: {bundle.creditsPerMonth}cr max
-                  </div>
-                )}
-
-                <div className="space-y-2 mb-6 pt-4 border-t border-border/30">
-                  {(bundle.features as string[] ?? []).map((f: string, i: number) => (
-                    <div key={i} className="flex items-center gap-2 text-sm text-muted-foreground">
-                      <Check className="w-3.5 h-3.5 text-netos-green shrink-0" />{f}
-                    </div>
-                  ))}
-                </div>
-
-                <Button className="w-full" variant={bundle.isPopular ? "default" : "outline"} onClick={() => toast.info("Stripe subscription integration coming soon")}>
-                  {parseFloat(bundle.priceEur) === 0 ? "Get Started" : "Subscribe"}<ArrowRight className="w-4 h-4 ml-2" />
-                </Button>
-              </CardContent>
-            </Card>
+              <div className="w-full h-px bg-white/[0.06] mb-6" />
+              <ul className="space-y-3 flex-1">
+                {(bundle.features as string[] ?? []).map((f: string, i: number) => (
+                  <li key={i} className="flex items-center gap-3 text-[13px] text-[#888] font-light">
+                    <Check className="w-3.5 h-3.5 text-[#627653] shrink-0" />{f}
+                  </li>
+                ))}
+              </ul>
+              <button
+                onClick={() => toast.info("Stripe subscription integration activating soon.")}
+                className={`mt-8 w-full py-[14px] text-[10px] font-semibold tracking-[3px] uppercase transition-all duration-300 ${
+                  isPopular
+                    ? "bg-[#627653] text-white hover:bg-[#4a5a3f]"
+                    : "border border-white/10 bg-transparent text-white hover:bg-white hover:text-[#111]"
+                }`}
+              >
+                {parseFloat(bundle.priceEur) === 0 ? "Get started" : "Subscribe"}
+              </button>
+            </div>
           );
         })}
       </div>
 
       {/* FAQ */}
-      <Card className="glass-card border-border/50 max-w-3xl mx-auto">
-        <CardHeader className="pb-2"><CardTitle className="text-base flex items-center gap-2"><HelpCircle className="w-4 h-4 text-primary" />Frequently Asked Questions</CardTitle></CardHeader>
-        <CardContent>
-          <div className="space-y-4">
-            {[
-              { q: "What happens to unused credits?", a: "Credits roll over to the next month, up to your bundle size. Excess credits expire (breakage)." },
-              { q: "How does dynamic pricing work?", a: "Off-peak hours (early mornings, evenings) have a 0.45x multiplier, while peak hours go up to 1.4x. This means your credits go further during quiet times." },
-              { q: "Can I upgrade mid-month?", a: "Yes! Upgrading is prorated. You'll receive the difference in credits immediately." },
-              { q: "What are company vs personal credits?", a: "Company credits are funded by your employer's subscription. Personal credits are your own top-ups. Company credits are used first." },
-            ].map((faq, i) => (
-              <div key={i} className="p-3 rounded-lg bg-secondary/30">
-                <p className="text-sm font-medium mb-1">{faq.q}</p>
-                <p className="text-xs text-muted-foreground">{faq.a}</p>
-              </div>
-            ))}
-          </div>
-        </CardContent>
-      </Card>
+      <div className="max-w-xl mx-auto pt-12 border-t border-white/[0.06]">
+        <div className="text-[9px] font-semibold tracking-[4px] uppercase text-[#627653] mb-4 text-center">FAQ</div>
+        <h2 className="text-2xl font-extralight text-center mb-8">Common <strong className="font-semibold">questions.</strong></h2>
+        <div className="space-y-0">
+          {[
+            { q: "What happens to unused credits?", a: "Credits roll over to the next month, up to your plan's rollover limit. Unused credits beyond the cap expire (breakage revenue)." },
+            { q: "Can I switch plans?", a: "Yes, you can upgrade or downgrade at any time. Changes take effect at the start of your next billing cycle." },
+            { q: "How do multipliers work?", a: "Credit costs vary by day and time. Off-peak hours have lower multipliers (0.45x\u20130.7x), while peak times cost more (up to 1.4x)." },
+            { q: "Company vs personal credits?", a: "Company credits are funded by your employer's subscription. Personal credits are your own top-ups. Company credits are used first." },
+          ].map((faq, i) => (
+            <div key={i} className="py-5 border-b border-white/[0.06]">
+              <h4 className="text-sm font-medium mb-2">{faq.q}</h4>
+              <p className="text-[13px] text-[#888] font-light leading-[1.7]">{faq.a}</p>
+            </div>
+          ))}
+        </div>
+      </div>
     </div>
   );
 }

@@ -1,187 +1,188 @@
 import { trpc } from "@/lib/trpc";
-import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
+import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import { Badge } from "@/components/ui/badge";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { ScrollArea } from "@/components/ui/scroll-area";
 import { toast } from "sonner";
 import { useState } from "react";
-import {
-  Monitor, Upload, Palette, Image, Building2, Eye, Wifi, Zap,
-  CheckCircle2, Settings, Users, Tv, ArrowRight
-} from "lucide-react";
+import { Monitor, Palette, Image, Building2, Upload, Tv, Wifi } from "lucide-react";
 
 export default function SigningPage() {
   const { data: companies } = trpc.companies.list.useQuery();
   const [editCompany, setEditCompany] = useState<any>(null);
-  const [brandForm, setBrandForm] = useState({ primaryColor: "#00C853", secondaryColor: "#1a1a2e", welcomeMessage: "" });
+  const [brandForm, setBrandForm] = useState({ primaryColor: "#627653", secondaryColor: "#b8a472", welcomeMessage: "" });
+  const [tab, setTab] = useState<"branding" | "screens" | "photos">("branding");
 
   const updateBranding = trpc.companies.updateBranding.useMutation({
-    onSuccess: () => { toast.success("Branding updated! Signing screens will refresh."); setEditCompany(null); },
+    onSuccess: () => { toast.success("Branding updated."); setEditCompany(null); },
     onError: (e: any) => toast.error(e.message),
   });
 
   const openEditor = (c: any) => {
     setEditCompany(c);
-    setBrandForm({ primaryColor: c.primaryColor || "#00C853", secondaryColor: c.secondaryColor || "#1a1a2e", welcomeMessage: "" });
+    setBrandForm({ primaryColor: c.primaryColor || "#627653", secondaryColor: c.secondaryColor || "#b8a472", welcomeMessage: "" });
   };
 
+  const screens = ["Apeldoorn \u2014 Lobby", "Apeldoorn \u2014 Floor 2", "Amsterdam \u2014 Reception", "Amsterdam \u2014 Floor 3", "Rotterdam \u2014 Entrance", "Zwolle \u2014 Lobby", "Ede \u2014 Reception", "Klarenbeek \u2014 Main", "Spijkenisse \u2014 Lobby"];
+
   return (
-    <div className="space-y-6 p-1">
-      <div className="flex items-center justify-between">
-        <div>
-          <h1 className="text-2xl font-bold tracking-tight">Signing Platform</h1>
-          <p className="text-muted-foreground text-sm mt-1">Manage digital signage and company branding across all locations.</p>
-        </div>
-        <Badge variant="secondary" className="text-xs"><Wifi className="w-3 h-3 mr-1" />Live Connected</Badge>
+    <div className="space-y-8 p-1">
+      <div>
+        <div className="text-[9px] font-semibold tracking-[4px] uppercase text-[#627653] mb-3">Digital Signage</div>
+        <h1 className="text-[clamp(24px,3vw,36px)] font-extralight tracking-[-0.5px]">
+          Signing <strong className="font-semibold">platform.</strong>
+        </h1>
+        <p className="text-sm text-[#888] font-light mt-2 max-w-lg">Dynamic branding on screens at room entry points. Logos, colors and photos update automatically per booking.</p>
       </div>
 
-      {/* How it works */}
-      <div className="grid grid-cols-1 sm:grid-cols-4 gap-3">
+      <div className="grid grid-cols-2 md:grid-cols-4 gap-[1px] bg-white/[0.04]">
         {[
-          { icon: Upload, title: "Upload", desc: "Logo, colors & photos" },
-          { icon: Settings, title: "Configure", desc: "Welcome message & layout" },
-          { icon: Zap, title: "Auto-Trigger", desc: "Activates on booking/entry" },
-          { icon: Tv, title: "Display", desc: "Screens show company brand" },
-        ].map((s, i) => (
-          <Card key={i} className="glass-card border-border/50">
-            <CardContent className="p-4 text-center">
-              <div className="w-10 h-10 rounded-xl bg-primary/10 flex items-center justify-center mx-auto mb-2"><s.icon className="w-5 h-5 text-primary" /></div>
-              <p className="text-sm font-medium">{s.title}</p>
-              <p className="text-xs text-muted-foreground">{s.desc}</p>
-            </CardContent>
-          </Card>
+          { label: "Companies", value: (companies ?? []).length, icon: Building2 },
+          { label: "With Logo", value: (companies ?? []).filter((c: any) => c.logoUrl).length, icon: Image },
+          { label: "With Colors", value: (companies ?? []).filter((c: any) => c.primaryColor).length, icon: Palette },
+          { label: "Screens", value: screens.length, icon: Monitor },
+        ].map((kpi, i) => (
+          <div key={i} className="bg-[#111] p-5 flex items-center gap-3">
+            <kpi.icon className="w-4 h-4 text-[#627653]" />
+            <div>
+              <div className="text-[10px] text-[#888] tracking-[1px] uppercase">{kpi.label}</div>
+              <div className="text-xl font-extralight">{kpi.value}</div>
+            </div>
+          </div>
         ))}
       </div>
 
-      {/* Company Branding */}
-      <Tabs defaultValue="branding">
-        <TabsList>
-          <TabsTrigger value="branding">Company Branding</TabsTrigger>
-          <TabsTrigger value="screens">Screen Status</TabsTrigger>
-          <TabsTrigger value="photos">Employee Photos</TabsTrigger>
-        </TabsList>
+      {/* Tabs */}
+      <div className="flex gap-0 border-b border-white/[0.06]">
+        {([
+          { key: "branding", label: "Company Branding" },
+          { key: "screens", label: "Screen Status" },
+          { key: "photos", label: "Employee Photos" },
+        ] as const).map((t) => (
+          <button key={t.key} onClick={() => setTab(t.key)} className={`px-6 py-3 text-[10px] font-semibold tracking-[3px] uppercase transition-all border-b-2 ${tab === t.key ? "border-[#627653] text-white" : "border-transparent text-[#888] hover:text-white"}`}>
+            {t.label}
+          </button>
+        ))}
+      </div>
 
-        <TabsContent value="branding" className="mt-4">
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-            {(companies ?? []).map((c: any) => (
-              <Card key={c.id} className="glass-card border-border/50 overflow-hidden">
-                <div className="h-1.5" style={{ background: `linear-gradient(90deg, ${c.primaryColor || "#00C853"}, ${c.secondaryColor || "#1a1a2e"})` }} />
-                <CardContent className="p-5">
-                  <div className="flex items-start justify-between mb-4">
-                    <div className="flex items-center gap-3">
-                      <div className="w-12 h-12 rounded-lg flex items-center justify-center text-white font-bold" style={{ backgroundColor: c.primaryColor ?? "#1a1a2e" }}>
-                        {c.name.charAt(0)}
-                      </div>
-                      <div>
-                        <h3 className="font-semibold text-sm">{c.name}</h3>
-                        <p className="text-xs text-muted-foreground">{c.memberCount} members</p>
-                      </div>
+      {/* Branding tab */}
+      {tab === "branding" && (
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+          {(companies ?? []).map((c: any) => (
+            <Card key={c.id} className="bg-[#111] border-white/[0.06] overflow-hidden hover:border-white/[0.12] transition-all group">
+              <div className="h-2" style={{ background: `linear-gradient(90deg, ${c.primaryColor || "#627653"}, ${c.secondaryColor || "#b8a472"})` }} />
+              <CardContent className="p-5">
+                <div className="flex items-start justify-between mb-4">
+                  <div className="flex items-center gap-3">
+                    <div className="w-10 h-10 rounded flex items-center justify-center" style={{ background: `${c.primaryColor || "#627653"}20` }}>
+                      {c.logoUrl ? <img src={c.logoUrl} alt="" className="w-6 h-6 object-contain" /> : <Building2 className="w-5 h-5" style={{ color: c.primaryColor || "#627653" }} />}
                     </div>
-                    <Button variant="outline" size="sm" onClick={() => openEditor(c)}><Palette className="w-3 h-3 mr-1" />Edit</Button>
-                  </div>
-                  {/* Live Preview */}
-                  <div className="rounded-xl overflow-hidden border border-border/30">
-                    <div className="p-6 text-center relative" style={{ background: `linear-gradient(135deg, ${c.primaryColor || "#00C853"}ee, ${c.primaryColor || "#00C853"}88)` }}>
-                      <div className="absolute top-2 right-2 flex items-center gap-1 bg-black/20 rounded-full px-2 py-0.5">
-                        <div className="w-1.5 h-1.5 rounded-full bg-netos-green animate-pulse" />
-                        <span className="text-[9px] text-white/70">LIVE</span>
-                      </div>
-                      <div className="text-white text-xl font-bold mb-1">{c.name}</div>
-                      <div className="text-white/70 text-sm">Welcome to Mr. Green</div>
-                      <div className="mt-4 flex items-center justify-center gap-3">
-                        <div className="w-4 h-4 rounded-full border-2 border-white/30" style={{ backgroundColor: c.primaryColor || "#00C853" }} />
-                        <div className="w-4 h-4 rounded-full border-2 border-white/30" style={{ backgroundColor: c.secondaryColor || "#1a1a2e" }} />
-                      </div>
-                    </div>
-                    <div className="bg-secondary/50 p-2 flex items-center justify-between">
-                      <span className="text-[10px] text-muted-foreground flex items-center gap-1"><Monitor className="w-3 h-3" />Signing Screen Preview</span>
-                      <span className="text-[10px] text-muted-foreground">16:9</span>
+                    <div>
+                      <p className="text-sm font-light">{c.name}</p>
+                      <p className="text-[11px] text-[#888]">{c.memberCount} members</p>
                     </div>
                   </div>
-                </CardContent>
-              </Card>
-            ))}
-          </div>
-        </TabsContent>
+                  <button onClick={() => openEditor(c)} className="opacity-0 group-hover:opacity-100 text-[9px] font-semibold tracking-[2px] uppercase text-[#627653] hover:underline transition-all">
+                    Edit
+                  </button>
+                </div>
+                {/* Mini preview */}
+                <div className="rounded overflow-hidden border border-white/[0.04]">
+                  <div className="p-4 text-center" style={{ background: `linear-gradient(135deg, ${c.primaryColor || "#627653"}ee, ${c.primaryColor || "#627653"}88)` }}>
+                    <div className="text-white text-sm font-medium">{c.name}</div>
+                    <div className="text-white/60 text-[11px]">Welcome to Mr. Green</div>
+                  </div>
+                </div>
+                <div className="flex items-center gap-3 mt-3">
+                  <div className="flex items-center gap-1.5">
+                    <div className="w-4 h-4 rounded border border-white/[0.06]" style={{ backgroundColor: c.primaryColor || "#627653" }} />
+                    <span className="text-[10px] text-[#888] font-mono">{c.primaryColor || "#627653"}</span>
+                  </div>
+                  <div className="flex items-center gap-1.5">
+                    <div className="w-4 h-4 rounded border border-white/[0.06]" style={{ backgroundColor: c.secondaryColor || "#b8a472" }} />
+                    <span className="text-[10px] text-[#888] font-mono">{c.secondaryColor || "#b8a472"}</span>
+                  </div>
+                </div>
+              </CardContent>
+            </Card>
+          ))}
+        </div>
+      )}
 
-        <TabsContent value="screens" className="mt-4">
-          <Card className="glass-card border-border/50">
-            <CardContent className="p-6">
-              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3">
-                {["Apeldoorn - Lobby", "Apeldoorn - Floor 2", "Amsterdam - Reception", "Amsterdam - Floor 3", "Rotterdam - Entrance", "Zwolle - Lobby", "Ede - Reception", "Klarenbeek - Main", "Spijkenisse - Lobby"].map((screen, i) => (
-                  <div key={i} className="flex items-center justify-between p-3 rounded-lg bg-secondary/30 border border-border/20">
-                    <div className="flex items-center gap-3">
-                      <Tv className="w-4 h-4 text-primary" />
-                      <div>
-                        <p className="text-sm font-medium">{screen}</p>
-                        <p className="text-[10px] text-muted-foreground">NETOS Netlink #{1000 + i}</p>
-                      </div>
-                    </div>
-                    <div className="flex items-center gap-1">
-                      <div className="w-2 h-2 rounded-full bg-netos-green animate-pulse" />
-                      <span className="text-[10px] text-netos-green">Online</span>
-                    </div>
-                  </div>
-                ))}
+      {/* Screens tab */}
+      {tab === "screens" && (
+        <div className="space-y-0">
+          {screens.map((screen, i) => (
+            <div key={i} className="flex items-center justify-between py-4 border-b border-white/[0.03] hover:bg-white/[0.02] transition-colors">
+              <div className="flex items-center gap-4">
+                <div className="w-10 h-10 rounded bg-white/[0.04] flex items-center justify-center">
+                  <Tv className="w-5 h-5 text-[#627653]" />
+                </div>
+                <div>
+                  <p className="text-sm font-light">{screen}</p>
+                  <p className="text-[11px] text-[#888]">NETOS Netlink #{1000 + i}</p>
+                </div>
               </div>
-            </CardContent>
-          </Card>
-        </TabsContent>
+              <div className="flex items-center gap-1.5">
+                <div className="w-2 h-2 rounded-full bg-[#627653] animate-pulse" />
+                <span className="text-[10px] text-[#627653] font-semibold tracking-[2px] uppercase">Online</span>
+              </div>
+            </div>
+          ))}
+        </div>
+      )}
 
-        <TabsContent value="photos" className="mt-4">
-          <Card className="glass-card border-border/50">
-            <CardContent className="p-8 text-center">
-              <Image className="w-12 h-12 text-muted-foreground mx-auto mb-4 opacity-50" />
-              <h3 className="text-lg font-medium mb-2">Employee Photos</h3>
-              <p className="text-sm text-muted-foreground mb-4 max-w-md mx-auto">
-                Upload employee photos for personalized signing screens. When a team member opens a door, their photo and company branding appear on the display.
-              </p>
-              <Button variant="outline" onClick={() => toast.info("Photo upload requires S3 integration")}><Upload className="w-4 h-4 mr-2" />Upload Photos</Button>
-            </CardContent>
-          </Card>
-        </TabsContent>
-      </Tabs>
+      {/* Photos tab */}
+      {tab === "photos" && (
+        <div className="text-center py-16">
+          <Image className="w-8 h-8 text-[#888] mx-auto mb-3 opacity-30" />
+          <p className="text-sm text-[#888] font-light mb-1">Employee photo management</p>
+          <p className="text-[11px] text-[#888]/60 font-light max-w-sm mx-auto mb-4">Upload employee photos for personalized signing screens. Photos appear when team members open a door.</p>
+          <button onClick={() => toast.info("Photo upload coming soon.")} className="px-5 py-3 border border-white/[0.06] text-[10px] font-semibold tracking-[3px] uppercase text-[#888] hover:text-white hover:border-white/20 transition-all">
+            <Upload className="w-3.5 h-3.5 inline mr-2" />Upload photos
+          </button>
+        </div>
+      )}
 
-      {/* Branding Editor Dialog */}
+      {/* Branding editor dialog */}
       <Dialog open={!!editCompany} onOpenChange={(open) => { if (!open) setEditCompany(null); }}>
-        <DialogContent className="sm:max-w-lg bg-card border-border">
-          <DialogHeader><DialogTitle className="flex items-center gap-2"><Palette className="w-5 h-5 text-primary" />Edit Branding - {editCompany?.name}</DialogTitle></DialogHeader>
+        <DialogContent className="bg-[#111] border-white/[0.06] sm:max-w-lg">
+          <DialogHeader><DialogTitle className="font-light text-lg">Edit branding &mdash; {editCompany?.name}</DialogTitle></DialogHeader>
           <div className="space-y-4">
             <div className="grid grid-cols-2 gap-4">
-              <div>
-                <p className="text-xs text-muted-foreground mb-1">Primary Color</p>
-                <div className="flex items-center gap-2">
-                  <input type="color" value={brandForm.primaryColor} onChange={(e) => setBrandForm({ ...brandForm, primaryColor: e.target.value })} className="w-10 h-10 rounded-lg cursor-pointer border-0" />
-                  <Input value={brandForm.primaryColor} onChange={(e) => setBrandForm({ ...brandForm, primaryColor: e.target.value })} className="bg-secondary/50 border-border/50 font-mono text-sm" />
+              {[
+                { key: "primaryColor", label: "Primary" },
+                { key: "secondaryColor", label: "Secondary" },
+              ].map((field) => (
+                <div key={field.key}>
+                  <label className="text-[10px] text-[#888] tracking-[2px] uppercase font-medium">{field.label}</label>
+                  <div className="flex items-center gap-2 mt-1">
+                    <input type="color" value={(brandForm as any)[field.key]} onChange={(e) => setBrandForm({ ...brandForm, [field.key]: e.target.value })} className="w-10 h-10 rounded cursor-pointer border-0 bg-transparent" />
+                    <Input value={(brandForm as any)[field.key]} onChange={(e) => setBrandForm({ ...brandForm, [field.key]: e.target.value })} className="bg-white/[0.03] border-white/[0.06] font-mono text-sm" />
+                  </div>
                 </div>
-              </div>
-              <div>
-                <p className="text-xs text-muted-foreground mb-1">Secondary Color</p>
-                <div className="flex items-center gap-2">
-                  <input type="color" value={brandForm.secondaryColor} onChange={(e) => setBrandForm({ ...brandForm, secondaryColor: e.target.value })} className="w-10 h-10 rounded-lg cursor-pointer border-0" />
-                  <Input value={brandForm.secondaryColor} onChange={(e) => setBrandForm({ ...brandForm, secondaryColor: e.target.value })} className="bg-secondary/50 border-border/50 font-mono text-sm" />
-                </div>
-              </div>
+              ))}
             </div>
             <div>
-              <p className="text-xs text-muted-foreground mb-1">Welcome Message</p>
-              <Input value={brandForm.welcomeMessage} onChange={(e) => setBrandForm({ ...brandForm, welcomeMessage: e.target.value })} placeholder="Welcome to our office" className="bg-secondary/50 border-border/50" />
+              <label className="text-[10px] text-[#888] tracking-[2px] uppercase font-medium">Welcome Message</label>
+              <Input value={brandForm.welcomeMessage} onChange={(e) => setBrandForm({ ...brandForm, welcomeMessage: e.target.value })} placeholder="Welcome to our office" className="mt-1 bg-white/[0.03] border-white/[0.06]" />
             </div>
-            {/* Live Preview */}
-            <div className="rounded-xl overflow-hidden border border-border/30">
+            {/* Live preview */}
+            <div className="rounded overflow-hidden border border-white/[0.04]">
               <div className="p-8 text-center" style={{ background: `linear-gradient(135deg, ${brandForm.primaryColor}ee, ${brandForm.primaryColor}88)` }}>
-                <div className="text-white text-xl font-bold mb-1">{editCompany?.name}</div>
-                <div className="text-white/70 text-sm">{brandForm.welcomeMessage || "Welcome to Mr. Green"}</div>
+                <div className="text-white text-xl font-light">{editCompany?.name}</div>
+                <div className="text-white/60 text-sm mt-1">{brandForm.welcomeMessage || "Welcome to Mr. Green"}</div>
+                <div className="mt-4 flex items-center justify-center gap-2">
+                  <div className="w-4 h-4 rounded-full border border-white/20" style={{ backgroundColor: brandForm.primaryColor }} />
+                  <div className="w-4 h-4 rounded-full border border-white/20" style={{ backgroundColor: brandForm.secondaryColor }} />
+                </div>
               </div>
             </div>
           </div>
           <DialogFooter>
-            <Button variant="outline" onClick={() => setEditCompany(null)}>Cancel</Button>
-            <Button onClick={() => updateBranding.mutate({ companyId: editCompany?.id, primaryColor: brandForm.primaryColor, secondaryColor: brandForm.secondaryColor, welcomeMessage: brandForm.welcomeMessage })} disabled={updateBranding.isPending}>
-              {updateBranding.isPending ? "Saving..." : "Save & Push to Screens"}
+            <Button variant="outline" onClick={() => setEditCompany(null)} className="border-white/10 bg-transparent">Cancel</Button>
+            <Button onClick={() => updateBranding.mutate({ companyId: editCompany?.id, primaryColor: brandForm.primaryColor, secondaryColor: brandForm.secondaryColor, welcomeMessage: brandForm.welcomeMessage })} disabled={updateBranding.isPending} className="bg-[#627653] text-white hover:bg-[#4a5a3f]">
+              {updateBranding.isPending ? "Saving..." : "Save & push to screens"}
             </Button>
           </DialogFooter>
         </DialogContent>

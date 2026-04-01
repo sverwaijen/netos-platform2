@@ -64,3 +64,14 @@
 - [ ] Predictive analytics for multiplier optimization
 - [ ] SMS/WhatsApp deep links for visitor invites
 - [ ] Auth0 SSO integration
+
+## Phase 5: Huisstijl Update (from mrgreen-members-v2.html)
+- [x] Switch font from Inter to Montserrat (200-700)
+- [x] Apply exact color palette: #627653, #3a4a34, #f6f5f2, #111, #b8a472
+- [x] Upload all Mr. Green photos to CDN and use in platform
+- [x] Rewrite landing page to match editorial luxury style
+- [x] Apply minimal typography (font-weight 200, tight letter-spacing)
+- [x] Add ticker animation, fade-in scroll effects
+- [x] Update DashboardLayout with Mr. Green branding
+- [x] Apply form styling (border-bottom inputs, transparent bg)
+- [x] Update all pages with consistent huisstijl

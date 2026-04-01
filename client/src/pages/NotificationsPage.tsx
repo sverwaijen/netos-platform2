@@ -1,125 +1,106 @@
 import { trpc } from "@/lib/trpc";
 import { useAuth } from "@/_core/hooks/useAuth";
-import { Card, CardContent } from "@/components/ui/card";
-import { Badge } from "@/components/ui/badge";
-import { Button } from "@/components/ui/button";
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { ScrollArea } from "@/components/ui/scroll-area";
 import { Skeleton } from "@/components/ui/skeleton";
 import { toast } from "sonner";
-import {
-  Bell, AlertTriangle, TrendingUp, Users, CreditCard, Calendar, Info,
-  CheckCircle2, Eye, BellOff
-} from "lucide-react";
+import { useState } from "react";
+import { Bell, CheckCheck, AlertTriangle, CreditCard, DoorOpen, Calendar, Users, Info } from "lucide-react";
 
 const TYPE_ICONS: Record<string, any> = {
-  enterprise_signup: Users, breakage_milestone: TrendingUp,
-  occupancy_anomaly: AlertTriangle, credit_inflation: CreditCard,
-  monthly_report: Calendar, booking_reminder: Calendar,
+  booking_reminder: Calendar, enterprise_signup: Users, breakage_milestone: CreditCard,
+  occupancy_anomaly: AlertTriangle, credit_inflation: CreditCard, monthly_report: Calendar,
   visitor_arrival: Users, system: Info,
-};
-const TYPE_COLORS: Record<string, { bg: string; text: string }> = {
-  enterprise_signup: { bg: "bg-netos-green/10", text: "text-netos-green" },
-  breakage_milestone: { bg: "bg-amber-500/10", text: "text-amber-400" },
-  occupancy_anomaly: { bg: "bg-red-500/10", text: "text-red-400" },
-  credit_inflation: { bg: "bg-purple-500/10", text: "text-purple-400" },
-  monthly_report: { bg: "bg-blue-500/10", text: "text-blue-400" },
-  booking_reminder: { bg: "bg-netos-green/10", text: "text-netos-green" },
-  visitor_arrival: { bg: "bg-cyan-500/10", text: "text-cyan-400" },
-  system: { bg: "bg-secondary", text: "text-muted-foreground" },
 };
 
 export default function NotificationsPage() {
   const { isAuthenticated } = useAuth();
   const { data: notifications, isLoading } = trpc.notifications.mine.useQuery(undefined, { enabled: isAuthenticated });
   const utils = trpc.useUtils();
-  const markRead = trpc.notifications.markRead.useMutation({
-    onSuccess: () => utils.notifications.mine.invalidate(),
-  });
+  const markRead = trpc.notifications.markRead.useMutation({ onSuccess: () => utils.notifications.mine.invalidate() });
   const markAllRead = trpc.notifications.markAllRead.useMutation({
-    onSuccess: () => {
-      toast.success("All notifications marked as read");
-      utils.notifications.mine.invalidate();
-    },
+    onSuccess: () => { toast.success("All marked as read."); utils.notifications.mine.invalidate(); },
   });
+  const [tab, setTab] = useState<"all" | "unread" | "read">("all");
 
   const unread = (notifications ?? []).filter((n: any) => !n.isRead);
-  const read = (notifications ?? []).filter((n: any) => n.isRead);
+  const readItems = (notifications ?? []).filter((n: any) => n.isRead);
+  const items = tab === "unread" ? unread : tab === "read" ? readItems : (notifications ?? []);
 
-  if (isLoading) return <div className="space-y-4 p-1">{Array.from({ length: 3 }).map((_, i) => <Skeleton key={i} className="h-20 rounded-xl" />)}</div>;
-
-  const renderNotification = (n: any) => {
-    const Icon = TYPE_ICONS[n.type] ?? Info;
-    const colors = TYPE_COLORS[n.type] ?? TYPE_COLORS.system;
-    return (
-      <div key={n.id} className={`flex items-start gap-3 p-4 rounded-xl transition-colors border border-border/20 ${!n.isRead ? "bg-primary/5 border-l-2 border-l-primary" : "bg-secondary/20 hover:bg-secondary/40"}`}>
-        <div className={`w-9 h-9 rounded-lg flex items-center justify-center shrink-0 ${colors.bg}`}>
-          <Icon className={`w-4 h-4 ${colors.text}`} />
-        </div>
-        <div className="flex-1 min-w-0">
-          <div className="flex items-center gap-2 mb-0.5">
-            <h3 className="text-sm font-medium">{n.title}</h3>
-            {!n.isRead && <div className="w-2 h-2 rounded-full bg-primary shrink-0" />}
-          </div>
-          {n.message && <p className="text-xs text-muted-foreground line-clamp-2">{n.message}</p>}
-          <p className="text-[10px] text-muted-foreground mt-1">{new Date(n.createdAt).toLocaleDateString("nl-NL", { day: "numeric", month: "short", hour: "2-digit", minute: "2-digit" })}</p>
-        </div>
-        {!n.isRead && (
-          <Button variant="ghost" size="icon" className="shrink-0 text-muted-foreground hover:text-primary" onClick={() => markRead.mutate({ id: n.id })}>
-            <Eye className="w-4 h-4" />
-          </Button>
-        )}
-      </div>
-    );
-  };
+  if (isLoading) return <div className="space-y-4 p-1">{Array.from({ length: 4 }).map((_, i) => <Skeleton key={i} className="h-16" />)}</div>;
 
   return (
-    <div className="space-y-6 p-1">
-      <div className="flex items-center justify-between">
+    <div className="space-y-8 p-1">
+      <div className="flex items-end justify-between">
         <div>
-          <h1 className="text-2xl font-bold tracking-tight">Notifications</h1>
-          <p className="text-muted-foreground text-sm mt-1">Stay informed about your workspace activity.</p>
+          <div className="text-[9px] font-semibold tracking-[4px] uppercase text-[#627653] mb-3">Activity</div>
+          <h1 className="text-[clamp(24px,3vw,36px)] font-extralight tracking-[-0.5px]">
+            Notifi<strong className="font-semibold">cations.</strong>
+          </h1>
         </div>
         {unread.length > 0 && (
-          <Button variant="outline" size="sm" onClick={() => markAllRead.mutate()} disabled={markAllRead.isPending}>
-            <CheckCircle2 className="w-3 h-3 mr-1" />Mark All Read
-          </Button>
+          <button onClick={() => markAllRead.mutate()} className="flex items-center gap-2 px-5 py-3 border border-white/[0.06] text-[10px] font-semibold tracking-[3px] uppercase text-[#888] hover:text-white hover:border-white/20 transition-all">
+            <CheckCheck className="w-3.5 h-3.5" />Mark all read
+          </button>
         )}
       </div>
 
-      <div className="grid grid-cols-3 gap-3">
-        <Card className="glass-card border-border/50"><CardContent className="p-4"><p className="text-xs text-muted-foreground">Total</p><p className="text-2xl font-bold">{(notifications ?? []).length}</p></CardContent></Card>
-        <Card className="glass-card border-border/50"><CardContent className="p-4"><p className="text-xs text-muted-foreground">Unread</p><p className="text-2xl font-bold text-primary">{unread.length}</p></CardContent></Card>
-        <Card className="glass-card border-border/50"><CardContent className="p-4"><p className="text-xs text-muted-foreground">Read</p><p className="text-2xl font-bold text-muted-foreground">{read.length}</p></CardContent></Card>
+      <div className="grid grid-cols-3 gap-[1px] bg-white/[0.04]">
+        <div className="bg-[#111] p-5">
+          <div className="text-[10px] text-[#888] tracking-[2px] uppercase mb-1">Total</div>
+          <div className="text-2xl font-extralight">{(notifications ?? []).length}</div>
+        </div>
+        <div className="bg-[#111] p-5">
+          <div className="text-[10px] text-[#888] tracking-[2px] uppercase mb-1">Unread</div>
+          <div className="text-2xl font-extralight text-[#627653]">{unread.length}</div>
+        </div>
+        <div className="bg-[#111] p-5">
+          <div className="text-[10px] text-[#888] tracking-[2px] uppercase mb-1">Read</div>
+          <div className="text-2xl font-extralight">{readItems.length}</div>
+        </div>
       </div>
 
-      <Card className="glass-card border-border/50">
-        <CardContent className="p-4">
-          <Tabs defaultValue="all">
-            <TabsList className="mb-4">
-              <TabsTrigger value="all">All ({(notifications ?? []).length})</TabsTrigger>
-              <TabsTrigger value="unread">Unread ({unread.length})</TabsTrigger>
-              <TabsTrigger value="read">Read ({read.length})</TabsTrigger>
-            </TabsList>
-            {[{ key: "all", items: notifications ?? [] }, { key: "unread", items: unread }, { key: "read", items: read }].map(({ key, items }) => (
-              <TabsContent key={key} value={key}>
-                <ScrollArea className="h-[400px]">
-                  <div className="space-y-2">
-                    {items.map(renderNotification)}
-                    {items.length === 0 && (
-                      <div className="text-center py-16">
-                        <BellOff className="w-12 h-12 text-muted-foreground mx-auto mb-4 opacity-50" />
-                        <h3 className="text-lg font-medium mb-2">{key === "unread" ? "All caught up!" : "No notifications"}</h3>
-                        <p className="text-sm text-muted-foreground">{key === "unread" ? "You have no unread notifications." : "Notifications will appear here."}</p>
-                      </div>
-                    )}
+      <div className="flex gap-0 border-b border-white/[0.06]">
+        {([
+          { key: "all", label: "All", count: (notifications ?? []).length },
+          { key: "unread", label: "Unread", count: unread.length },
+          { key: "read", label: "Read", count: readItems.length },
+        ] as const).map((t) => (
+          <button key={t.key} onClick={() => setTab(t.key)} className={`px-6 py-3 text-[10px] font-semibold tracking-[3px] uppercase transition-all border-b-2 ${tab === t.key ? "border-[#627653] text-white" : "border-transparent text-[#888] hover:text-white"}`}>
+            {t.label} ({t.count})
+          </button>
+        ))}
+      </div>
+
+      {items.length === 0 ? (
+        <div className="text-center py-16">
+          <Bell className="w-8 h-8 text-[#888] mx-auto mb-3 opacity-30" />
+          <p className="text-sm text-[#888] font-light">{tab === "unread" ? "All caught up." : "No notifications."}</p>
+        </div>
+      ) : (
+        <div className="space-y-0">
+          {items.map((n: any) => {
+            const Icon = TYPE_ICONS[n.type] ?? Bell;
+            return (
+              <div
+                key={n.id}
+                onClick={() => !n.isRead && markRead.mutate({ id: n.id })}
+                className={`flex items-start gap-4 py-4 border-b border-white/[0.03] transition-colors ${n.isRead ? "opacity-40" : "hover:bg-white/[0.02] cursor-pointer"}`}
+              >
+                <div className={`w-10 h-10 rounded flex items-center justify-center shrink-0 ${n.isRead ? "bg-white/[0.03]" : "bg-[#627653]/10"}`}>
+                  <Icon className={`w-5 h-5 ${n.isRead ? "text-[#888]" : "text-[#627653]"}`} />
+                </div>
+                <div className="flex-1 min-w-0">
+                  <div className="flex items-center gap-2">
+                    <p className="text-sm font-light">{n.title}</p>
+                    {!n.isRead && <div className="w-1.5 h-1.5 rounded-full bg-[#627653] shrink-0" />}
                   </div>
-                </ScrollArea>
-              </TabsContent>
-            ))}
-          </Tabs>
-        </CardContent>
-      </Card>
+                  {n.message && <p className="text-[11px] text-[#888] mt-0.5 line-clamp-2">{n.message}</p>}
+                  <p className="text-[10px] text-[#888]/60 mt-1">{new Date(n.createdAt).toLocaleString("nl-NL", { day: "numeric", month: "short", hour: "2-digit", minute: "2-digit" })}</p>
+                </div>
+              </div>
+            );
+          })}
+        </div>
+      )}
     </div>
   );
 }

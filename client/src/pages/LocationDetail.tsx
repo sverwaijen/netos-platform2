@@ -12,9 +12,10 @@ import { toast } from "sonner";
 import { useParams, Link } from "wouter";
 import { useState, useMemo } from "react";
 import {
-  ArrowLeft, MapPin, Users as UsersIcon, Clock, Zap, Filter, Search,
+  ArrowLeft, MapPin, Users as UsersIcon, Clock, Filter, Search,
   Monitor, Phone, Coffee, Dumbbell, Calendar, ChevronLeft, ChevronRight, CreditCard
 } from "lucide-react";
+import { getLocationImage } from "@/lib/brand";
 
 const RESOURCE_ICONS: Record<string, any> = {
   desk: Monitor, meeting_room: UsersIcon, private_office: Coffee,
@@ -145,20 +146,30 @@ export default function LocationDetail() {
   if (locLoading) return <div className="space-y-4 p-1">{Array.from({ length: 3 }).map((_, i) => <Skeleton key={i} className="h-32 rounded-xl" />)}</div>;
   if (!location) return <div className="text-center py-20 text-muted-foreground">Location not found</div>;
 
+  const heroImg = getLocationImage(slug);
+
   return (
     <div className="space-y-6 p-1">
-      <div className="flex items-start justify-between">
-        <div>
-          <Link href="/locations"><Button variant="ghost" size="sm" className="mb-2 -ml-2"><ArrowLeft className="w-4 h-4 mr-1" />Back</Button></Link>
-          <h1 className="text-2xl font-bold tracking-tight">{location.name}</h1>
-          <p className="text-muted-foreground text-sm flex items-center gap-1 mt-1"><MapPin className="w-3 h-3" />{location.address}, {location.city}</p>
+      {/* Hero image */}
+      <div className="relative -m-6 mb-0 h-64 overflow-hidden">
+        <img src={heroImg} alt={location.name} className="w-full h-full object-cover brightness-[0.5] saturate-[0.8]" />
+        <div className="absolute inset-0 bg-gradient-to-t from-background via-background/40 to-transparent" />
+        <div className="absolute bottom-0 left-0 right-0 p-6">
+          <Link href="/locations"><Button variant="ghost" size="sm" className="mb-3 -ml-2 text-white/70 hover:text-white hover:bg-white/10"><ArrowLeft className="w-4 h-4 mr-1" />All locations</Button></Link>
+          <div className="flex items-end justify-between">
+            <div>
+              <div className="text-[9px] font-semibold tracking-[4px] uppercase text-[#627653] mb-2">Mr. Green Boutique Office</div>
+              <h1 className="text-3xl font-extralight tracking-[-0.5px] text-white">{location.name}</h1>
+              <p className="text-white/50 text-sm flex items-center gap-1 mt-1 font-light"><MapPin className="w-3 h-3" />{location.address}, {location.city}</p>
+            </div>
+            <span className="text-[10px] text-white/40 tracking-[2px] uppercase font-medium">{location.totalResources} resources</span>
+          </div>
         </div>
-        <Badge variant="secondary" className="text-xs">{location.totalResources} resources</Badge>
       </div>
 
       <Card className="glass-card border-border/50">
         <CardContent className="p-4">
-          <div className="flex items-center gap-2 mb-3"><Zap className="w-4 h-4 text-netos-green" /><span className="text-sm font-medium">Dynamic Pricing</span></div>
+          <div className="flex items-center gap-2 mb-3"><CreditCard className="w-4 h-4 text-[#627653]" /><span className="text-sm font-medium">Dynamic Pricing</span></div>
           <div className="grid grid-cols-7 gap-2">
             {DAY_NAMES.map((day, i) => {
               const m = multiplierMap[i] ?? 1.0;

@@ -1,255 +1,234 @@
 import { useAuth } from "@/_core/hooks/useAuth";
-import { Button } from "@/components/ui/button";
 import { getLoginUrl } from "@/const";
-import { trpc } from "@/lib/trpc";
-import {
-  Zap, MapPin, CreditCard, Shield, ArrowRight, Smartphone, Building2,
-  Users, ChevronRight, Wifi, Coffee, Monitor, Lock, Check, Star
-} from "lucide-react";
-import { useLocation } from "wouter";
+import { BRAND, LOCATION_IMAGES } from "@/lib/brand";
+import { useEffect, useRef } from "react";
+import { Link } from "wouter";
+
+const TICKER_ITEMS = [
+  "Apply for membership",
+  "7 locations across the Netherlands",
+  "Invite only",
+  "23% acceptance rate",
+  "A network, not an office",
+];
+
+const LOCATIONS = [
+  { city: "Amsterdam", slug: "amsterdam", tag: "Waitlist only", tagClass: "bg-white/[0.08] text-white/40" },
+  { city: "Rotterdam", slug: "rotterdam", tag: "2 spots left", tagClass: "bg-[#627653]/25 text-[#627653]" },
+  { city: "Zwolle", slug: "zwolle", tag: "3 spots left", tagClass: "bg-[#627653]/25 text-[#627653]" },
+  { city: "Ede", slug: "ede", tag: "Accepting applications", tagClass: "bg-[#b8a472]/20 text-[#b8a472]" },
+  { city: "Apeldoorn", slug: "apeldoorn", tag: "Accepting applications", tagClass: "bg-[#b8a472]/20 text-[#b8a472]" },
+  { city: "Klarenbeek", slug: "klarenbeek", tag: "5 spots left", tagClass: "bg-[#627653]/25 text-[#627653]" },
+  { city: "Spijkenisse", slug: "spijkenisse", tag: "Opening soon", tagClass: "bg-[#b8a472]/20 text-[#b8a472]" },
+];
+
+const FEATURES = [
+  { label: "The space", title: "Your office.", bold: "Seven addresses.", desc: "A private office at one location. Access to all seven. Work in Amsterdam today, Zwolle tomorrow. Your membership travels with you.", img: BRAND.images.boutiqueOffice },
+  { label: "The network", title: "Not coworking.", bold: "Co-growing.", desc: "Monthly member events. Quarterly dinners. A private directory of businesses that think like you. The connections you make here don't happen at networking drinks.", img: BRAND.images.zwolleCommunity },
+];
+
+function useFadeIn() {
+  const ref = useRef<HTMLDivElement>(null);
+  useEffect(() => {
+    const el = ref.current;
+    if (!el) return;
+    const obs = new IntersectionObserver(
+      (entries) => entries.forEach((e) => { if (e.isIntersecting) e.target.classList.add("visible"); }),
+      { threshold: 0.15 }
+    );
+    el.querySelectorAll(".fade-in").forEach((child) => obs.observe(child));
+    return () => obs.disconnect();
+  }, []);
+  return ref;
+}
 
 export default function Home() {
-  const { user } = useAuth();
-  const [, setLocation] = useLocation();
-  const { data: locations } = trpc.locations.list.useQuery();
-  const { data: bundles } = trpc.bundles.list.useQuery();
+  const { isAuthenticated } = useAuth();
+  const pageRef = useFadeIn();
+
+  useEffect(() => {
+    const timer = setTimeout(() => {
+      document.querySelector(".hero-fade")?.classList.add("visible");
+    }, 300);
+    return () => clearTimeout(timer);
+  }, []);
 
   return (
-    <div className="min-h-screen bg-background text-foreground">
-      {/* Navigation */}
-      <nav className="fixed top-0 w-full z-50 bg-background/80 backdrop-blur-xl border-b border-border/30">
-        <div className="max-w-7xl mx-auto px-6 h-16 flex items-center justify-between">
-          <div className="flex items-center gap-2">
-            <div className="w-8 h-8 rounded-lg bg-primary flex items-center justify-center"><Zap className="h-4 w-4 text-primary-foreground" /></div>
-            <span className="text-xl font-bold tracking-tight">NET OS</span>
-            <span className="text-xs text-muted-foreground ml-1 hidden sm:inline">by Mr. Green</span>
-          </div>
-          <div className="hidden md:flex items-center gap-8 text-sm text-muted-foreground">
-            <a href="#locations" className="hover:text-foreground transition-colors">Locations</a>
-            <a href="#features" className="hover:text-foreground transition-colors">Features</a>
-            <a href="#pricing" className="hover:text-foreground transition-colors">Pricing</a>
-            <a href="#access" className="hover:text-foreground transition-colors">Access Zones</a>
-          </div>
-          <div className="flex items-center gap-3">
-            {user ? (
-              <Button onClick={() => setLocation("/dashboard")} size="sm">Dashboard <ArrowRight className="ml-1 h-3 w-3" /></Button>
-            ) : (
-              <>
-                <Button variant="ghost" size="sm" onClick={() => (window.location.href = getLoginUrl())}>Sign in</Button>
-                <Button size="sm" onClick={() => (window.location.href = getLoginUrl())}>Get Started</Button>
-              </>
-            )}
-          </div>
+    <div ref={pageRef} className="min-h-screen bg-[#111] text-white" style={{ fontFamily: "'Montserrat', sans-serif" }}>
+      {/* NAV */}
+      <nav className="fixed top-0 w-full z-50 flex justify-between items-center px-6 md:px-12 py-7" style={{ mixBlendMode: "difference" }}>
+        <div>
+          <img src={BRAND.logo} alt="Mr. Green" className="h-6 brightness-[10]" />
+        </div>
+        <div className="flex items-center gap-8">
+          {isAuthenticated ? (
+            <Link href="/dashboard" className="text-white no-underline text-[10px] font-semibold tracking-[3px] uppercase pb-2.5 border-b border-white/40 hover:border-white transition-colors">
+              Dashboard
+            </Link>
+          ) : (
+            <a href="#apply" className="text-white no-underline text-[10px] font-semibold tracking-[3px] uppercase pb-2.5 border-b border-white/40 hover:border-white transition-colors">
+              Request access
+            </a>
+          )}
         </div>
       </nav>
 
-      {/* Hero */}
-      <section className="pt-32 pb-24 px-6 relative overflow-hidden">
-        <div className="absolute inset-0 bg-gradient-to-b from-primary/5 via-transparent to-transparent" />
-        <div className="absolute top-20 left-1/2 -translate-x-1/2 w-[600px] h-[600px] bg-primary/5 rounded-full blur-3xl" />
-        <div className="max-w-7xl mx-auto relative">
-          <div className="max-w-3xl">
-            <div className="inline-flex items-center gap-2 px-3 py-1.5 rounded-full bg-primary/10 text-primary text-xs font-medium mb-6 border border-primary/20">
-              <Shield className="h-3 w-3" />
-              Invite-Only Platform
+      {/* HERO */}
+      <section className="h-screen min-h-[600px] flex items-end relative overflow-hidden">
+        <div className="absolute inset-0 bg-cover bg-center" style={{ backgroundImage: `url(${BRAND.images.amsterdam})` }} />
+        <div className="absolute inset-0" style={{ background: "linear-gradient(to top, rgba(0,0,0,0.85) 0%, rgba(0,0,0,0.1) 50%, rgba(0,0,0,0.3) 100%)" }} />
+        <div className="hero-fade fade-in relative z-10 px-6 md:px-12 pb-20 max-w-[720px]">
+          <h1 className="text-[clamp(40px,6vw,72px)] font-extralight leading-[1.05] tracking-[-2px] mb-6">
+            You don't<br />find us.<br /><span className="font-semibold">We find you.</span>
+          </h1>
+          <div className="w-10 h-px bg-[#627653] my-7" />
+          <p className="text-sm text-[#888] font-light tracking-[0.5px] leading-[1.7] max-w-[420px]">
+            Mr. Green Members is a closed community of selected businesses. Access to seven premium locations across the Netherlands — by invitation only.
+          </p>
+        </div>
+      </section>
+
+      {/* TICKER */}
+      <div className="border-t border-b border-white/[0.06] overflow-hidden whitespace-nowrap py-4">
+        <div className="ticker-track">
+          {[...TICKER_ITEMS, ...TICKER_ITEMS, ...TICKER_ITEMS].map((item, i) => (
+            <span key={i} className="text-[11px] font-normal tracking-[4px] uppercase text-white/20 px-12">
+              {item} <span className="text-[#627653] ml-12">&middot;</span>
+            </span>
+          ))}
+        </div>
+      </div>
+
+      {/* STATEMENT */}
+      <div className="py-40 px-6 md:px-12 flex justify-center">
+        <div className="max-w-[640px] fade-in">
+          <p className="text-[clamp(22px,3vw,34px)] font-extralight leading-[1.5] tracking-[-0.5px] text-white/85">
+            We don't sell desks. We curate a community. Every member is <span className="text-[#627653] font-normal">selected</span> for what they bring to the network — not what they pay for a room.
+          </p>
+        </div>
+      </div>
+
+      {/* SPLIT SECTIONS */}
+      {FEATURES.map((feat, i) => (
+        <div key={i} className={`grid grid-cols-1 lg:grid-cols-2 min-h-[80vh]`}>
+          <div className={`overflow-hidden ${i % 2 === 1 ? "lg:order-2" : ""}`}>
+            <img src={feat.img} alt={feat.label} className="w-full h-full object-cover brightness-[0.8] hover:scale-[1.03] transition-transform duration-[8s]" />
+          </div>
+          <div className={`flex flex-col justify-center px-6 md:px-[72px] py-20 fade-in ${i % 2 === 1 ? "lg:order-1" : ""}`}>
+            <div className="text-[9px] font-semibold tracking-[4px] uppercase text-[#627653] mb-8">{feat.label}</div>
+            <h2 className="text-[clamp(28px,3vw,42px)] font-extralight leading-[1.2] tracking-[-0.5px] mb-7">
+              {feat.title}<br /><strong className="font-semibold">{feat.bold}</strong>
+            </h2>
+            <p className="text-sm text-[#888] leading-[1.8] font-light max-w-[400px]">{feat.desc}</p>
+          </div>
+        </div>
+      ))}
+
+      {/* NUMBERS */}
+      <div className="grid grid-cols-2 lg:grid-cols-4 gap-px bg-white/[0.04] border-t border-b border-white/[0.06]" style={{ padding: "120px 48px" }}>
+        {[
+          { val: "87", label: "Current members" },
+          { val: "7", label: "Locations" },
+          { val: "143", label: "On the waitlist" },
+          { val: "23%", label: "Acceptance rate" },
+        ].map((n, i) => (
+          <div key={i} className="text-center py-10 px-5 bg-[#111] fade-in">
+            <div className="text-[clamp(36px,4vw,56px)] font-extralight tracking-[-1px]">{n.val}</div>
+            <div className="text-[10px] text-[#888] tracking-[3px] uppercase mt-3 font-normal">{n.label}</div>
+          </div>
+        ))}
+      </div>
+
+      {/* LOCATIONS */}
+      <div className="py-[120px] px-6 md:px-12">
+        <div className="flex flex-col md:flex-row justify-between items-start md:items-end mb-12 fade-in">
+          <h2 className="text-[clamp(28px,3vw,42px)] font-extralight tracking-[-0.5px]">
+            Where we <strong className="font-semibold">are.</strong>
+          </h2>
+          <div className="text-[11px] text-[#888] tracking-[1px] font-light mt-3 md:mt-0">Availability updated weekly</div>
+        </div>
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-[3px]">
+          {LOCATIONS.slice(0, 4).map((loc) => (
+            <Link key={loc.slug} href={`/locations/${loc.slug}`} className="no-underline">
+              <div className="relative aspect-[3/4] overflow-hidden cursor-pointer group">
+                <img
+                  src={LOCATION_IMAGES[loc.slug]}
+                  alt={loc.city}
+                  className="w-full h-full object-cover brightness-[0.55] saturate-[0.8] group-hover:brightness-[0.4] group-hover:saturate-[0.6] group-hover:scale-[1.03] transition-all duration-600"
+                />
+                <div className="absolute bottom-0 left-0 right-0 p-7">
+                  <div className="text-lg font-normal tracking-[1px] text-white">{loc.city}</div>
+                  <span className={`inline-block mt-2.5 text-[9px] font-semibold tracking-[2.5px] uppercase px-3.5 py-1.5 ${loc.tagClass}`}>
+                    {loc.tag}
+                  </span>
+                </div>
+              </div>
+            </Link>
+          ))}
+        </div>
+        <div className="grid grid-cols-1 sm:grid-cols-3 gap-[3px] mt-[3px]">
+          {LOCATIONS.slice(4).map((loc) => (
+            <Link key={loc.slug} href={`/locations/${loc.slug}`} className="no-underline">
+              <div className="relative aspect-[4/3] overflow-hidden cursor-pointer group">
+                <img
+                  src={LOCATION_IMAGES[loc.slug]}
+                  alt={loc.city}
+                  className="w-full h-full object-cover brightness-[0.55] saturate-[0.8] group-hover:brightness-[0.4] group-hover:saturate-[0.6] group-hover:scale-[1.03] transition-all duration-600"
+                />
+                <div className="absolute bottom-0 left-0 right-0 p-7">
+                  <div className="text-lg font-normal tracking-[1px] text-white">{loc.city}</div>
+                  <span className={`inline-block mt-2.5 text-[9px] font-semibold tracking-[2.5px] uppercase px-3.5 py-1.5 ${loc.tagClass}`}>
+                    {loc.tag}
+                  </span>
+                </div>
+              </div>
+            </Link>
+          ))}
+        </div>
+      </div>
+
+      {/* APPLY */}
+      <section id="apply" className="py-40 px-6 md:px-12 flex justify-center border-t border-white/[0.06]">
+        <div className="max-w-[520px] w-full text-center fade-in">
+          <div className="inline-flex items-center gap-2.5 text-xs text-[#b8a472] font-normal tracking-[1px] mb-12">
+            <span className="w-[5px] h-[5px] rounded-full bg-[#b8a472] animate-pulse-slow" />
+            143 companies ahead of you
+          </div>
+          <h2 className="text-[clamp(32px,4vw,52px)] font-extralight leading-[1.15] tracking-[-1px] mb-4">
+            Request <strong className="font-semibold">access.</strong>
+          </h2>
+          <p className="text-[13px] text-[#888] font-light leading-[1.7] mb-12">
+            We review every application personally. If there's a match, you'll hear from us within five business days.
+          </p>
+          {isAuthenticated ? (
+            <Link href="/dashboard">
+              <button className="w-full mt-4 py-[18px] border border-white/15 bg-transparent text-white font-semibold text-[10px] tracking-[4px] uppercase hover:bg-white hover:text-[#111] transition-all duration-400">
+                Go to dashboard
+              </button>
+            </Link>
+          ) : (
+            <div className="flex flex-col gap-0">
+              <input type="text" placeholder="Your name" className="py-[18px] border-0 border-b border-white/10 bg-transparent text-white font-light text-sm outline-none focus:border-b-[#627653] transition-colors placeholder:text-white/25" />
+              <input type="text" placeholder="Company" className="py-[18px] border-0 border-b border-white/10 bg-transparent text-white font-light text-sm outline-none focus:border-b-[#627653] transition-colors placeholder:text-white/25" />
+              <input type="email" placeholder="Work email" className="py-[18px] border-0 border-b border-white/10 bg-transparent text-white font-light text-sm outline-none focus:border-b-[#627653] transition-colors placeholder:text-white/25" />
+              <input type="tel" placeholder="Phone (optional)" className="py-[18px] border-0 border-b border-white/10 bg-transparent text-white font-light text-sm outline-none focus:border-b-[#627653] transition-colors placeholder:text-white/25" />
+              <a href={getLoginUrl()}>
+                <button className="w-full mt-10 py-[18px] border border-white/15 bg-transparent text-white font-semibold text-[10px] tracking-[4px] uppercase hover:bg-white hover:text-[#111] transition-all duration-400">
+                  Join the waitlist
+                </button>
+              </a>
             </div>
-            <h1 className="text-5xl md:text-7xl font-bold tracking-tight leading-[1.05] mb-6">
-              <span className="gradient-text">Office for</span>
-              <br />
-              the Unbound
-            </h1>
-            <p className="text-lg text-muted-foreground max-w-xl mb-8 leading-relaxed">
-              One app. Seven premium locations. Seamless access, smart credits, and
-              everything you need to work without boundaries across the Netherlands.
-            </p>
-            <div className="flex flex-wrap gap-3">
-              <Button size="lg" onClick={() => (window.location.href = getLoginUrl())} className="h-12 px-8">
-                Request Access <ArrowRight className="ml-2 h-4 w-4" />
-              </Button>
-              <Button variant="outline" size="lg" className="h-12 px-8 bg-transparent" onClick={() => document.getElementById("features")?.scrollIntoView({ behavior: "smooth" })}>
-                Explore Features
-              </Button>
-            </div>
-          </div>
-
-          {/* Stats */}
-          <div className="grid grid-cols-2 md:grid-cols-4 gap-6 mt-20 pt-10 border-t border-border/30">
-            {[
-              { value: "7", label: "Premium Locations" },
-              { value: "917", label: "Bookable Resources" },
-              { value: "1,800+", label: "Active Members" },
-              { value: "165+", label: "Companies" },
-            ].map((stat) => (
-              <div key={stat.label}>
-                <div className="text-3xl font-bold gradient-text">{stat.value}</div>
-                <div className="text-sm text-muted-foreground mt-1">{stat.label}</div>
-              </div>
-            ))}
-          </div>
+          )}
+          <p className="text-[11px] text-white/20 mt-6 font-light">
+            Your data stays with us. No spam. No sales calls. Just a conversation if it fits.
+          </p>
         </div>
       </section>
 
-      {/* Locations */}
-      <section id="locations" className="py-20 px-6">
-        <div className="max-w-7xl mx-auto">
-          <div className="mb-12">
-            <h2 className="text-3xl font-bold tracking-tight mb-3">Seven Boutique Locations</h2>
-            <p className="text-muted-foreground max-w-lg">Premium workspaces across the Netherlands, each with its own character.</p>
-          </div>
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
-            {(locations ?? []).map((loc: any) => (
-              <div key={loc.id} className="group glass-card rounded-xl p-5 hover:border-primary/30 transition-all duration-300 cursor-pointer" onClick={() => { if (user) setLocation(`/locations/${loc.slug}`); else window.location.href = getLoginUrl(); }}>
-                <div className="flex items-start justify-between mb-3">
-                  <div className="w-10 h-10 rounded-xl bg-primary/10 flex items-center justify-center"><MapPin className="h-5 w-5 text-primary" /></div>
-                  <ArrowRight className="h-4 w-4 text-muted-foreground group-hover:text-primary group-hover:translate-x-1 transition-all" />
-                </div>
-                <h3 className="font-semibold text-foreground mb-1">{loc.name.replace("Mr. Green ", "")}</h3>
-                <p className="text-sm text-muted-foreground mb-2">{loc.city}</p>
-                <div className="flex items-center gap-2 text-xs text-muted-foreground">
-                  <Monitor className="w-3 h-3" />{loc.totalResources} resources
-                </div>
-              </div>
-            ))}
-          </div>
-        </div>
-      </section>
-
-      {/* Features */}
-      <section id="features" className="py-20 px-6 bg-secondary/20">
-        <div className="max-w-7xl mx-auto">
-          <div className="mb-12 text-center">
-            <h2 className="text-3xl font-bold tracking-tight mb-3">Everything in One App</h2>
-            <p className="text-muted-foreground max-w-lg mx-auto">From opening doors to booking rooms, managing credits to inviting visitors.</p>
-          </div>
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-            {[
-              { icon: Lock, title: "Smart Access", desc: "Open doors with your phone via Salto KS. Zone-based access from lobby to private offices." },
-              { icon: CreditCard, title: "Credit Wallet", desc: "Dual wallet system with company and personal credits. Dynamic pricing with day multipliers." },
-              { icon: Monitor, title: "Book Anything", desc: "Desks, meeting rooms, offices, gym. Real-time availability across all 7 locations." },
-              { icon: Building2, title: "Company Hub", desc: "Manage teams, set credit limits, track usage. Bronze, Silver, Gold tier benefits." },
-              { icon: Users, title: "Visitor Management", desc: "Invite guests with one tap. License plate registration and temporary access." },
-              { icon: Smartphone, title: "Signing Platform", desc: "Your company branding on every screen. Dynamic displays that change when you enter." },
-              { icon: Wifi, title: "IoT Connected", desc: "177 NETOS devices and 2,478 sensors for real-time occupancy and smart automation." },
-              { icon: Coffee, title: "Micro-Services", desc: "Coffee, lunch, printing, lockers. All payable with credits from your wallet." },
-              { icon: Shield, title: "Invite Only", desc: "An exclusive community. Get invited by a member or company to join the network." },
-            ].map((feature) => (
-              <div key={feature.title} className="glass-card rounded-xl p-6 hover:border-primary/20 transition-all duration-300">
-                <div className="w-10 h-10 rounded-xl bg-primary/10 flex items-center justify-center mb-4"><feature.icon className="h-5 w-5 text-primary" /></div>
-                <h3 className="font-semibold text-foreground mb-2">{feature.title}</h3>
-                <p className="text-sm text-muted-foreground leading-relaxed">{feature.desc}</p>
-              </div>
-            ))}
-          </div>
-        </div>
-      </section>
-
-      {/* Zone System */}
-      <section id="access" className="py-20 px-6">
-        <div className="max-w-7xl mx-auto">
-          <div className="mb-12">
-            <h2 className="text-3xl font-bold tracking-tight mb-3">Zone-Based Access</h2>
-            <p className="text-muted-foreground max-w-lg">Seamless access across four zones, automatically managed through your credits.</p>
-          </div>
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
-            {[
-              { zone: "Zone 0", name: "Transit", desc: "Lobby, corridors, lifts", cost: "Free", color: "text-muted-foreground", border: "border-border/50" },
-              { zone: "Zone 1", name: "Base Access", desc: "Lounge, WiFi, coffee", cost: "4 cr/day", color: "text-blue-400", border: "border-blue-500/20" },
-              { zone: "Zone 2", name: "Smart Desk", desc: "Dedicated flex desk", cost: "2 cr/hr", color: "text-primary", border: "border-primary/20" },
-              { zone: "Zone 3", name: "Private", desc: "Meeting rooms & offices", cost: "10+ cr/hr", color: "text-amber-400", border: "border-amber-500/20" },
-            ].map((z) => (
-              <div key={z.zone} className={`glass-card rounded-xl p-6 ${z.border} transition-all hover:scale-[1.02]`}>
-                <div className={`text-xs font-mono ${z.color} mb-3 flex items-center gap-2`}><Lock className="w-3 h-3" />{z.zone}</div>
-                <h3 className="font-semibold text-foreground text-lg mb-1">{z.name}</h3>
-                <p className="text-sm text-muted-foreground mb-4">{z.desc}</p>
-                <div className={`text-sm font-semibold ${z.color}`}>{z.cost}</div>
-              </div>
-            ))}
-          </div>
-        </div>
-      </section>
-
-      {/* Pricing */}
-      <section id="pricing" className="py-20 px-6 bg-secondary/20">
-        <div className="max-w-7xl mx-auto">
-          <div className="mb-12 text-center">
-            <h2 className="text-3xl font-bold tracking-tight mb-3">Credit Bundles</h2>
-            <p className="text-muted-foreground max-w-lg mx-auto">1 Credit = &euro;5. Choose a bundle that fits your workstyle. Unused credits roll over.</p>
-          </div>
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
-            {(bundles ?? []).map((bundle: any) => (
-              <div key={bundle.id} className={`glass-card rounded-xl p-6 relative transition-all duration-300 ${bundle.isPopular ? "border-primary/50" : "hover:border-primary/20"}`}>
-                {bundle.isPopular && <div className="absolute top-0 left-0 right-0 h-1 bg-gradient-to-r from-netos-green to-emerald-400 rounded-t-xl" />}
-                {bundle.isPopular && <div className="absolute top-4 right-4 px-2 py-0.5 rounded-full bg-primary/20 text-primary text-xs font-medium flex items-center gap-1"><Star className="w-3 h-3" />Popular</div>}
-                <h3 className="font-semibold text-foreground text-lg mb-1">{bundle.name}</h3>
-                <p className="text-sm text-muted-foreground mb-4">{bundle.description}</p>
-                <div className="flex items-baseline gap-1 mb-1">
-                  <span className="text-3xl font-bold">{parseFloat(bundle.priceEur) === 0 ? "Free" : `€${parseFloat(bundle.priceEur)}`}</span>
-                  {parseFloat(bundle.priceEur) > 0 && <span className="text-sm text-muted-foreground">/month</span>}
-                </div>
-                <div className="text-sm text-primary font-semibold mb-4">{bundle.creditsPerMonth} credits/month</div>
-                <div className="space-y-2 pt-4 border-t border-border/30">
-                  {(bundle.features as string[] ?? []).map((f: string, i: number) => (
-                    <div key={i} className="flex items-center gap-2 text-sm text-muted-foreground"><Check className="h-3.5 w-3.5 text-netos-green shrink-0" />{f}</div>
-                  ))}
-                </div>
-                <Button className="w-full mt-6" variant={bundle.isPopular ? "default" : "outline"} onClick={() => (window.location.href = getLoginUrl())}>
-                  {parseFloat(bundle.priceEur) === 0 ? "Get Started" : "Choose Plan"}
-                </Button>
-              </div>
-            ))}
-          </div>
-        </div>
-      </section>
-
-      {/* Smart Pricing */}
-      <section className="py-20 px-6">
-        <div className="max-w-7xl mx-auto">
-          <div className="mb-12">
-            <h2 className="text-3xl font-bold tracking-tight mb-3">Smart Pricing</h2>
-            <p className="text-muted-foreground max-w-lg">Dynamic multipliers reward off-peak usage. Save up to 55% on quiet days.</p>
-          </div>
-          <div className="grid grid-cols-7 gap-2">
-            {[
-              { day: "Mon", mult: 0.5 }, { day: "Tue", mult: 0.7 }, { day: "Wed", mult: 1.0 },
-              { day: "Thu", mult: 1.4 }, { day: "Fri", mult: 0.45 }, { day: "Sat", mult: 0.5 }, { day: "Sun", mult: 0.5 },
-            ].map((d) => (
-              <div key={d.day} className="glass-card rounded-xl p-4 text-center">
-                <div className="text-xs text-muted-foreground mb-2">{d.day}</div>
-                <div className="h-20 rounded-lg mb-2 flex items-end justify-center">
-                  <div className={`w-full rounded-lg ${d.mult >= 1 ? "bg-amber-500/30" : "bg-primary/30"}`} style={{ height: `${d.mult * 70}%` }} />
-                </div>
-                <div className={`text-sm font-semibold ${d.mult >= 1 ? "text-amber-400" : "text-netos-green"}`}>{d.mult}x</div>
-              </div>
-            ))}
-          </div>
-        </div>
-      </section>
-
-      {/* CTA */}
-      <section className="py-20 px-6">
-        <div className="max-w-3xl mx-auto text-center">
-          <div className="glass-card rounded-2xl p-12 border-primary/20">
-            <h2 className="text-4xl font-bold tracking-tight mb-4">Ready to work unbound?</h2>
-            <p className="text-muted-foreground mb-8 max-w-lg mx-auto">
-              Join 1,800+ professionals and 165+ companies already using NET OS across 7 premium locations.
-            </p>
-            <Button size="lg" className="h-12 px-8" onClick={() => (window.location.href = getLoginUrl())}>
-              Request Access <ArrowRight className="ml-2 h-4 w-4" />
-            </Button>
-          </div>
-        </div>
-      </section>
-
-      {/* Footer */}
-      <footer className="border-t border-border/30 py-8 px-6">
-        <div className="max-w-7xl mx-auto flex flex-col sm:flex-row items-center justify-between gap-4">
-          <div className="flex items-center gap-2">
-            <div className="w-6 h-6 rounded bg-primary flex items-center justify-center"><Zap className="h-3 w-3 text-primary-foreground" /></div>
-            <span className="text-sm font-medium">NET OS</span>
-            <span className="text-xs text-muted-foreground">by Mr. Green Boutique Offices</span>
-          </div>
-          <div className="text-xs text-muted-foreground">Invite-only platform &middot; &copy; {new Date().getFullYear()} Mr. Green Offices</div>
-        </div>
+      {/* FOOTER */}
+      <footer className="px-6 md:px-12 py-12 border-t border-white/[0.06] flex flex-col md:flex-row justify-between items-center gap-4">
+        <img src={BRAND.logo} alt="Mr. Green" className="h-5 opacity-40" />
+        <div className="text-[10px] text-white/20 tracking-[2px] font-normal">OFFICE FOR THE UNBOUND</div>
       </footer>
     </div>
   );

@@ -22,6 +22,7 @@ import {
 } from "@/components/ui/sidebar";
 import { getLoginUrl } from "@/const";
 import { useIsMobile } from "@/hooks/useMobile";
+import { BRAND } from "@/lib/brand";
 import {
   LayoutDashboard,
   LogOut,
@@ -37,7 +38,6 @@ import {
   UserPlus,
   Settings,
   CreditCard,
-  Zap,
 } from "lucide-react";
 import { CSSProperties, useEffect, useRef, useState } from "react";
 import { useLocation } from "wouter";
@@ -87,10 +87,9 @@ export default function DashboardLayout({
     return (
       <div className="flex items-center justify-center min-h-screen bg-background">
         <div className="flex flex-col items-center gap-8 p-8 max-w-md w-full">
-          <div className="flex flex-col items-center gap-2">
+            <div className="flex flex-col items-center gap-2">
             <div className="flex items-center gap-2 mb-4">
-              <Zap className="h-8 w-8 text-primary" />
-              <span className="text-2xl font-bold tracking-tight gradient-text">NET OS</span>
+              <img src={BRAND.logo} alt="Mr. Green" className="h-6 opacity-80" />
             </div>
             <h1 className="text-xl font-semibold tracking-tight text-center text-foreground">
               Sign in to continue
@@ -197,10 +196,7 @@ function DashboardLayoutContent({
               </button>
               {!isCollapsed ? (
                 <div className="flex items-center gap-2 min-w-0">
-                  <Zap className="h-5 w-5 text-primary shrink-0" />
-                  <span className="font-bold tracking-tight truncate text-foreground">
-                    NET OS
-                  </span>
+                  <img src={BRAND.logo} alt="Mr. Green" className="h-4 shrink-0 opacity-80" />
                 </div>
               ) : null}
             </div>
@@ -284,8 +280,8 @@ function DashboardLayoutContent({
             <div className="flex items-center gap-2">
               <SidebarTrigger className="h-9 w-9 rounded-lg bg-background" />
               <div className="flex items-center gap-3">
-                <Zap className="h-4 w-4 text-primary" />
-                <span className="tracking-tight text-foreground font-medium">
+                <img src={BRAND.logo} alt="Mr. Green" className="h-3.5 opacity-80" />
+                <span className="tracking-tight text-foreground font-medium text-sm">
                   {activeMenuItem?.label ?? "NET OS"}
                 </span>
               </div>

@@ -1,95 +1,74 @@
 import { trpc } from "@/lib/trpc";
-import { Card, CardContent } from "@/components/ui/card";
-import { Input } from "@/components/ui/input";
-import { Badge } from "@/components/ui/badge";
 import { Skeleton } from "@/components/ui/skeleton";
-import { MapPin, ArrowRight, Wifi, Monitor, Users, Search, Building2 } from "lucide-react";
+import { MapPin, ArrowRight } from "lucide-react";
 import { useLocation } from "wouter";
-import { useState, useMemo } from "react";
+import { getLocationImage } from "@/lib/brand";
 
 export default function Locations() {
   const { data: locations, isLoading } = trpc.locations.list.useQuery();
   const [, setLocation] = useLocation();
-  const [search, setSearch] = useState("");
 
-  const filtered = useMemo(() => {
-    if (!locations) return [];
-    if (!search) return locations;
-    const q = search.toLowerCase();
-    return locations.filter((l: any) => l.name.toLowerCase().includes(q) || l.city.toLowerCase().includes(q));
-  }, [locations, search]);
-
-  const totalResources = (locations ?? []).reduce((s: number, l: any) => s + (l.totalResources || 0), 0);
-
-  if (isLoading) return <div className="space-y-4 p-1">{Array.from({ length: 4 }).map((_, i) => <Skeleton key={i} className="h-40 rounded-xl" />)}</div>;
+  if (isLoading) return <div className="space-y-4 p-1">{Array.from({ length: 4 }).map((_, i) => <Skeleton key={i} className="h-64 rounded-none" />)}</div>;
 
   return (
-    <div className="space-y-6 p-1">
-      <div className="flex items-center justify-between">
+    <div className="space-y-8 p-1">
+      {/* Header */}
+      <div className="flex flex-col md:flex-row justify-between items-start md:items-end gap-3">
         <div>
-          <h1 className="text-2xl font-bold tracking-tight">Locations</h1>
-          <p className="text-muted-foreground text-sm mt-1">7 premium boutique offices across the Netherlands.</p>
+          <div className="text-[9px] font-semibold tracking-[4px] uppercase text-[#627653] mb-3">Locations</div>
+          <h1 className="text-[clamp(28px,3vw,42px)] font-extralight tracking-[-0.5px] leading-tight">
+            Where we <strong className="font-semibold">are.</strong>
+          </h1>
         </div>
-        <Badge variant="secondary" className="text-xs">{totalResources} resources</Badge>
+        <div className="text-[11px] text-[#888] tracking-[1px] font-light">{(locations ?? []).length} locations &middot; Availability updated weekly</div>
       </div>
 
-      <div className="relative">
-        <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
-        <Input placeholder="Search locations..." value={search} onChange={(e) => setSearch(e.target.value)} className="pl-10 bg-secondary/50 border-border/50" />
-      </div>
-
-      <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
-        <Card className="glass-card border-border/50"><CardContent className="p-4"><p className="text-xs text-muted-foreground">Locations</p><p className="text-2xl font-bold">{(locations ?? []).length}</p></CardContent></Card>
-        <Card className="glass-card border-border/50"><CardContent className="p-4"><p className="text-xs text-muted-foreground">Total Resources</p><p className="text-2xl font-bold text-primary">{totalResources}</p></CardContent></Card>
-        <Card className="glass-card border-border/50"><CardContent className="p-4"><p className="text-xs text-muted-foreground">Cities</p><p className="text-2xl font-bold text-amber-400">{new Set((locations ?? []).map((l: any) => l.city)).size}</p></CardContent></Card>
-        <Card className="glass-card border-border/50"><CardContent className="p-4"><p className="text-xs text-muted-foreground">Status</p><p className="text-2xl font-bold text-netos-green">All Active</p></CardContent></Card>
-      </div>
-
-      <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-4">
-        {filtered.map((loc: any) => {
+      {/* Location grid - editorial photo cards */}
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-[3px]">
+        {(locations ?? []).map((loc: any) => {
+          const img = getLocationImage(loc.slug);
           const occ = Math.floor(Math.random() * 60) + 20;
+          const spotTag = occ > 70 ? { text: "Waitlist only", cls: "bg-white/[0.08] text-white/40" }
+            : occ > 50 ? { text: `${Math.floor(Math.random() * 3) + 2} spots left`, cls: "bg-[#627653]/25 text-[#627653]" }
+            : { text: "Accepting applications", cls: "bg-[#b8a472]/20 text-[#b8a472]" };
+
           return (
-            <Card key={loc.id} className="glass-card border-border/50 hover:border-primary/30 transition-all duration-300 cursor-pointer group overflow-hidden" onClick={() => setLocation(`/locations/${loc.slug}`)}>
-              <div className="h-1 bg-gradient-to-r from-netos-green/50 to-transparent" />
-              <CardContent className="p-5">
-                <div className="flex items-start justify-between mb-4">
-                  <div className="w-11 h-11 rounded-xl bg-primary/10 flex items-center justify-center">
-                    <Building2 className="w-5 h-5 text-primary" />
-                  </div>
-                  <ArrowRight className="w-4 h-4 text-muted-foreground group-hover:text-primary group-hover:translate-x-1 transition-all" />
-                </div>
-                <h3 className="text-lg font-semibold mb-1">{loc.name}</h3>
-                <p className="text-sm text-muted-foreground flex items-center gap-1 mb-1"><MapPin className="w-3 h-3" />{loc.address}</p>
-                <p className="text-xs text-muted-foreground mb-4">{loc.postalCode} {loc.city}</p>
+            <div
+              key={loc.id}
+              className="relative aspect-[3/4] overflow-hidden cursor-pointer group"
+              onClick={() => setLocation(`/locations/${loc.slug}`)}
+            >
+              <img
+                src={img}
+                alt={loc.city}
+                className="w-full h-full object-cover brightness-[0.55] saturate-[0.8] group-hover:brightness-[0.4] group-hover:saturate-[0.6] group-hover:scale-[1.03] transition-all duration-600"
+              />
+              {/* Gradient overlay */}
+              <div className="absolute inset-0 bg-gradient-to-t from-black/60 via-transparent to-transparent" />
 
-                {/* Occupancy bar */}
-                <div className="mb-3">
-                  <div className="flex items-center justify-between text-xs mb-1">
-                    <span className="text-muted-foreground">Occupancy</span>
-                    <span className={occ > 80 ? "text-red-400" : occ > 50 ? "text-amber-400" : "text-netos-green"}>{occ}%</span>
-                  </div>
-                  <div className="w-full h-1.5 bg-secondary rounded-full overflow-hidden">
-                    <div className="h-full rounded-full transition-all" style={{ width: `${occ}%`, backgroundColor: occ > 80 ? "#ef4444" : occ > 50 ? "#f59e0b" : "#00C853" }} />
-                  </div>
+              {/* Info */}
+              <div className="absolute bottom-0 left-0 right-0 p-7">
+                <div className="text-lg font-normal tracking-[1px] text-white">{loc.city}</div>
+                <div className="flex items-center gap-1.5 mt-1 text-[11px] text-white/50 font-light">
+                  <MapPin className="w-3 h-3" />
+                  {loc.address}
                 </div>
+                <div className="flex items-center justify-between mt-3">
+                  <span className={`inline-block text-[9px] font-semibold tracking-[2.5px] uppercase px-3.5 py-1.5 ${spotTag.cls}`}>
+                    {spotTag.text}
+                  </span>
+                  <ArrowRight className="w-4 h-4 text-white/30 group-hover:text-white/70 group-hover:translate-x-1 transition-all" />
+                </div>
+              </div>
 
-                <div className="flex items-center gap-4 pt-3 border-t border-border/30">
-                  <span className="flex items-center gap-1.5 text-xs text-muted-foreground"><Monitor className="w-3 h-3" />{loc.totalResources} resources</span>
-                  <span className="flex items-center gap-1.5 text-xs text-netos-green"><Wifi className="w-3 h-3" />Online</span>
-                </div>
-              </CardContent>
-            </Card>
+              {/* Resource count badge */}
+              <div className="absolute top-5 right-5 text-[10px] text-white/40 tracking-[2px] uppercase font-medium">
+                {loc.totalResources || "—"} resources
+              </div>
+            </div>
           );
         })}
       </div>
-
-      {filtered.length === 0 && (
-        <div className="text-center py-16">
-          <MapPin className="w-12 h-12 text-muted-foreground mx-auto mb-4 opacity-50" />
-          <h3 className="text-lg font-medium mb-2">No locations found</h3>
-          <p className="text-sm text-muted-foreground">Try a different search term.</p>
-        </div>
-      )}
     </div>
   );
 }
