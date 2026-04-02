@@ -369,12 +369,13 @@ describe("bookings", () => {
     const desk = resources.find((r: any) => r.type === "desk");
     expect(desk).toBeDefined();
 
-    // Book 1 hour tomorrow at 10:00
-    const tomorrow = new Date();
-    tomorrow.setDate(tomorrow.getDate() + 1);
-    tomorrow.setHours(10, 0, 0, 0);
-    const endTime = new Date(tomorrow);
+    // Book 1 hour far in the future to avoid conflicts from previous test runs
+    const futureDate = new Date();
+    futureDate.setDate(futureDate.getDate() + 30 + Math.floor(Math.random() * 30));
+    futureDate.setHours(10, 0, 0, 0);
+    const endTime = new Date(futureDate);
     endTime.setHours(11, 0, 0, 0);
+    const tomorrow = futureDate;
 
     const result = await caller.bookings.create({
       resourceId: desk.id,
@@ -536,5 +537,225 @@ describe("profile", () => {
     const caller = appRouter.createCaller(ctx);
     const result = await caller.profile.update({ name: "Updated Name", phone: "+31600000000" });
     expect(result.success).toBe(true);
+  });
+});
+
+// ─── CRM Leads ───
+describe("crmLeads", () => {
+  let createdLeadId: number;
+
+  it("create lead returns success", async () => {
+    const { ctx } = createAuthContext();
+    const caller = appRouter.createCaller(ctx);
+    const result = await caller.crmLeads.create({
+      companyName: "Test Corp",
+      contactName: "Jane Doe",
+      contactEmail: "jane@testcorp.com",
+      contactPhone: "+31612345678",
+      companySize: "10-50",
+      industry: "Technology",
+      website: "https://testcorp.com",
+      locationPreference: "Amsterdam",
+      budgetRange: "€500-1000/mo",
+      source: "website",
+      estimatedValue: "12000",
+      notes: "Interested in 5 desks",
+    });
+    expect(result.success).toBe(true);
+    expect(result.id).toBeDefined();
+    createdLeadId = result.id;
+  });
+
+  it("list returns leads including created one", async () => {
+    const { ctx } = createAuthContext();
+    const caller = appRouter.createCaller(ctx);
+    const leads = await caller.crmLeads.list({});
+    expect(Array.isArray(leads)).toBe(true);
+    expect(leads.length).toBeGreaterThanOrEqual(1);
+    const found = leads.find((l: any) => l.companyName === "Test Corp");
+    expect(found).toBeDefined();
+  });
+
+  it("list filters by search", async () => {
+    const { ctx } = createAuthContext();
+    const caller = appRouter.createCaller(ctx);
+    const leads = await caller.crmLeads.list({ search: "Test Corp" });
+    expect(leads.length).toBeGreaterThanOrEqual(1);
+    expect(leads[0].companyName).toBe("Test Corp");
+  });
+
+  it("list filters by source", async () => {
+    const { ctx } = createAuthContext();
+    const caller = appRouter.createCaller(ctx);
+    const leads = await caller.crmLeads.list({ source: "website" });
+    leads.forEach((l: any) => {
+      expect(l.source).toBe("website");
+    });
+  });
+
+  it("byId returns correct lead", async () => {
+    const { ctx } = createAuthContext();
+    const caller = appRouter.createCaller(ctx);
+    const lead = await caller.crmLeads.byId({ id: createdLeadId });
+    expect(lead).toBeDefined();
+    expect(lead?.companyName).toBe("Test Corp");
+    expect(lead?.contactEmail).toBe("jane@testcorp.com");
+    expect(lead?.stage).toBe("new");
+  });
+
+  it("update changes lead stage", async () => {
+    const { ctx } = createAuthContext();
+    const caller = appRouter.createCaller(ctx);
+    const result = await caller.crmLeads.update({ id: createdLeadId, stage: "qualified" });
+    expect(result.success).toBe(true);
+
+    const lead = await caller.crmLeads.byId({ id: createdLeadId });
+    expect(lead?.stage).toBe("qualified");
+  });
+
+  it("pipelineStats returns aggregate data", async () => {
+    const { ctx } = createAuthContext();
+    const caller = appRouter.createCaller(ctx);
+    const stats = await caller.crmLeads.pipelineStats();
+    expect(stats).toHaveProperty("totalLeads");
+    expect(stats).toHaveProperty("totalValue");
+    expect(stats).toHaveProperty("conversionRate");
+    expect(stats).toHaveProperty("avgDealSize");
+    expect(Number(stats.totalLeads)).toBeGreaterThanOrEqual(1);
+  });
+
+  it("addActivity logs activity on lead", async () => {
+    const { ctx } = createAuthContext();
+    const caller = appRouter.createCaller(ctx);
+    const result = await caller.crmLeads.addActivity({
+      leadId: createdLeadId,
+      type: "note",
+      title: "Test note",
+      description: "This is a test activity",
+    });
+    expect(result.success).toBe(true);
+  });
+
+  it("activities returns lead activities", async () => {
+    const { ctx } = createAuthContext();
+    const caller = appRouter.createCaller(ctx);
+    const activities = await caller.crmLeads.activities({ leadId: createdLeadId });
+    expect(Array.isArray(activities)).toBe(true);
+    expect(activities.length).toBeGreaterThanOrEqual(1);
+    const note = activities.find((a: any) => a.type === "note");
+    expect(note).toBeDefined();
+    expect(note.title).toBe("Test note");
+  });
+
+  it("delete removes lead", async () => {
+    const { ctx } = createAuthContext();
+    const caller = appRouter.createCaller(ctx);
+    const result = await caller.crmLeads.delete({ id: createdLeadId });
+    expect(result.success).toBe(true);
+
+    // byId throws "Lead not found" after deletion
+    await expect(caller.crmLeads.byId({ id: createdLeadId })).rejects.toThrow();
+  });
+
+  it("requires authentication", async () => {
+    const ctx = createPublicContext();
+    const caller = appRouter.createCaller(ctx);
+    await expect(caller.crmLeads.list({})).rejects.toThrow();
+  });
+});
+
+// ─── CRM Campaigns ───
+describe("crmCampaigns", () => {
+  let campaignId: number;
+
+  it("create campaign returns success", async () => {
+    const { ctx } = createAuthContext();
+    const caller = appRouter.createCaller(ctx);
+    const result = await caller.crmCampaigns.create({
+      name: "Test Campaign",
+      description: "Outreach to tech companies",
+      type: "email_sequence",
+    });
+    expect(result.success).toBe(true);
+    expect(result.id).toBeDefined();
+    campaignId = result.id;
+  });
+
+  it("list returns campaigns", async () => {
+    const { ctx } = createAuthContext();
+    const caller = appRouter.createCaller(ctx);
+    const campaigns = await caller.crmCampaigns.list({});
+    expect(Array.isArray(campaigns)).toBe(true);
+    expect(campaigns.length).toBeGreaterThanOrEqual(1);
+  });
+
+  it("addStep adds email step to campaign", async () => {
+    const { ctx } = createAuthContext();
+    const caller = appRouter.createCaller(ctx);
+    const result = await caller.crmCampaigns.addStep({
+      campaignId,
+      stepOrder: 1,
+      subject: "Welcome to Mr. Green",
+      body: "Hi {{name}}, we'd love to show you our spaces.",
+      delayDays: 0,
+    });
+    expect(result.success).toBe(true);
+  });
+
+  it("steps returns campaign steps", async () => {
+    const { ctx } = createAuthContext();
+    const caller = appRouter.createCaller(ctx);
+    const steps = await caller.crmCampaigns.steps({ campaignId });
+    expect(Array.isArray(steps)).toBe(true);
+    expect(steps.length).toBe(1);
+    expect(steps[0].subject).toBe("Welcome to Mr. Green");
+  });
+
+  it("update campaign status", async () => {
+    const { ctx } = createAuthContext();
+    const caller = appRouter.createCaller(ctx);
+    const result = await caller.crmCampaigns.update({ id: campaignId, status: "active" });
+    expect(result.success).toBe(true);
+  });
+
+  it("requires authentication", async () => {
+    const ctx = createPublicContext();
+    const caller = appRouter.createCaller(ctx);
+    await expect(caller.crmCampaigns.list({})).rejects.toThrow();
+  });
+});
+
+// ─── CRM Templates ───
+describe("crmTemplates", () => {
+  it("create and list templates", async () => {
+    const { ctx } = createAuthContext();
+    const caller = appRouter.createCaller(ctx);
+    const result = await caller.crmTemplates.create({
+      name: "Welcome Email",
+      subject: "Welcome to Mr. Green Offices",
+      body: "Dear {{name}},\n\nWelcome to our premium coworking community.",
+      category: "onboarding",
+    });
+    expect(result.success).toBe(true);
+
+    const templates = await caller.crmTemplates.list();
+    expect(Array.isArray(templates)).toBe(true);
+    expect(templates.length).toBeGreaterThanOrEqual(1);
+    const found = templates.find((t: any) => t.name === "Welcome Email");
+    expect(found).toBeDefined();
+
+    // Update
+    const updateResult = await caller.crmTemplates.update({ id: found.id, subject: "Updated Welcome" });
+    expect(updateResult.success).toBe(true);
+
+    // Delete
+    const deleteResult = await caller.crmTemplates.delete({ id: found.id });
+    expect(deleteResult.success).toBe(true);
+  });
+
+  it("requires authentication", async () => {
+    const ctx = createPublicContext();
+    const caller = appRouter.createCaller(ctx);
+    await expect(caller.crmTemplates.list()).rejects.toThrow();
   });
 });

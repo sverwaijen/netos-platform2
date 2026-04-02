@@ -328,3 +328,143 @@ export const invites = mysqlTable("invites", {
 });
 
 export type Invite = typeof invites.$inferSelect;
+
+// ─── CRM: Leads ─────────────────────────────────────────────────────
+export const crmLeads = mysqlTable("crm_leads", {
+  id: int("id").autoincrement().primaryKey(),
+  companyName: varchar("companyName", { length: 256 }).notNull(),
+  contactName: varchar("contactName", { length: 256 }),
+  contactEmail: varchar("contactEmail", { length: 320 }),
+  contactPhone: varchar("contactPhone", { length: 20 }),
+  companySize: varchar("companySize", { length: 32 }),
+  industry: varchar("industry", { length: 128 }),
+  website: varchar("website", { length: 512 }),
+  locationPreference: varchar("locationPreference", { length: 128 }),
+  budgetRange: varchar("budgetRange", { length: 64 }),
+  source: mysqlEnum("source", [
+    "website",
+    "referral",
+    "event",
+    "cold_outreach",
+    "linkedin",
+    "partner",
+    "inbound",
+    "other",
+  ]).default("inbound"),
+  stage: mysqlEnum("stage", [
+    "new",
+    "qualified",
+    "tour_scheduled",
+    "proposal",
+    "negotiation",
+    "won",
+    "lost",
+  ]).default("new").notNull(),
+  score: int("score").default(0),
+  estimatedValue: decimal("estimatedValue", { precision: 12, scale: 2 }),
+  assignedToUserId: int("assignedToUserId"),
+  notes: text("notes"),
+  lostReason: text("lostReason"),
+  wonDate: timestamp("wonDate"),
+  nextFollowUp: bigint("nextFollowUp", { mode: "number" }),
+  tags: json("tags").$type<string[]>(),
+  metadata: json("metadata"),
+  createdAt: timestamp("createdAt").defaultNow().notNull(),
+  updatedAt: timestamp("updatedAt").defaultNow().onUpdateNow().notNull(),
+});
+
+export type CrmLead = typeof crmLeads.$inferSelect;
+export type InsertCrmLead = typeof crmLeads.$inferInsert;
+
+// ─── CRM: Lead Activities ───────────────────────────────────────────
+export const crmLeadActivities = mysqlTable("crm_lead_activities", {
+  id: int("id").autoincrement().primaryKey(),
+  leadId: int("leadId").notNull(),
+  userId: int("userId"),
+  type: mysqlEnum("type", [
+    "note",
+    "email_sent",
+    "email_opened",
+    "email_clicked",
+    "email_replied",
+    "call",
+    "meeting",
+    "tour",
+    "proposal_sent",
+    "stage_change",
+    "score_change",
+    "task",
+  ]).notNull(),
+  title: varchar("title", { length: 256 }).notNull(),
+  description: text("description"),
+  metadata: json("metadata"),
+  createdAt: timestamp("createdAt").defaultNow().notNull(),
+});
+
+export type CrmLeadActivity = typeof crmLeadActivities.$inferSelect;
+
+// ─── CRM: Campaigns ────────────────────────────────────────────────
+export const crmCampaigns = mysqlTable("crm_campaigns", {
+  id: int("id").autoincrement().primaryKey(),
+  name: varchar("name", { length: 256 }).notNull(),
+  description: text("description"),
+  type: mysqlEnum("type", ["email_sequence", "one_off", "drip", "event"]).default("email_sequence"),
+  status: mysqlEnum("status", ["draft", "active", "paused", "completed", "archived"]).default("draft").notNull(),
+  targetAudience: text("targetAudience"),
+  totalLeads: int("totalLeads").default(0),
+  sentCount: int("sentCount").default(0),
+  openCount: int("openCount").default(0),
+  clickCount: int("clickCount").default(0),
+  replyCount: int("replyCount").default(0),
+  conversionCount: int("conversionCount").default(0),
+  createdByUserId: int("createdByUserId"),
+  createdAt: timestamp("createdAt").defaultNow().notNull(),
+  updatedAt: timestamp("updatedAt").defaultNow().onUpdateNow().notNull(),
+});
+
+export type CrmCampaign = typeof crmCampaigns.$inferSelect;
+export type InsertCrmCampaign = typeof crmCampaigns.$inferInsert;
+
+// ─── CRM: Campaign Steps (Email Sequence Steps) ────────────────────
+export const crmCampaignSteps = mysqlTable("crm_campaign_steps", {
+  id: int("id").autoincrement().primaryKey(),
+  campaignId: int("campaignId").notNull(),
+  stepOrder: int("stepOrder").notNull(),
+  delayDays: int("delayDays").default(0),
+  subject: varchar("subject", { length: 512 }),
+  body: text("body"),
+  isAiGenerated: boolean("isAiGenerated").default(false),
+  createdAt: timestamp("createdAt").defaultNow().notNull(),
+});
+
+export type CrmCampaignStep = typeof crmCampaignSteps.$inferSelect;
+
+// ─── CRM: Campaign Enrollments ─────────────────────────────────────
+export const crmCampaignEnrollments = mysqlTable("crm_campaign_enrollments", {
+  id: int("id").autoincrement().primaryKey(),
+  campaignId: int("campaignId").notNull(),
+  leadId: int("leadId").notNull(),
+  currentStepId: int("currentStepId"),
+  status: mysqlEnum("status", ["active", "completed", "paused", "bounced", "unsubscribed"]).default("active").notNull(),
+  nextSendAt: bigint("nextSendAt", { mode: "number" }),
+  enrolledAt: timestamp("enrolledAt").defaultNow().notNull(),
+  completedAt: timestamp("completedAt"),
+});
+
+export type CrmCampaignEnrollment = typeof crmCampaignEnrollments.$inferSelect;
+
+// ─── CRM: Email Templates ──────────────────────────────────────────
+export const crmEmailTemplates = mysqlTable("crm_email_templates", {
+  id: int("id").autoincrement().primaryKey(),
+  name: varchar("name", { length: 256 }).notNull(),
+  subject: varchar("subject", { length: 512 }).notNull(),
+  body: text("body").notNull(),
+  category: varchar("category", { length: 64 }),
+  isAiGenerated: boolean("isAiGenerated").default(false),
+  usageCount: int("usageCount").default(0),
+  createdByUserId: int("createdByUserId"),
+  createdAt: timestamp("createdAt").defaultNow().notNull(),
+  updatedAt: timestamp("updatedAt").defaultNow().onUpdateNow().notNull(),
+});
+
+export type CrmEmailTemplate = typeof crmEmailTemplates.$inferSelect;

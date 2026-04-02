@@ -38,6 +38,9 @@ import {
   UserPlus,
   Settings,
   CreditCard,
+  Target,
+  Mail,
+  FileText,
 } from "lucide-react";
 import { CSSProperties, useEffect, useRef, useState } from "react";
 import { useLocation } from "wouter";
@@ -56,6 +59,9 @@ const menuItems = [
   { icon: Cpu, label: "Devices & IoT", path: "/devices" },
   { icon: Bell, label: "Notifications", path: "/notifications" },
   { icon: UserPlus, label: "Invites", path: "/invites" },
+  { icon: Target, label: "CRM Pipeline", path: "/crm" },
+  { icon: Mail, label: "Campaigns", path: "/crm/campaigns" },
+  { icon: FileText, label: "Templates", path: "/crm/templates" },
   { icon: Settings, label: "Settings", path: "/settings" },
 ];
 

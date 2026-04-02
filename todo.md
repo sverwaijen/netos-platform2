@@ -75,3 +75,13 @@
 - [x] Update DashboardLayout with Mr. Green branding
 - [x] Apply form styling (border-bottom inputs, transparent bg)
 - [x] Update all pages with consistent huisstijl
+
+## Phase 6: CRM & Marketing Outreach Module (DONE)
+- [x] Research AgentGTM and define CRM features
+- [x] Database schema for leads, campaigns, sequences, pipeline (6 CRM tables)
+- [x] CRM Pipeline page with Kanban board and drag-drop stage transitions
+- [x] Lead detail page with activity timeline, AI scoring, AI enrichment, AI suggestions
+- [x] Campaign management with email sequences and enrollment tracking
+- [x] Email template library with AI generation
+- [x] Pipeline analytics and stats (total leads, pipeline value, conversion rate)
+- [x] CRM tests (60 total tests passing)

@@ -5,6 +5,8 @@ import {
   wallets, creditLedger, bookings, dayMultipliers, visitors,
   companyBranding, employeePhotos, devices, sensors, accessLog,
   notifications, invites,
+  crmLeads, InsertCrmLead, crmLeadActivities, crmCampaigns, InsertCrmCampaign,
+  crmCampaignSteps, crmCampaignEnrollments, crmEmailTemplates,
 } from "../drizzle/schema";
 import { ENV } from './_core/env';
 
@@ -590,4 +592,200 @@ export async function getLocationBookingStats() {
     });
   }
   return stats;
+}
+
+// ─── CRM: Leads ───
+export async function getCrmLeads(filters?: { stage?: string; source?: string; search?: string; assignedToUserId?: number }) {
+  const db = await getDb();
+  if (!db) return [];
+  const conditions: any[] = [];
+  if (filters?.stage) conditions.push(eq(crmLeads.stage, filters.stage as any));
+  if (filters?.source) conditions.push(eq(crmLeads.source, filters.source as any));
+  if (filters?.assignedToUserId) conditions.push(eq(crmLeads.assignedToUserId, filters.assignedToUserId));
+  if (filters?.search) conditions.push(or(like(crmLeads.companyName, `%${filters.search}%`), like(crmLeads.contactName, `%${filters.search}%`), like(crmLeads.contactEmail, `%${filters.search}%`)));
+  return db.select().from(crmLeads).where(conditions.length > 0 ? and(...conditions) : undefined).orderBy(desc(crmLeads.updatedAt)).limit(200);
+}
+
+export async function getCrmLeadById(id: number) {
+  const db = await getDb();
+  if (!db) return undefined;
+  const result = await db.select().from(crmLeads).where(eq(crmLeads.id, id)).limit(1);
+  return result[0];
+}
+
+export async function createCrmLead(data: InsertCrmLead) {
+  const db = await getDb();
+  if (!db) return null;
+  const result = await db.insert(crmLeads).values(data);
+  return result[0]?.insertId;
+}
+
+export async function updateCrmLead(id: number, data: Partial<InsertCrmLead>) {
+  const db = await getDb();
+  if (!db) return;
+  await db.update(crmLeads).set(data).where(eq(crmLeads.id, id));
+}
+
+export async function deleteCrmLead(id: number) {
+  const db = await getDb();
+  if (!db) return;
+  await db.delete(crmLeads).where(eq(crmLeads.id, id));
+}
+
+export async function getCrmLeadsByStage() {
+  const db = await getDb();
+  if (!db) return [];
+  return db.select({
+    stage: crmLeads.stage,
+    count: sql<number>`COUNT(*)`,
+    totalValue: sql<number>`COALESCE(SUM(estimatedValue), 0)`,
+  }).from(crmLeads).groupBy(crmLeads.stage);
+}
+
+// ─── CRM: Lead Activities ───
+export async function getCrmLeadActivities(leadId: number, limit = 50) {
+  const db = await getDb();
+  if (!db) return [];
+  return db.select().from(crmLeadActivities).where(eq(crmLeadActivities.leadId, leadId)).orderBy(desc(crmLeadActivities.createdAt)).limit(limit);
+}
+
+export async function addCrmLeadActivity(data: { leadId: number; userId?: number; type: string; title: string; description?: string; metadata?: any }) {
+  const db = await getDb();
+  if (!db) return;
+  await db.insert(crmLeadActivities).values(data as any);
+}
+
+// ─── CRM: Campaigns ───
+export async function getCrmCampaigns(filters?: { status?: string }) {
+  const db = await getDb();
+  if (!db) return [];
+  const conditions: any[] = [];
+  if (filters?.status) conditions.push(eq(crmCampaigns.status, filters.status as any));
+  return db.select().from(crmCampaigns).where(conditions.length > 0 ? and(...conditions) : undefined).orderBy(desc(crmCampaigns.updatedAt)).limit(100);
+}
+
+export async function getCrmCampaignById(id: number) {
+  const db = await getDb();
+  if (!db) return undefined;
+  const result = await db.select().from(crmCampaigns).where(eq(crmCampaigns.id, id)).limit(1);
+  return result[0];
+}
+
+export async function createCrmCampaign(data: InsertCrmCampaign) {
+  const db = await getDb();
+  if (!db) return null;
+  const result = await db.insert(crmCampaigns).values(data);
+  return result[0]?.insertId;
+}
+
+export async function updateCrmCampaign(id: number, data: Partial<InsertCrmCampaign>) {
+  const db = await getDb();
+  if (!db) return;
+  await db.update(crmCampaigns).set(data).where(eq(crmCampaigns.id, id));
+}
+
+// ─── CRM: Campaign Steps ───
+export async function getCrmCampaignSteps(campaignId: number) {
+  const db = await getDb();
+  if (!db) return [];
+  return db.select().from(crmCampaignSteps).where(eq(crmCampaignSteps.campaignId, campaignId)).orderBy(asc(crmCampaignSteps.stepOrder));
+}
+
+export async function createCrmCampaignStep(data: { campaignId: number; stepOrder: number; delayDays?: number; subject?: string; body?: string; isAiGenerated?: boolean }) {
+  const db = await getDb();
+  if (!db) return;
+  await db.insert(crmCampaignSteps).values(data);
+}
+
+export async function updateCrmCampaignStep(id: number, data: { subject?: string; body?: string; delayDays?: number }) {
+  const db = await getDb();
+  if (!db) return;
+  await db.update(crmCampaignSteps).set(data).where(eq(crmCampaignSteps.id, id));
+}
+
+export async function deleteCrmCampaignStep(id: number) {
+  const db = await getDb();
+  if (!db) return;
+  await db.delete(crmCampaignSteps).where(eq(crmCampaignSteps.id, id));
+}
+
+// ─── CRM: Campaign Enrollments ───
+export async function getCrmCampaignEnrollments(campaignId: number) {
+  const db = await getDb();
+  if (!db) return [];
+  const enrollments = await db.select().from(crmCampaignEnrollments).where(eq(crmCampaignEnrollments.campaignId, campaignId)).orderBy(desc(crmCampaignEnrollments.enrolledAt));
+  const enriched = [];
+  for (const e of enrollments) {
+    const lead = await getCrmLeadById(e.leadId);
+    enriched.push({ ...e, leadName: lead?.companyName ?? "Unknown", contactName: lead?.contactName ?? "" });
+  }
+  return enriched;
+}
+
+export async function enrollLeadInCampaign(campaignId: number, leadId: number) {
+  const db = await getDb();
+  if (!db) return;
+  await db.insert(crmCampaignEnrollments).values({ campaignId, leadId, status: "active" });
+  // Update campaign total leads count
+  const campaign = await getCrmCampaignById(campaignId);
+  if (campaign) {
+    await db.update(crmCampaigns).set({ totalLeads: (campaign.totalLeads ?? 0) + 1 }).where(eq(crmCampaigns.id, campaignId));
+  }
+}
+
+// ─── CRM: Email Templates ───
+export async function getCrmEmailTemplates() {
+  const db = await getDb();
+  if (!db) return [];
+  return db.select().from(crmEmailTemplates).orderBy(desc(crmEmailTemplates.updatedAt));
+}
+
+export async function createCrmEmailTemplate(data: { name: string; subject: string; body: string; category?: string; isAiGenerated?: boolean; createdByUserId?: number }) {
+  const db = await getDb();
+  if (!db) return;
+  await db.insert(crmEmailTemplates).values(data);
+}
+
+export async function updateCrmEmailTemplate(id: number, data: { name?: string; subject?: string; body?: string; category?: string }) {
+  const db = await getDb();
+  if (!db) return;
+  await db.update(crmEmailTemplates).set(data).where(eq(crmEmailTemplates.id, id));
+}
+
+export async function deleteCrmEmailTemplate(id: number) {
+  const db = await getDb();
+  if (!db) return;
+  await db.delete(crmEmailTemplates).where(eq(crmEmailTemplates.id, id));
+}
+
+// ─── CRM: Pipeline Stats ───
+export async function getCrmPipelineStats() {
+  const db = await getDb();
+  if (!db) return { totalLeads: 0, totalValue: 0, wonValue: 0, lostCount: 0, conversionRate: 0, avgDealSize: 0, leadsBySource: [], leadsByStage: [] };
+
+  const [totalCount] = await db.select({ count: sql<number>`COUNT(*)` }).from(crmLeads);
+  const [totalVal] = await db.select({ total: sql<number>`COALESCE(SUM(estimatedValue), 0)` }).from(crmLeads);
+  const [wonVal] = await db.select({ total: sql<number>`COALESCE(SUM(estimatedValue), 0)`, count: sql<number>`COUNT(*)` }).from(crmLeads).where(eq(crmLeads.stage, "won"));
+  const [lostCount] = await db.select({ count: sql<number>`COUNT(*)` }).from(crmLeads).where(eq(crmLeads.stage, "lost"));
+
+  const leadsBySource = await db.select({
+    source: crmLeads.source,
+    count: sql<number>`COUNT(*)`,
+  }).from(crmLeads).groupBy(crmLeads.source);
+
+  const leadsByStage = await getCrmLeadsByStage();
+
+  const totalLeads = totalCount?.count ?? 0;
+  const wonCount = wonVal?.count ?? 0;
+
+  return {
+    totalLeads,
+    totalValue: totalVal?.total ?? 0,
+    wonValue: wonVal?.total ?? 0,
+    lostCount: lostCount?.count ?? 0,
+    conversionRate: totalLeads > 0 ? Math.round((wonCount / totalLeads) * 100) : 0,
+    avgDealSize: wonCount > 0 ? Math.round((wonVal?.total ?? 0) / wonCount) : 0,
+    leadsBySource,
+    leadsByStage,
+  };
 }

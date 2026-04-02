@@ -447,6 +447,336 @@ export const appRouter = router({
       return db.getResourceTypeDistribution();
     }),
   }),
+
+  // ─── CRM: Leads ───
+  crmLeads: router({
+    list: protectedProcedure.input(z.object({
+      stage: z.string().optional(),
+      source: z.string().optional(),
+      search: z.string().optional(),
+    }).optional()).query(async ({ input }) => {
+      return db.getCrmLeads(input);
+    }),
+    byId: protectedProcedure.input(z.object({ id: z.number() })).query(async ({ input }) => {
+      const lead = await db.getCrmLeadById(input.id);
+      if (!lead) throw new Error("Lead not found");
+      return lead;
+    }),
+    create: protectedProcedure.input(z.object({
+      companyName: z.string().min(1),
+      contactName: z.string().optional(),
+      contactEmail: z.string().optional(),
+      contactPhone: z.string().optional(),
+      companySize: z.string().optional(),
+      industry: z.string().optional(),
+      website: z.string().optional(),
+      locationPreference: z.string().optional(),
+      budgetRange: z.string().optional(),
+      source: z.enum(["website", "referral", "event", "cold_outreach", "linkedin", "partner", "inbound", "other"]).optional(),
+      estimatedValue: z.string().optional(),
+      notes: z.string().optional(),
+      tags: z.array(z.string()).optional(),
+    })).mutation(async ({ ctx, input }) => {
+      const id = await db.createCrmLead({ ...input, assignedToUserId: ctx.user.id });
+      await db.addCrmLeadActivity({ leadId: id!, userId: ctx.user.id, type: "note", title: "Lead created" });
+      return { success: true, id };
+    }),
+    update: protectedProcedure.input(z.object({
+      id: z.number(),
+      companyName: z.string().optional(),
+      contactName: z.string().optional(),
+      contactEmail: z.string().optional(),
+      contactPhone: z.string().optional(),
+      companySize: z.string().optional(),
+      industry: z.string().optional(),
+      website: z.string().optional(),
+      locationPreference: z.string().optional(),
+      budgetRange: z.string().optional(),
+      source: z.enum(["website", "referral", "event", "cold_outreach", "linkedin", "partner", "inbound", "other"]).optional(),
+      stage: z.enum(["new", "qualified", "tour_scheduled", "proposal", "negotiation", "won", "lost"]).optional(),
+      estimatedValue: z.string().optional(),
+      notes: z.string().optional(),
+      score: z.number().optional(),
+      lostReason: z.string().optional(),
+      tags: z.array(z.string()).optional(),
+    })).mutation(async ({ ctx, input }) => {
+      const { id, ...data } = input;
+      const oldLead = await db.getCrmLeadById(id);
+      await db.updateCrmLead(id, data as any);
+      if (data.stage && oldLead && data.stage !== oldLead.stage) {
+        await db.addCrmLeadActivity({ leadId: id, userId: ctx.user.id, type: "stage_change", title: `Stage: ${oldLead.stage} → ${data.stage}` });
+      }
+      return { success: true };
+    }),
+    delete: protectedProcedure.input(z.object({ id: z.number() })).mutation(async ({ input }) => {
+      await db.deleteCrmLead(input.id);
+      return { success: true };
+    }),
+    pipelineStats: protectedProcedure.query(async () => {
+      return db.getCrmPipelineStats();
+    }),
+    activities: protectedProcedure.input(z.object({ leadId: z.number() })).query(async ({ input }) => {
+      return db.getCrmLeadActivities(input.leadId);
+    }),
+    addActivity: protectedProcedure.input(z.object({
+      leadId: z.number(),
+      type: z.string(),
+      title: z.string(),
+      description: z.string().optional(),
+    })).mutation(async ({ ctx, input }) => {
+      await db.addCrmLeadActivity({ ...input, userId: ctx.user.id } as any);
+      return { success: true };
+    }),
+    aiScore: protectedProcedure.input(z.object({ id: z.number() })).mutation(async ({ ctx, input }) => {
+      const lead = await db.getCrmLeadById(input.id);
+      if (!lead) throw new Error("Lead not found");
+      // AI scoring based on lead attributes
+      let score = 0;
+      if (lead.contactEmail) score += 15;
+      if (lead.contactPhone) score += 10;
+      if (lead.companySize) {
+        const size = parseInt(lead.companySize) || 0;
+        if (size >= 50) score += 25;
+        else if (size >= 20) score += 20;
+        else if (size >= 5) score += 15;
+        else score += 5;
+      }
+      if (lead.estimatedValue) {
+        const val = parseFloat(lead.estimatedValue);
+        if (val >= 50000) score += 25;
+        else if (val >= 10000) score += 20;
+        else if (val >= 5000) score += 15;
+        else score += 5;
+      }
+      if (lead.website) score += 5;
+      if (lead.locationPreference) score += 10;
+      if (lead.budgetRange) score += 5;
+      score = Math.min(100, score);
+      await db.updateCrmLead(input.id, { score });
+      await db.addCrmLeadActivity({ leadId: input.id, userId: ctx.user.id, type: "score_change", title: `AI Score updated to ${score}` });
+      return { success: true, score };
+    }),
+  }),
+
+  // ─── CRM: Campaigns ───
+  crmCampaigns: router({
+    list: protectedProcedure.input(z.object({ status: z.string().optional() }).optional()).query(async ({ input }) => {
+      return db.getCrmCampaigns(input);
+    }),
+    byId: protectedProcedure.input(z.object({ id: z.number() })).query(async ({ input }) => {
+      const campaign = await db.getCrmCampaignById(input.id);
+      if (!campaign) throw new Error("Campaign not found");
+      return campaign;
+    }),
+    create: protectedProcedure.input(z.object({
+      name: z.string().min(1),
+      description: z.string().optional(),
+      type: z.enum(["email_sequence", "one_off", "drip", "event"]).optional(),
+      targetAudience: z.string().optional(),
+    })).mutation(async ({ ctx, input }) => {
+      const id = await db.createCrmCampaign({ ...input, createdByUserId: ctx.user.id });
+      return { success: true, id };
+    }),
+    update: protectedProcedure.input(z.object({
+      id: z.number(),
+      name: z.string().optional(),
+      description: z.string().optional(),
+      status: z.enum(["draft", "active", "paused", "completed", "archived"]).optional(),
+      targetAudience: z.string().optional(),
+    })).mutation(async ({ input }) => {
+      const { id, ...data } = input;
+      await db.updateCrmCampaign(id, data as any);
+      return { success: true };
+    }),
+    steps: protectedProcedure.input(z.object({ campaignId: z.number() })).query(async ({ input }) => {
+      return db.getCrmCampaignSteps(input.campaignId);
+    }),
+    addStep: protectedProcedure.input(z.object({
+      campaignId: z.number(),
+      stepOrder: z.number(),
+      delayDays: z.number().optional(),
+      subject: z.string().optional(),
+      body: z.string().optional(),
+    })).mutation(async ({ input }) => {
+      await db.createCrmCampaignStep(input);
+      return { success: true };
+    }),
+    updateStep: protectedProcedure.input(z.object({
+      id: z.number(),
+      subject: z.string().optional(),
+      body: z.string().optional(),
+      delayDays: z.number().optional(),
+    })).mutation(async ({ input }) => {
+      const { id, ...data } = input;
+      await db.updateCrmCampaignStep(id, data);
+      return { success: true };
+    }),
+    deleteStep: protectedProcedure.input(z.object({ id: z.number() })).mutation(async ({ input }) => {
+      await db.deleteCrmCampaignStep(input.id);
+      return { success: true };
+    }),
+    enrollments: protectedProcedure.input(z.object({ campaignId: z.number() })).query(async ({ input }) => {
+      return db.getCrmCampaignEnrollments(input.campaignId);
+    }),
+    enrollLead: protectedProcedure.input(z.object({
+      campaignId: z.number(),
+      leadId: z.number(),
+    })).mutation(async ({ input }) => {
+      await db.enrollLeadInCampaign(input.campaignId, input.leadId);
+      return { success: true };
+    }),
+  }),
+
+  // ─── CRM: Email Templates ───
+  crmTemplates: router({
+    list: protectedProcedure.query(async () => {
+      return db.getCrmEmailTemplates();
+    }),
+    create: protectedProcedure.input(z.object({
+      name: z.string().min(1),
+      subject: z.string().min(1),
+      body: z.string().min(1),
+      category: z.string().optional(),
+    })).mutation(async ({ ctx, input }) => {
+      await db.createCrmEmailTemplate({ ...input, createdByUserId: ctx.user.id });
+      return { success: true };
+    }),
+    update: protectedProcedure.input(z.object({
+      id: z.number(),
+      name: z.string().optional(),
+      subject: z.string().optional(),
+      body: z.string().optional(),
+      category: z.string().optional(),
+    })).mutation(async ({ input }) => {
+      const { id, ...data } = input;
+      await db.updateCrmEmailTemplate(id, data);
+      return { success: true };
+    }),
+    delete: protectedProcedure.input(z.object({ id: z.number() })).mutation(async ({ input }) => {
+      await db.deleteCrmEmailTemplate(input.id);
+      return { success: true };
+    }),
+    aiGenerate: protectedProcedure.input(z.object({
+      leadId: z.number().optional(),
+      campaignType: z.string().optional(),
+      tone: z.string().optional(),
+      context: z.string().optional(),
+    })).mutation(async ({ input }) => {
+      // Use LLM to generate email content
+      const { invokeLLM } = await import("./_core/llm");
+      const lead = input.leadId ? await db.getCrmLeadById(input.leadId) : null;
+      const prompt = `Generate a professional outreach email for a premium coworking space (Mr. Green Offices). 
+${lead ? `Company: ${lead.companyName}, Contact: ${lead.contactName}, Industry: ${lead.industry}, Size: ${lead.companySize}` : ""}
+${input.context ? `Context: ${input.context}` : ""}
+Tone: ${input.tone || "professional and warm"}
+Campaign type: ${input.campaignType || "introduction"}
+
+Return JSON with "subject" and "body" fields. The body should be HTML formatted.`;
+      
+      const response = await invokeLLM({
+        messages: [
+          { role: "system", content: "You are a professional B2B sales copywriter for Mr. Green Offices, a premium coworking brand. Always return valid JSON with subject and body fields." },
+          { role: "user", content: prompt },
+        ],
+        response_format: {
+          type: "json_schema",
+          json_schema: {
+            name: "email_content",
+            strict: true,
+            schema: {
+              type: "object",
+              properties: {
+                subject: { type: "string", description: "Email subject line" },
+                body: { type: "string", description: "Email body in HTML" },
+              },
+              required: ["subject", "body"],
+              additionalProperties: false,
+            },
+          },
+        },
+      });
+      
+      const content = JSON.parse(String(response.choices[0].message.content) || "{}");
+      return { subject: content.subject || "Introduction to Mr. Green Offices", body: content.body || "" };
+    }),
+  }),
+
+  // ─── CRM: AI Agent ───
+  crmAgent: router({
+    suggestNextAction: protectedProcedure.input(z.object({ leadId: z.number() })).mutation(async ({ input }) => {
+      const lead = await db.getCrmLeadById(input.leadId);
+      if (!lead) throw new Error("Lead not found");
+      const activities = await db.getCrmLeadActivities(input.leadId, 10);
+      
+      const { invokeLLM } = await import("./_core/llm");
+      const response = await invokeLLM({
+        messages: [
+          { role: "system", content: "You are an AI sales agent for Mr. Green Offices, a premium coworking brand. Suggest the best next action for this lead. Return JSON with action, reason, and priority fields." },
+          { role: "user", content: `Lead: ${JSON.stringify(lead)}\nRecent activities: ${JSON.stringify(activities.slice(0, 5))}\n\nWhat should we do next?` },
+        ],
+        response_format: {
+          type: "json_schema",
+          json_schema: {
+            name: "next_action",
+            strict: true,
+            schema: {
+              type: "object",
+              properties: {
+                action: { type: "string", description: "Suggested next action" },
+                reason: { type: "string", description: "Why this action" },
+                priority: { type: "string", description: "high, medium, or low" },
+              },
+              required: ["action", "reason", "priority"],
+              additionalProperties: false,
+            },
+          },
+        },
+      });
+      
+      return JSON.parse(String(response.choices[0].message.content) || "{}");
+    }),
+    enrichLead: protectedProcedure.input(z.object({ leadId: z.number() })).mutation(async ({ input }) => {
+      const lead = await db.getCrmLeadById(input.leadId);
+      if (!lead) throw new Error("Lead not found");
+      
+      const { invokeLLM } = await import("./_core/llm");
+      const response = await invokeLLM({
+        messages: [
+          { role: "system", content: "You are a B2B data enrichment agent. Based on the company name and any available info, estimate company details. Return JSON." },
+          { role: "user", content: `Enrich this lead: ${JSON.stringify({ companyName: lead.companyName, website: lead.website, industry: lead.industry, contactName: lead.contactName })}` },
+        ],
+        response_format: {
+          type: "json_schema",
+          json_schema: {
+            name: "enrichment",
+            strict: true,
+            schema: {
+              type: "object",
+              properties: {
+                industry: { type: "string", description: "Industry sector" },
+                companySize: { type: "string", description: "Estimated employee count" },
+                estimatedValue: { type: "string", description: "Estimated annual deal value in EUR" },
+                insights: { type: "string", description: "Key insights about the company" },
+              },
+              required: ["industry", "companySize", "estimatedValue", "insights"],
+              additionalProperties: false,
+            },
+          },
+        },
+      });
+      
+      const enrichment = JSON.parse(String(response.choices[0].message.content) || "{}");
+      const updates: any = {};
+      if (enrichment.industry && !lead.industry) updates.industry = enrichment.industry;
+      if (enrichment.companySize && !lead.companySize) updates.companySize = enrichment.companySize;
+      if (enrichment.estimatedValue && !lead.estimatedValue) updates.estimatedValue = enrichment.estimatedValue;
+      if (Object.keys(updates).length > 0) {
+        await db.updateCrmLead(input.leadId, updates);
+      }
+      await db.addCrmLeadActivity({ leadId: input.leadId, type: "note", title: "AI Enrichment", description: enrichment.insights });
+      return { success: true, enrichment };
+    }),
+  }),
 });
 
 export type AppRouter = typeof appRouter;
