@@ -86,26 +86,40 @@
 - [x] Pipeline analytics and stats (total leads, pipeline value, conversion rate)
 - [x] CRM tests (60 total tests passing)
 
-## Phase 7: Advanced Resource Management (Nexudus-inspired)
-- [ ] Research Nexudus resource settings, rules, pricing, availability
-- [ ] Resource CRUD admin (create, edit, delete resources)
-- [ ] Resource pricing rules (peak/off-peak, per-hour/day/month, member tier discounts)
-- [ ] Booking rules engine (min/max duration, advance booking limit, cancellation policy, buffer time)
-- [ ] Availability schedules (operating hours per resource, blocked dates, maintenance windows)
-- [ ] Amenities management (assign amenities to resources, filterable)
-- [ ] Resource groups/categories with bulk settings
-- [ ] Capacity and layout management
-- [ ] Resource images and descriptions
-- [ ] Admin resource detail page with all settings tabs
-- [ ] Tests for resource management
+## Phase 7: Advanced Resource Management (Nexudus-inspired) (DONE)
+- [x] Research Nexudus resource settings, rules, pricing, availability
+- [x] Resource CRUD admin (create, edit, delete resources)
+- [x] Resource pricing rules (peak/off-peak, per-hour/day/month, member tier discounts)
+- [x] Booking rules engine (min/max duration, advance booking limit, cancellation policy, buffer time)
+- [x] Availability schedules (operating hours per resource, blocked dates, maintenance windows)
+- [x] Amenities management (assign amenities to resources, filterable)
+- [x] Resource groups/categories with bulk settings
+- [x] Capacity and layout management
+- [x] Resource images and descriptions
+- [x] Admin resource detail page with all settings tabs
+- [x] Tests for resource management
 
 ## Phase 8: Signing App Upgrade - Kiosk Display & Auto Scraper
-- [ ] Backend scraper API: extract logo, brand colors, and photos from company website URL
-- [ ] Store scraped branding data (logo URL, colors, photos) in company record
-- [ ] 34-inch kiosk display page (/kiosk/:companySlug) with company branding
-- [ ] Kiosk display: full-screen logo, brand colors, employee photos, welcome message
-- [ ] Kiosk display: auto-rotate between company photos/content
-- [ ] Unique kiosk URL per company for kiosk mode paste-in
+- [x] Backend scraper API: extract logo, brand colors, and photos from company website URL
+- [x] Store scraped branding data (logo URL, colors, photos) in company record
+- [x] 34-inch kiosk display page (/kiosk/display?company=<id>) with company branding
+- [x] Kiosk display: full-screen logo, brand colors, employee photos, welcome message
+- [x] Kiosk display: auto-rotate between company photos/content
+- [x] Unique kiosk URL per company for kiosk mode paste-in
 - [ ] Upgrade Signing admin page with "Auto-scrape from website" button
 - [ ] Live preview of scraped branding before saving
-- [ ] Tests for scraper and kiosk display
+- [x] Tests for scraper and kiosk display (23 kiosk tests passing)
+
+## Phase 9: Butler Kiosk App (POS System)
+- [x] Research Nexudus catering/POS/products in resources
+- [x] Database: products, product categories, kiosk orders, order items, booking add-ons
+- [x] Backend: product CRUD, kiosk order flow, payment (credits/Stripe/invoice)
+- [x] Backend: booking add-ons (link products to meeting room bookings)
+- [x] Butler Kiosk POS page (/butler) - tablet/screen optimized
+- [x] Kiosk: product grid with categories, cart, payment method selector
+- [x] Kiosk: pay with personal credits, company credits, Stripe/PIN, or on company tab
+- [ ] Kiosk: QR code scan to identify user
+- [x] Admin: product management page (CRUD, categories, pricing)
+- [x] Admin: order history and revenue dashboard
+- [ ] Booking add-ons: select products when booking a meeting room
+- [x] Tests for kiosk and product management (92 total tests passing)

@@ -42,6 +42,7 @@ import {
   Mail,
   FileText,
   Layers,
+  Coffee,
 } from "lucide-react";
 import { CSSProperties, useEffect, useRef, useState } from "react";
 import { useLocation } from "wouter";
@@ -58,6 +59,7 @@ const menuItems = [
   { icon: Users, label: "Visitors", path: "/visitors" },
   { icon: Monitor, label: "Signing", path: "/signing" },
   { icon: Layers, label: "Resources", path: "/resources" },
+  { icon: Coffee, label: "Butler Kiosk", path: "/butler/admin" },
   { icon: Cpu, label: "Devices & IoT", path: "/devices" },
   { icon: Bell, label: "Notifications", path: "/notifications" },
   { icon: UserPlus, label: "Invites", path: "/invites" },

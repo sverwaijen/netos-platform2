@@ -10,6 +10,7 @@ import {
   bookingPoliciesRouter, resourceAmenitiesRouter, resourceSchedulesRouter,
   blockedDatesRouter, resourceCategoriesRouter,
 } from "./routers/resourceAdmin";
+import { productCatalogRouter, kioskOrderRouter, signingRouter } from "./routers/kioskRouter";
 
 const adminProcedure = protectedProcedure.use(({ ctx, next }) => {
   if (ctx.user.role !== "admin") {
@@ -792,6 +793,10 @@ Return JSON with "subject" and "body" fields. The body should be HTML formatted.
   resourceSchedules: resourceSchedulesRouter,
   blockedDates: blockedDatesRouter,
   resourceCategories: resourceCategoriesRouter,
+  // ─── Butler Kiosk & Signing ───
+  products: productCatalogRouter,
+  kioskOrders: kioskOrderRouter,
+  signing: signingRouter,
 });
 
 export type AppRouter = typeof appRouter;

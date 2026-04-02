@@ -29,6 +29,27 @@
       "when": 1775158879868,
       "tag": "0003_yellow_squadron_sinister",
       "breakpoints": true
+    },
+    {
+      "idx": 4,
+      "version": "5",
+      "when": 1775163122270,
+      "tag": "0004_marvelous_shadowcat",
+      "breakpoints": true
+    },
+    {
+      "idx": 5,
+      "version": "5",
+      "when": 1775164114926,
+      "tag": "0005_warm_rawhide_kid",
+      "breakpoints": true
+    },
+    {
+      "idx": 6,
+      "version": "5",
+      "when": 1775164703002,
+      "tag": "0006_chunky_micromacro",
+      "breakpoints": true
     }
   ]
 }

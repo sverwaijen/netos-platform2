@@ -223,8 +223,10 @@ export const companyBranding = mysqlTable("company_branding", {
   id: int("id").autoincrement().primaryKey(),
   companyId: int("companyId").notNull(),
   logoUrl: text("logoUrl"),
-  primaryColor: varchar("primaryColor", { length: 7 }).default("#1a1a2e"),
-  secondaryColor: varchar("secondaryColor", { length: 7 }).default("#e94560"),
+  primaryColor: varchar("primaryColor", { length: 9 }).default("#1a1a2e"),
+  secondaryColor: varchar("secondaryColor", { length: 9 }).default("#e94560"),
+  accentColor: varchar("accentColor", { length: 9 }).default("#b8a472"),
+  fontFamily: varchar("fontFamily", { length: 128 }).default("Montserrat"),
   welcomeMessage: text("welcomeMessage"),
   backgroundImageUrl: text("backgroundImageUrl"),
   isActive: boolean("isActive").default(true),
@@ -645,3 +647,136 @@ export const resourceBlockedDates = mysqlTable("resource_blocked_dates", {
 });
 
 export type ResourceBlockedDate = typeof resourceBlockedDates.$inferSelect;
+
+// ─── Company Branding Scraped Data ──────────────────────────────────
+export const companyBrandingScraped = mysqlTable("company_branding_scraped", {
+  id: int("id").autoincrement().primaryKey(),
+  companyId: int("companyId").notNull(),
+  websiteUrl: text("websiteUrl"),
+  scrapedLogoUrl: text("scrapedLogoUrl"),
+  scrapedFaviconUrl: text("scrapedFaviconUrl"),
+  scrapedColors: json("scrapedColors").$type<string[]>(),
+  scrapedImages: json("scrapedImages").$type<string[]>(),
+  scrapedFonts: json("scrapedFonts").$type<string[]>(),
+  scrapedTitle: varchar("scrapedTitle", { length: 256 }),
+  scrapedDescription: text("scrapedDescription"),
+  status: mysqlEnum("status", ["pending", "scraping", "completed", "failed"]).default("pending"),
+  lastScrapedAt: timestamp("lastScrapedAt"),
+  createdAt: timestamp("createdAt").defaultNow().notNull(),
+  updatedAt: timestamp("updatedAt").defaultNow().onUpdateNow().notNull(),
+});
+
+export type CompanyBrandingScraped = typeof companyBrandingScraped.$inferSelect;
+
+
+// ─── Product Catalog (Butler Kiosk) ─────────────────────────────────
+export const productCategories = mysqlTable("product_categories", {
+  id: int("id").autoincrement().primaryKey(),
+  name: varchar("name", { length: 128 }).notNull(),
+  slug: varchar("slug", { length: 64 }).notNull(),
+  description: text("description"),
+  icon: varchar("icon", { length: 64 }),
+  sortOrder: int("sortOrder").default(0),
+  isActive: boolean("isActive").default(true),
+  locationId: int("locationId"), // null = all locations
+  createdAt: timestamp("createdAt").defaultNow().notNull(),
+});
+
+export type ProductCategory = typeof productCategories.$inferSelect;
+
+export const products = mysqlTable("products", {
+  id: int("id").autoincrement().primaryKey(),
+  categoryId: int("categoryId").notNull(),
+  name: varchar("name", { length: 256 }).notNull(),
+  description: text("description"),
+  imageUrl: text("imageUrl"),
+  priceCredits: decimal("priceCredits", { precision: 10, scale: 2 }).notNull(), // credit cost
+  priceEur: decimal("priceEur", { precision: 10, scale: 2 }).notNull(), // EUR cost for Stripe/PIN
+  sku: varchar("sku", { length: 64 }),
+  stockTracking: boolean("stockTracking").default(false),
+  stockQuantity: int("stockQuantity").default(0),
+  isActive: boolean("isActive").default(true),
+  isBookingAddon: boolean("isBookingAddon").default(false), // can be added to bookings
+  chargePerBookingHour: boolean("chargePerBookingHour").default(false), // prorate by booking length
+  allowMultipleQuantity: boolean("allowMultipleQuantity").default(true),
+  maxQuantityPerOrder: int("maxQuantityPerOrder").default(10),
+  vatRate: decimal("vatRate", { precision: 5, scale: 2 }).default("21.00"), // NL BTW
+  sortOrder: int("sortOrder").default(0),
+  createdAt: timestamp("createdAt").defaultNow().notNull(),
+  updatedAt: timestamp("updatedAt").defaultNow().onUpdateNow().notNull(),
+});
+
+export type Product = typeof products.$inferSelect;
+
+// ─── Product-Resource Links (Booking Add-ons) ───────────────────────
+export const productResourceLinks = mysqlTable("product_resource_links", {
+  id: int("id").autoincrement().primaryKey(),
+  productId: int("productId").notNull(),
+  resourceTypeId: int("resourceTypeId"), // link to resource type (null = all)
+  resourceId: int("resourceId"), // link to specific resource (null = all of type)
+  isRequired: boolean("isRequired").default(false), // mandatory add-on
+  isDefault: boolean("isDefault").default(false), // pre-checked in booking
+  sortOrder: int("sortOrder").default(0),
+  createdAt: timestamp("createdAt").defaultNow().notNull(),
+});
+
+export type ProductResourceLink = typeof productResourceLinks.$inferSelect;
+
+// ─── Kiosk Orders ───────────────────────────────────────────────────
+export const kioskOrders = mysqlTable("kiosk_orders", {
+  id: int("id").autoincrement().primaryKey(),
+  orderNumber: varchar("orderNumber", { length: 32 }).notNull(),
+  locationId: int("locationId").notNull(),
+  userId: int("userId"), // null for guest/walk-in
+  companyId: int("companyId"), // for "on company tab" payments
+  bookingId: int("bookingId"), // linked booking (if add-on order)
+  status: mysqlEnum("status", ["pending", "processing", "completed", "cancelled", "refunded"]).default("pending"),
+  paymentMethod: mysqlEnum("paymentMethod", [
+    "personal_credits",
+    "company_credits",
+    "stripe_card",
+    "company_invoice",
+    "cash",
+  ]).notNull(),
+  subtotalCredits: decimal("subtotalCredits", { precision: 10, scale: 2 }).default("0"),
+  subtotalEur: decimal("subtotalEur", { precision: 10, scale: 2 }).default("0"),
+  vatAmount: decimal("vatAmount", { precision: 10, scale: 2 }).default("0"),
+  totalCredits: decimal("totalCredits", { precision: 10, scale: 2 }).default("0"),
+  totalEur: decimal("totalEur", { precision: 10, scale: 2 }).default("0"),
+  stripePaymentIntentId: varchar("stripePaymentIntentId", { length: 256 }),
+  notes: text("notes"),
+  createdAt: timestamp("createdAt").defaultNow().notNull(),
+  updatedAt: timestamp("updatedAt").defaultNow().onUpdateNow().notNull(),
+});
+
+export type KioskOrder = typeof kioskOrders.$inferSelect;
+
+export const kioskOrderItems = mysqlTable("kiosk_order_items", {
+  id: int("id").autoincrement().primaryKey(),
+  orderId: int("orderId").notNull(),
+  productId: int("productId").notNull(),
+  productName: varchar("productName", { length: 256 }).notNull(), // snapshot
+  quantity: int("quantity").notNull().default(1),
+  unitPriceCredits: decimal("unitPriceCredits", { precision: 10, scale: 2 }).notNull(),
+  unitPriceEur: decimal("unitPriceEur", { precision: 10, scale: 2 }).notNull(),
+  totalCredits: decimal("totalCredits", { precision: 10, scale: 2 }).notNull(),
+  totalEur: decimal("totalEur", { precision: 10, scale: 2 }).notNull(),
+  vatRate: decimal("vatRate", { precision: 5, scale: 2 }).default("21.00"),
+  createdAt: timestamp("createdAt").defaultNow().notNull(),
+});
+
+export type KioskOrderItem = typeof kioskOrderItems.$inferSelect;
+
+// ─── Booking Add-ons (Products added to bookings) ───────────────────
+export const bookingAddons = mysqlTable("booking_addons", {
+  id: int("id").autoincrement().primaryKey(),
+  bookingId: int("bookingId").notNull(),
+  productId: int("productId").notNull(),
+  quantity: int("quantity").notNull().default(1),
+  unitPriceCredits: decimal("unitPriceCredits", { precision: 10, scale: 2 }).notNull(),
+  totalCredits: decimal("totalCredits", { precision: 10, scale: 2 }).notNull(),
+  proratedByHours: boolean("proratedByHours").default(false),
+  createdAt: timestamp("createdAt").defaultNow().notNull(),
+});
+
+export type BookingAddon = typeof bookingAddons.$inferSelect;
