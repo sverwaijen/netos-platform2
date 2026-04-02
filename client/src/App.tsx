@@ -22,6 +22,7 @@ import CrmPipeline from "./pages/CrmPipeline";
 import CrmLeadDetail from "./pages/CrmLeadDetail";
 import CrmCampaigns from "./pages/CrmCampaigns";
 import CrmTemplates from "./pages/CrmTemplates";
+import ResourceManagement from "./pages/ResourceManagement";
 import DashboardLayout from "./components/DashboardLayout";
 
 function WrappedPage({ component: Component }: { component: React.ComponentType }) {
@@ -53,6 +54,7 @@ function Router() {
       <Route path="/crm/campaigns">{() => <WrappedPage component={CrmCampaigns} />}</Route>
       <Route path="/crm/templates">{() => <WrappedPage component={CrmTemplates} />}</Route>
       <Route path="/crm">{() => <WrappedPage component={CrmPipeline} />}</Route>
+      <Route path="/resources">{() => <WrappedPage component={ResourceManagement} />}</Route>
       <Route path="/404" component={NotFound} />
       <Route component={NotFound} />
     </Switch>

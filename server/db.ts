@@ -789,3 +789,220 @@ export async function getCrmPipelineStats() {
     leadsByStage,
   };
 }
+
+// ─── Resource Types ───
+import {
+  resourceTypes, InsertResourceType, resourceRates, InsertResourceRate,
+  resourceRules, InsertResourceRule, resourceCategories, bookingPolicies, InsertBookingPolicy,
+  resourceAmenities, resourceAmenityMap, resourceSchedules, resourceBlockedDates,
+} from "../drizzle/schema";
+
+export async function getResourceTypes() {
+  const db = await getDb();
+  if (!db) return [];
+  return db.select().from(resourceTypes).where(eq(resourceTypes.isActive, true)).orderBy(asc(resourceTypes.name));
+}
+
+export async function getResourceTypeById(id: number) {
+  const db = await getDb();
+  if (!db) return undefined;
+  const result = await db.select().from(resourceTypes).where(eq(resourceTypes.id, id)).limit(1);
+  return result[0];
+}
+
+export async function createResourceType(data: InsertResourceType) {
+  const db = await getDb();
+  if (!db) return null;
+  const result = await db.insert(resourceTypes).values(data);
+  return result[0]?.insertId;
+}
+
+export async function updateResourceType(id: number, data: Partial<InsertResourceType>) {
+  const db = await getDb();
+  if (!db) return;
+  await db.update(resourceTypes).set(data).where(eq(resourceTypes.id, id));
+}
+
+export async function deleteResourceType(id: number) {
+  const db = await getDb();
+  if (!db) return;
+  await db.update(resourceTypes).set({ isActive: false }).where(eq(resourceTypes.id, id));
+}
+
+// ─── Resource Rates ───
+export async function getResourceRates(resourceTypeId?: number) {
+  const db = await getDb();
+  if (!db) return [];
+  const conditions = [eq(resourceRates.isActive, true)];
+  if (resourceTypeId) conditions.push(eq(resourceRates.resourceTypeId, resourceTypeId));
+  return db.select().from(resourceRates).where(and(...conditions)).orderBy(asc(resourceRates.sortOrder));
+}
+
+export async function getResourceRateById(id: number) {
+  const db = await getDb();
+  if (!db) return undefined;
+  const result = await db.select().from(resourceRates).where(eq(resourceRates.id, id)).limit(1);
+  return result[0];
+}
+
+export async function createResourceRate(data: InsertResourceRate) {
+  const db = await getDb();
+  if (!db) return null;
+  const result = await db.insert(resourceRates).values(data);
+  return result[0]?.insertId;
+}
+
+export async function updateResourceRate(id: number, data: Partial<InsertResourceRate>) {
+  const db = await getDb();
+  if (!db) return;
+  await db.update(resourceRates).set(data).where(eq(resourceRates.id, id));
+}
+
+export async function deleteResourceRate(id: number) {
+  const db = await getDb();
+  if (!db) return;
+  await db.update(resourceRates).set({ isActive: false }).where(eq(resourceRates.id, id));
+}
+
+// ─── Resource Rules ───
+export async function getResourceRules(scope?: string) {
+  const db = await getDb();
+  if (!db) return [];
+  const conditions = [eq(resourceRules.isActive, true)];
+  if (scope) conditions.push(eq(resourceRules.scope, scope as any));
+  return db.select().from(resourceRules).where(and(...conditions)).orderBy(asc(resourceRules.evaluationOrder));
+}
+
+export async function getResourceRuleById(id: number) {
+  const db = await getDb();
+  if (!db) return undefined;
+  const result = await db.select().from(resourceRules).where(eq(resourceRules.id, id)).limit(1);
+  return result[0];
+}
+
+export async function createResourceRule(data: InsertResourceRule) {
+  const db = await getDb();
+  if (!db) return null;
+  const result = await db.insert(resourceRules).values(data);
+  return result[0]?.insertId;
+}
+
+export async function updateResourceRule(id: number, data: Partial<InsertResourceRule>) {
+  const db = await getDb();
+  if (!db) return;
+  await db.update(resourceRules).set(data).where(eq(resourceRules.id, id));
+}
+
+export async function deleteResourceRule(id: number) {
+  const db = await getDb();
+  if (!db) return;
+  await db.update(resourceRules).set({ isActive: false }).where(eq(resourceRules.id, id));
+}
+
+// ─── Resource Categories ───
+export async function getResourceCategories() {
+  const db = await getDb();
+  if (!db) return [];
+  return db.select().from(resourceCategories).where(eq(resourceCategories.isActive, true)).orderBy(asc(resourceCategories.sortOrder));
+}
+
+// ─── Booking Policies ───
+export async function getBookingPolicies() {
+  const db = await getDb();
+  if (!db) return [];
+  return db.select().from(bookingPolicies).where(eq(bookingPolicies.isActive, true)).orderBy(asc(bookingPolicies.name));
+}
+
+export async function getBookingPolicyById(id: number) {
+  const db = await getDb();
+  if (!db) return undefined;
+  const result = await db.select().from(bookingPolicies).where(eq(bookingPolicies.id, id)).limit(1);
+  return result[0];
+}
+
+export async function createBookingPolicy(data: InsertBookingPolicy) {
+  const db = await getDb();
+  if (!db) return null;
+  const result = await db.insert(bookingPolicies).values(data);
+  return result[0]?.insertId;
+}
+
+export async function updateBookingPolicy(id: number, data: Partial<InsertBookingPolicy>) {
+  const db = await getDb();
+  if (!db) return;
+  await db.update(bookingPolicies).set(data).where(eq(bookingPolicies.id, id));
+}
+
+export async function deleteBookingPolicy(id: number) {
+  const db = await getDb();
+  if (!db) return;
+  await db.update(bookingPolicies).set({ isActive: false }).where(eq(bookingPolicies.id, id));
+}
+
+// ─── Resource Amenities ───
+export async function getResourceAmenities() {
+  const db = await getDb();
+  if (!db) return [];
+  return db.select().from(resourceAmenities).where(eq(resourceAmenities.isActive, true)).orderBy(asc(resourceAmenities.name));
+}
+
+export async function getAmenitiesForResource(resourceId: number) {
+  const db = await getDb();
+  if (!db) return [];
+  const maps = await db.select().from(resourceAmenityMap).where(eq(resourceAmenityMap.resourceId, resourceId));
+  if (maps.length === 0) return [];
+  const amenityIds = maps.map(m => m.amenityId);
+  return db.select().from(resourceAmenities).where(inArray(resourceAmenities.id, amenityIds));
+}
+
+export async function setResourceAmenities(resourceId: number, amenityIds: number[]) {
+  const db = await getDb();
+  if (!db) return;
+  await db.delete(resourceAmenityMap).where(eq(resourceAmenityMap.resourceId, resourceId));
+  for (const amenityId of amenityIds) {
+    await db.insert(resourceAmenityMap).values({ resourceId, amenityId });
+  }
+}
+
+// ─── Resource Schedules ───
+export async function getResourceSchedules(locationId?: number) {
+  const db = await getDb();
+  if (!db) return [];
+  const conditions = [eq(resourceSchedules.isActive, true)];
+  if (locationId) conditions.push(eq(resourceSchedules.locationId, locationId));
+  return db.select().from(resourceSchedules).where(and(...conditions)).orderBy(asc(resourceSchedules.dayOfWeek));
+}
+
+export async function updateResourceSchedule(id: number, data: { openTime?: string; closeTime?: string; isActive?: boolean }) {
+  const db = await getDb();
+  if (!db) return;
+  await db.update(resourceSchedules).set(data).where(eq(resourceSchedules.id, id));
+}
+
+export async function createResourceSchedule(data: { resourceId?: number; resourceTypeId?: number; locationId?: number; dayOfWeek: number; openTime: string; closeTime: string }) {
+  const db = await getDb();
+  if (!db) return;
+  await db.insert(resourceSchedules).values(data);
+}
+
+// ─── Resource Blocked Dates ───
+export async function getBlockedDates(locationId?: number) {
+  const db = await getDb();
+  if (!db) return [];
+  if (locationId) {
+    return db.select().from(resourceBlockedDates).where(eq(resourceBlockedDates.locationId, locationId)).orderBy(desc(resourceBlockedDates.startDate));
+  }
+  return db.select().from(resourceBlockedDates).orderBy(desc(resourceBlockedDates.startDate));
+}
+
+export async function createBlockedDate(data: { resourceId?: number; locationId?: number; startDate: number; endDate: number; reason?: string }) {
+  const db = await getDb();
+  if (!db) return;
+  await db.insert(resourceBlockedDates).values(data);
+}
+
+export async function deleteBlockedDate(id: number) {
+  const db = await getDb();
+  if (!db) return;
+  await db.delete(resourceBlockedDates).where(eq(resourceBlockedDates.id, id));
+}

@@ -759,3 +759,111 @@ describe("crmTemplates", () => {
     await expect(caller.crmTemplates.list()).rejects.toThrow();
   });
 });
+
+
+// ── Resource Management Tests ──────────────────────────────────────────
+describe("resourceTypes", () => {
+  it("lists all resource types", async () => {
+    const { ctx } = createAuthContext();
+    const caller = appRouter.createCaller(ctx);
+    const types = await caller.resourceTypes.list();
+    expect(Array.isArray(types)).toBe(true);
+    expect(types.length).toBeGreaterThanOrEqual(1);
+    expect(types[0]).toHaveProperty("name");
+    expect(types[0]).toHaveProperty("slug");
+    expect(types[0]).toHaveProperty("chargingUnit");
+  });
+
+  it("gets a resource type by id", async () => {
+    const { ctx } = createAuthContext();
+    const caller = appRouter.createCaller(ctx);
+    const types = await caller.resourceTypes.list();
+    if (types.length > 0) {
+      const detail = await caller.resourceTypes.byId({ id: types[0].id });
+      expect(detail).toBeTruthy();
+      expect(detail!.name).toBe(types[0].name);
+    }
+  });
+});
+
+describe("resourceRates", () => {
+  it("lists all pricing rates", async () => {
+    const { ctx } = createAuthContext();
+    const caller = appRouter.createCaller(ctx);
+    const rates = await caller.resourceRates.list();
+    expect(Array.isArray(rates)).toBe(true);
+    expect(rates.length).toBeGreaterThanOrEqual(1);
+    expect(rates[0]).toHaveProperty("name");
+    expect(rates[0]).toHaveProperty("creditCost");
+  });
+
+  it("filters rates by resource type", async () => {
+    const { ctx } = createAuthContext();
+    const caller = appRouter.createCaller(ctx);
+    const types = await caller.resourceTypes.list();
+    if (types.length > 0) {
+      const rates = await caller.resourceRates.list({ resourceTypeId: types[0].id });
+      expect(Array.isArray(rates)).toBe(true);
+    }
+  });
+});
+
+describe("resourceRules", () => {
+  it("lists all booking rules", async () => {
+    const { ctx } = createAuthContext();
+    const caller = appRouter.createCaller(ctx);
+    const rules = await caller.resourceRules.list();
+    expect(Array.isArray(rules)).toBe(true);
+    expect(rules.length).toBeGreaterThanOrEqual(1);
+    expect(rules[0]).toHaveProperty("name");
+    expect(rules[0]).toHaveProperty("conditionType");
+    expect(rules[0]).toHaveProperty("limitType");
+  });
+});
+
+describe("bookingPolicies", () => {
+  it("lists all booking policies", async () => {
+    const { ctx } = createAuthContext();
+    const caller = appRouter.createCaller(ctx);
+    const policies = await caller.bookingPolicies.list();
+    expect(Array.isArray(policies)).toBe(true);
+    expect(policies.length).toBeGreaterThanOrEqual(1);
+    expect(policies[0]).toHaveProperty("name");
+    expect(policies[0]).toHaveProperty("bufferMinutes");
+  });
+});
+
+describe("resourceAmenities", () => {
+  it("lists all amenities", async () => {
+    const { ctx } = createAuthContext();
+    const caller = appRouter.createCaller(ctx);
+    const amenities = await caller.resourceAmenities.list();
+    expect(Array.isArray(amenities)).toBe(true);
+    expect(amenities.length).toBeGreaterThanOrEqual(1);
+    expect(amenities[0]).toHaveProperty("name");
+    expect(amenities[0]).toHaveProperty("icon");
+  });
+});
+
+describe("resourceSchedules", () => {
+  it("lists all schedules", async () => {
+    const { ctx } = createAuthContext();
+    const caller = appRouter.createCaller(ctx);
+    const schedules = await caller.resourceSchedules.list();
+    expect(Array.isArray(schedules)).toBe(true);
+    expect(schedules.length).toBeGreaterThanOrEqual(1);
+    expect(schedules[0]).toHaveProperty("dayOfWeek");
+    expect(schedules[0]).toHaveProperty("openTime");
+    expect(schedules[0]).toHaveProperty("closeTime");
+  });
+
+  it("filters schedules by location", async () => {
+    const { ctx } = createAuthContext();
+    const caller = appRouter.createCaller(ctx);
+    const locations = await caller.locations.list();
+    if (locations.length > 0) {
+      const schedules = await caller.resourceSchedules.list({ locationId: locations[0].id });
+      expect(Array.isArray(schedules)).toBe(true);
+    }
+  });
+});

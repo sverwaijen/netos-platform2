@@ -85,3 +85,27 @@
 - [x] Email template library with AI generation
 - [x] Pipeline analytics and stats (total leads, pipeline value, conversion rate)
 - [x] CRM tests (60 total tests passing)
+
+## Phase 7: Advanced Resource Management (Nexudus-inspired)
+- [ ] Research Nexudus resource settings, rules, pricing, availability
+- [ ] Resource CRUD admin (create, edit, delete resources)
+- [ ] Resource pricing rules (peak/off-peak, per-hour/day/month, member tier discounts)
+- [ ] Booking rules engine (min/max duration, advance booking limit, cancellation policy, buffer time)
+- [ ] Availability schedules (operating hours per resource, blocked dates, maintenance windows)
+- [ ] Amenities management (assign amenities to resources, filterable)
+- [ ] Resource groups/categories with bulk settings
+- [ ] Capacity and layout management
+- [ ] Resource images and descriptions
+- [ ] Admin resource detail page with all settings tabs
+- [ ] Tests for resource management
+
+## Phase 8: Signing App Upgrade - Kiosk Display & Auto Scraper
+- [ ] Backend scraper API: extract logo, brand colors, and photos from company website URL
+- [ ] Store scraped branding data (logo URL, colors, photos) in company record
+- [ ] 34-inch kiosk display page (/kiosk/:companySlug) with company branding
+- [ ] Kiosk display: full-screen logo, brand colors, employee photos, welcome message
+- [ ] Kiosk display: auto-rotate between company photos/content
+- [ ] Unique kiosk URL per company for kiosk mode paste-in
+- [ ] Upgrade Signing admin page with "Auto-scrape from website" button
+- [ ] Live preview of scraped branding before saving
+- [ ] Tests for scraper and kiosk display

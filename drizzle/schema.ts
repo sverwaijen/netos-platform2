@@ -468,3 +468,180 @@ export const crmEmailTemplates = mysqlTable("crm_email_templates", {
 });
 
 export type CrmEmailTemplate = typeof crmEmailTemplates.$inferSelect;
+
+// ─── Resource Types (Nexudus-style shared rate templates) ───────────
+export const resourceTypes = mysqlTable("resource_types", {
+  id: int("id").autoincrement().primaryKey(),
+  name: varchar("name", { length: 128 }).notNull(),
+  slug: varchar("slug", { length: 64 }).notNull().unique(),
+  description: text("description"),
+  icon: varchar("icon", { length: 64 }),
+  defaultCapacity: int("defaultCapacity").default(1),
+  chargingUnit: mysqlEnum("chargingUnit", ["per_hour", "per_day", "per_use", "per_week", "per_month"]).default("per_hour").notNull(),
+  timeSlotMinutes: int("timeSlotMinutes").default(15),
+  isActive: boolean("isActive").default(true),
+  createdAt: timestamp("createdAt").defaultNow().notNull(),
+  updatedAt: timestamp("updatedAt").defaultNow().onUpdateNow().notNull(),
+});
+
+export type ResourceType = typeof resourceTypes.$inferSelect;
+export type InsertResourceType = typeof resourceTypes.$inferInsert;
+
+// ─── Resource Rates (Multi-rate pricing per resource type) ──────────
+export const resourceRates = mysqlTable("resource_rates", {
+  id: int("id").autoincrement().primaryKey(),
+  name: varchar("name", { length: 128 }).notNull(),
+  resourceTypeId: int("resourceTypeId").notNull(),
+  creditCost: decimal("creditCost", { precision: 10, scale: 2 }).notNull(),
+  chargingUnit: mysqlEnum("chargingUnit", ["per_hour", "per_day", "per_use", "per_week", "per_month"]).default("per_hour").notNull(),
+  maxPriceCap: decimal("maxPriceCap", { precision: 10, scale: 2 }),
+  initialFixedCost: decimal("initialFixedCost", { precision: 10, scale: 2 }),
+  initialFixedMinutes: int("initialFixedMinutes"),
+  perAttendeePricing: boolean("perAttendeePricing").default(false),
+  isDefault: boolean("isDefault").default(false),
+  appliesToCustomerType: mysqlEnum("appliesToCustomerType", ["all", "members_only", "guests_only", "specific_plans", "specific_tiers"]).default("all"),
+  appliesToTiers: json("appliesToTiers").$type<string[]>(),
+  appliesToBundleIds: json("appliesToBundleIds").$type<number[]>(),
+  creditCostInCredits: int("creditCostInCredits"),
+  validDaysOfWeek: json("validDaysOfWeek").$type<number[]>(),
+  validTimeStart: varchar("validTimeStart", { length: 5 }),
+  validTimeEnd: varchar("validTimeEnd", { length: 5 }),
+  validFromDate: bigint("validFromDate", { mode: "number" }),
+  validToDate: bigint("validToDate", { mode: "number" }),
+  maxBookingLengthMinutes: int("maxBookingLengthMinutes"),
+  isActive: boolean("isActive").default(true),
+  sortOrder: int("sortOrder").default(0),
+  createdAt: timestamp("createdAt").defaultNow().notNull(),
+  updatedAt: timestamp("updatedAt").defaultNow().onUpdateNow().notNull(),
+});
+
+export type ResourceRate = typeof resourceRates.$inferSelect;
+export type InsertResourceRate = typeof resourceRates.$inferInsert;
+
+// ─── Resource Rules (Condition + Limit engine) ──────────────────────
+export const resourceRules = mysqlTable("resource_rules", {
+  id: int("id").autoincrement().primaryKey(),
+  name: varchar("name", { length: 256 }).notNull(),
+  description: text("description"),
+  scope: mysqlEnum("scope", ["global", "individual"]).default("individual").notNull(),
+  resourceId: int("resourceId"),
+  resourceTypeId: int("resourceTypeId"),
+  conditionType: mysqlEnum("conditionType", [
+    "customer_type",
+    "plan_type",
+    "tier_type",
+    "time_of_day",
+    "day_of_week",
+    "advance_booking",
+    "booking_length",
+    "zone_access",
+  ]).notNull(),
+  conditionValue: json("conditionValue").$type<Record<string, unknown>>(),
+  limitType: mysqlEnum("limitType", [
+    "block_booking",
+    "restrict_hours",
+    "max_duration",
+    "min_duration",
+    "max_advance_days",
+    "min_advance_hours",
+    "max_bookings_per_day",
+    "max_bookings_per_week",
+    "require_approval",
+  ]).notNull(),
+  limitValue: json("limitValue").$type<Record<string, unknown>>(),
+  evaluationOrder: int("evaluationOrder").default(0),
+  stopEvaluation: boolean("stopEvaluation").default(false),
+  isActive: boolean("isActive").default(true),
+  createdAt: timestamp("createdAt").defaultNow().notNull(),
+  updatedAt: timestamp("updatedAt").defaultNow().onUpdateNow().notNull(),
+});
+
+export type ResourceRule = typeof resourceRules.$inferSelect;
+export type InsertResourceRule = typeof resourceRules.$inferInsert;
+
+// ─── Resource Categories ────────────────────────────────────────────
+export const resourceCategories = mysqlTable("resource_categories", {
+  id: int("id").autoincrement().primaryKey(),
+  name: varchar("name", { length: 128 }).notNull(),
+  slug: varchar("slug", { length: 64 }).notNull().unique(),
+  description: text("description"),
+  icon: varchar("icon", { length: 64 }),
+  sortOrder: int("sortOrder").default(0),
+  isActive: boolean("isActive").default(true),
+  createdAt: timestamp("createdAt").defaultNow().notNull(),
+});
+
+export type ResourceCategory = typeof resourceCategories.$inferSelect;
+
+// ─── Booking Policies (Global + Per-Location) ──────────────────────
+export const bookingPolicies = mysqlTable("booking_policies", {
+  id: int("id").autoincrement().primaryKey(),
+  name: varchar("name", { length: 128 }).notNull(),
+  locationId: int("locationId"),
+  resourceTypeId: int("resourceTypeId"),
+  bufferMinutes: int("bufferMinutes").default(0),
+  minAdvanceMinutes: int("minAdvanceMinutes").default(0),
+  maxAdvanceDays: int("maxAdvanceDays").default(90),
+  minDurationMinutes: int("minDurationMinutes").default(15),
+  maxDurationMinutes: int("maxDurationMinutes").default(480),
+  freeCancelMinutes: int("freeCancelMinutes").default(1440),
+  lateCancelFeePercent: int("lateCancelFeePercent").default(50),
+  noShowFeePercent: int("noShowFeePercent").default(100),
+  autoCheckInMinutes: int("autoCheckInMinutes").default(15),
+  autoCancelNoCheckIn: boolean("autoCancelNoCheckIn").default(true),
+  allowRecurring: boolean("allowRecurring").default(true),
+  requireApproval: boolean("requireApproval").default(false),
+  allowGuestBooking: boolean("allowGuestBooking").default(false),
+  maxAttendeesOverride: int("maxAttendeesOverride"),
+  isActive: boolean("isActive").default(true),
+  createdAt: timestamp("createdAt").defaultNow().notNull(),
+  updatedAt: timestamp("updatedAt").defaultNow().onUpdateNow().notNull(),
+});
+
+export type BookingPolicy = typeof bookingPolicies.$inferSelect;
+export type InsertBookingPolicy = typeof bookingPolicies.$inferInsert;
+
+// ─── Resource Amenities ─────────────────────────────────────────────
+export const resourceAmenities = mysqlTable("resource_amenities", {
+  id: int("id").autoincrement().primaryKey(),
+  name: varchar("name", { length: 128 }).notNull(),
+  icon: varchar("icon", { length: 64 }),
+  category: mysqlEnum("category", ["tech", "furniture", "comfort", "accessibility", "catering"]).default("tech"),
+  isActive: boolean("isActive").default(true),
+});
+
+export type ResourceAmenity = typeof resourceAmenities.$inferSelect;
+
+// ─── Resource-Amenity Junction ──────────────────────────────────────
+export const resourceAmenityMap = mysqlTable("resource_amenity_map", {
+  id: int("id").autoincrement().primaryKey(),
+  resourceId: int("resourceId").notNull(),
+  amenityId: int("amenityId").notNull(),
+});
+
+// ─── Resource Availability Schedules ────────────────────────────────
+export const resourceSchedules = mysqlTable("resource_schedules", {
+  id: int("id").autoincrement().primaryKey(),
+  resourceId: int("resourceId"),
+  resourceTypeId: int("resourceTypeId"),
+  locationId: int("locationId"),
+  dayOfWeek: int("dayOfWeek").notNull(),
+  openTime: varchar("openTime", { length: 5 }).notNull(),
+  closeTime: varchar("closeTime", { length: 5 }).notNull(),
+  isActive: boolean("isActive").default(true),
+});
+
+export type ResourceSchedule = typeof resourceSchedules.$inferSelect;
+
+// ─── Resource Blocked Dates ─────────────────────────────────────────
+export const resourceBlockedDates = mysqlTable("resource_blocked_dates", {
+  id: int("id").autoincrement().primaryKey(),
+  resourceId: int("resourceId"),
+  locationId: int("locationId"),
+  startDate: bigint("startDate", { mode: "number" }).notNull(),
+  endDate: bigint("endDate", { mode: "number" }).notNull(),
+  reason: text("reason"),
+  createdAt: timestamp("createdAt").defaultNow().notNull(),
+});
+
+export type ResourceBlockedDate = typeof resourceBlockedDates.$inferSelect;

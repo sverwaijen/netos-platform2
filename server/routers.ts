@@ -5,6 +5,11 @@ import { publicProcedure, protectedProcedure, router } from "./_core/trpc";
 import { z } from "zod";
 import { nanoid } from "nanoid";
 import * as db from "./db";
+import {
+  resourceTypesRouter, resourceRatesRouter, resourceRulesRouter,
+  bookingPoliciesRouter, resourceAmenitiesRouter, resourceSchedulesRouter,
+  blockedDatesRouter, resourceCategoriesRouter,
+} from "./routers/resourceAdmin";
 
 const adminProcedure = protectedProcedure.use(({ ctx, next }) => {
   if (ctx.user.role !== "admin") {
@@ -777,6 +782,16 @@ Return JSON with "subject" and "body" fields. The body should be HTML formatted.
       return { success: true, enrichment };
     }),
   }),
+
+  // ─── Resource Management (Admin) ───
+  resourceTypes: resourceTypesRouter,
+  resourceRates: resourceRatesRouter,
+  resourceRules: resourceRulesRouter,
+  bookingPolicies: bookingPoliciesRouter,
+  resourceAmenities: resourceAmenitiesRouter,
+  resourceSchedules: resourceSchedulesRouter,
+  blockedDates: blockedDatesRouter,
+  resourceCategories: resourceCategoriesRouter,
 });
 
 export type AppRouter = typeof appRouter;

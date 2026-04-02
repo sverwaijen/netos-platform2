@@ -41,6 +41,7 @@ import {
   Target,
   Mail,
   FileText,
+  Layers,
 } from "lucide-react";
 import { CSSProperties, useEffect, useRef, useState } from "react";
 import { useLocation } from "wouter";
@@ -56,6 +57,7 @@ const menuItems = [
   { icon: Building2, label: "Companies", path: "/companies" },
   { icon: Users, label: "Visitors", path: "/visitors" },
   { icon: Monitor, label: "Signing", path: "/signing" },
+  { icon: Layers, label: "Resources", path: "/resources" },
   { icon: Cpu, label: "Devices & IoT", path: "/devices" },
   { icon: Bell, label: "Notifications", path: "/notifications" },
   { icon: UserPlus, label: "Invites", path: "/invites" },
