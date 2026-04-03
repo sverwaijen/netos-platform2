@@ -123,3 +123,10 @@
 - [x] Admin: order history and revenue dashboard
 - [ ] Booking add-ons: select products when booking a meeting room
 - [x] Tests for kiosk and product management (92 total tests passing)
+
+## Phase 10: Butler Kiosk Product Update (DONE)
+- [x] Review current kiosk products in database
+- [x] Replace products with realistic Dutch cafe items (45 products, 8 categories)
+- [x] Add product photos via CDN for all food & drink items (23 images uploaded)
+- [x] Add VAT rates (9% food/drink, 21% services/equipment)
+- [x] Verify kiosk display with new products and images
