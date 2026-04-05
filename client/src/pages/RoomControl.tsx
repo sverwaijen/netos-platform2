@@ -71,10 +71,10 @@ export default function RoomControl() {
 
   return (
     <div className="space-y-6">
-      <div className="flex items-center justify-between">
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
         <div>
-          <h1 className="text-2xl font-light tracking-tight">Room Control</h1>
-          <p className="text-muted-foreground text-sm mt-1">Klimaat, verlichting, sensoren & automatisering</p>
+          <h1 className="text-xl md:text-2xl font-light tracking-tight">Room Control</h1>
+          <p className="text-muted-foreground text-xs md:text-sm mt-1">Klimaat, verlichting, sensoren & automatisering</p>
         </div>
         <Dialog open={showCreateZone} onOpenChange={setShowCreateZone}>
           <DialogTrigger asChild>
@@ -85,11 +85,11 @@ export default function RoomControl() {
       </div>
 
       <Tabs value={activeTab} onValueChange={setActiveTab}>
-        <TabsList>
-          <TabsTrigger value="overview"><Gauge className="w-4 h-4 mr-1" />Overzicht</TabsTrigger>
-          <TabsTrigger value="zones"><Monitor className="w-4 h-4 mr-1" />Zones</TabsTrigger>
-          <TabsTrigger value="automation"><Zap className="w-4 h-4 mr-1" />Automatisering</TabsTrigger>
-          <TabsTrigger value="alerts"><AlertTriangle className="w-4 h-4 mr-1" />Alerts</TabsTrigger>
+        <TabsList className="w-full sm:w-auto overflow-x-auto flex">
+          <TabsTrigger value="overview" className="text-xs sm:text-sm flex-shrink-0"><Gauge className="w-3.5 h-3.5 sm:w-4 sm:h-4 mr-1" />Overzicht</TabsTrigger>
+          <TabsTrigger value="zones" className="text-xs sm:text-sm flex-shrink-0"><Monitor className="w-3.5 h-3.5 sm:w-4 sm:h-4 mr-1" />Zones</TabsTrigger>
+          <TabsTrigger value="automation" className="text-xs sm:text-sm flex-shrink-0"><Zap className="w-3.5 h-3.5 sm:w-4 sm:h-4 mr-1" />Auto</TabsTrigger>
+          <TabsTrigger value="alerts" className="text-xs sm:text-sm flex-shrink-0"><AlertTriangle className="w-3.5 h-3.5 sm:w-4 sm:h-4 mr-1" />Alerts</TabsTrigger>
         </TabsList>
 
         <TabsContent value="overview" className="space-y-4">

@@ -184,3 +184,17 @@
 - [ ] Build Expo mobile app shell (separate project)
 - [ ] Connect Salto KS API credentials
 - [ ] Connect UniFi controller credentials
+
+## Phase 16: Mobile Responsiveness Fixes (DONE)
+- [x] Fix DashboardLayout mobile sidebar (hamburger menu, sheet overlay, proper close)
+- [x] Fix DashboardLayoutSkeleton for mobile (no fixed sidebar on small screens)
+- [x] Fix Dashboard page mobile layout (KPIs, wallets, charts, booking rows)
+- [x] Fix Home landing page mobile padding and spacing
+- [x] Fix Bookings page mobile header, tabs, and booking rows
+- [x] Fix WalletPage mobile header, cards, and analytics strip
+- [x] Fix OperationsDashboard mobile header, stats grid, and tabs
+- [x] Fix ParkingAdmin mobile header, stats grid, and tabs
+- [x] Fix RoomControl mobile header and tabs
+- [x] Fix ButlerKiosk mobile layout (stacked layout, responsive cart)
+- [x] Add overflow-x:hidden to html/body for mobile
+- [x] 145 tests passing, 0 TS errors

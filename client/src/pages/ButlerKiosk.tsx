@@ -134,11 +134,11 @@ export default function ButlerKiosk() {
   }
 
   return (
-    <div className="w-screen h-screen bg-[#111] flex overflow-hidden" style={{ fontFamily: "'Montserrat', sans-serif" }}>
+    <div className="w-screen h-screen bg-[#111] flex flex-col md:flex-row overflow-hidden" style={{ fontFamily: "'Montserrat', sans-serif" }}>
       {/* Left: Product catalog */}
-      <div className="flex-1 flex flex-col">
+      <div className="flex-1 flex flex-col min-h-0">
         {/* Header */}
-        <div className="px-8 py-6 border-b border-white/[0.06] flex items-center justify-between">
+        <div className="px-4 md:px-8 py-4 md:py-6 border-b border-white/[0.06] flex items-center justify-between gap-3">
           <div className="flex items-center gap-4">
             <div className="w-10 h-10 rounded-full bg-[#627653] flex items-center justify-center">
               <Leaf className="w-5 h-5 text-white" />
@@ -149,7 +149,7 @@ export default function ButlerKiosk() {
             </div>
           </div>
           {/* Search */}
-          <div className="relative w-80">
+          <div className="relative w-40 sm:w-60 md:w-80">
             <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-white/30" />
             <input
               type="text"
@@ -162,7 +162,7 @@ export default function ButlerKiosk() {
         </div>
 
         {/* Categories */}
-        <div className="px-8 py-4 flex gap-3 overflow-x-auto border-b border-white/[0.04]">
+        <div className="px-4 md:px-8 py-3 md:py-4 flex gap-2 md:gap-3 overflow-x-auto border-b border-white/[0.04]">
           <button
             onClick={() => setSelectedCategory(null)}
             className={`px-5 py-2.5 rounded-full text-sm font-medium whitespace-nowrap transition-all ${
@@ -190,8 +190,8 @@ export default function ButlerKiosk() {
         </div>
 
         {/* Products grid */}
-        <div className="flex-1 overflow-y-auto p-8">
-          <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-4">
+        <div className="flex-1 overflow-y-auto p-4 md:p-8">
+          <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-3 md:gap-4">
             {filteredProducts.map((product) => {
               const inCart = cart.find((i) => i.productId === product.id);
               return (
@@ -236,7 +236,7 @@ export default function ButlerKiosk() {
       </div>
 
       {/* Right: Cart sidebar */}
-      <div className="w-[380px] bg-white/[0.02] border-l border-white/[0.06] flex flex-col">
+      <div className={`${cart.length > 0 ? 'flex' : 'hidden md:flex'} w-full md:w-[380px] bg-white/[0.02] border-t md:border-t-0 md:border-l border-white/[0.06] flex-col max-h-[50vh] md:max-h-none`}>
         <div className="px-6 py-5 border-b border-white/[0.06]">
           <div className="flex items-center gap-3">
             <ShoppingCart className="w-5 h-5 text-[#627653]" />

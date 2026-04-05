@@ -35,10 +35,10 @@ export default function ParkingAdmin() {
   return (
     <div className="space-y-6">
       {/* Header */}
-      <div className="flex items-center justify-between">
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
         <div>
-          <h1 className="text-2xl font-light tracking-tight">Smart Parking</h1>
-          <p className="text-muted-foreground text-sm mt-1">Parkeerplaatsbeheer, reserveringen & analytics</p>
+          <h1 className="text-xl md:text-2xl font-light tracking-tight">Smart Parking</h1>
+          <p className="text-muted-foreground text-xs md:text-sm mt-1">Parkeerplaatsbeheer, reserveringen & analytics</p>
         </div>
         <Dialog open={showCreateZone} onOpenChange={setShowCreateZone}>
           <DialogTrigger asChild>
@@ -76,7 +76,7 @@ export default function ParkingAdmin() {
       </div>
 
       {/* Stats Cards */}
-      <div className="grid grid-cols-2 md:grid-cols-5 gap-4">
+      <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-5 gap-2 md:gap-4">
         <Card className="bg-card/50 border-border/30">
           <CardContent className="p-4">
             <div className="flex items-center gap-3">
@@ -136,12 +136,12 @@ export default function ParkingAdmin() {
 
       {/* Tabs */}
       <Tabs value={activeTab} onValueChange={setActiveTab}>
-        <TabsList>
-          <TabsTrigger value="overview"><BarChart3 className="w-4 h-4 mr-1" />Overzicht</TabsTrigger>
-          <TabsTrigger value="zones"><MapPin className="w-4 h-4 mr-1" />Zones</TabsTrigger>
-          <TabsTrigger value="sessions"><Clock className="w-4 h-4 mr-1" />Sessies</TabsTrigger>
-          <TabsTrigger value="pricing"><CreditCard className="w-4 h-4 mr-1" />Tarieven</TabsTrigger>
-          <TabsTrigger value="permits"><Shield className="w-4 h-4 mr-1" />Vergunningen</TabsTrigger>
+        <TabsList className="w-full overflow-x-auto flex">
+          <TabsTrigger value="overview" className="text-xs sm:text-sm flex-shrink-0"><BarChart3 className="w-3.5 h-3.5 sm:w-4 sm:h-4 mr-1" />Overzicht</TabsTrigger>
+          <TabsTrigger value="zones" className="text-xs sm:text-sm flex-shrink-0"><MapPin className="w-3.5 h-3.5 sm:w-4 sm:h-4 mr-1" />Zones</TabsTrigger>
+          <TabsTrigger value="sessions" className="text-xs sm:text-sm flex-shrink-0"><Clock className="w-3.5 h-3.5 sm:w-4 sm:h-4 mr-1" />Sessies</TabsTrigger>
+          <TabsTrigger value="pricing" className="text-xs sm:text-sm flex-shrink-0"><CreditCard className="w-3.5 h-3.5 sm:w-4 sm:h-4 mr-1" />Tarieven</TabsTrigger>
+          <TabsTrigger value="permits" className="text-xs sm:text-sm flex-shrink-0"><Shield className="w-3.5 h-3.5 sm:w-4 sm:h-4 mr-1" />Vergunningen</TabsTrigger>
         </TabsList>
 
         <TabsContent value="overview" className="space-y-4">

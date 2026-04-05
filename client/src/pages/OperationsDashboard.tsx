@@ -47,10 +47,10 @@ export default function OperationsDashboard() {
   return (
     <div className="space-y-6">
       {/* Header */}
-      <div className="flex items-center justify-between">
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
         <div>
-          <h1 className="text-2xl font-light tracking-tight">Operations</h1>
-          <p className="text-muted-foreground text-sm mt-1">Tickets, agenda, aanwezigheid & meldingen</p>
+          <h1 className="text-xl md:text-2xl font-light tracking-tight">Operations</h1>
+          <p className="text-muted-foreground text-xs md:text-sm mt-1">Tickets, agenda, aanwezigheid & meldingen</p>
         </div>
         <Dialog open={showCreateTicket} onOpenChange={setShowCreateTicket}>
           <DialogTrigger asChild>
@@ -62,7 +62,7 @@ export default function OperationsDashboard() {
 
       {/* Quick Stats */}
       {user?.role === "admin" && (
-        <div className="grid grid-cols-2 md:grid-cols-6 gap-3">
+        <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-2 md:gap-3">
           <StatCard icon={Ticket} label="Open tickets" value={ticketStats.data?.open || 0} color="text-blue-500" bg="bg-blue-500/10" />
           <StatCard icon={Clock} label="In behandeling" value={ticketStats.data?.pending || 0} color="text-amber-500" bg="bg-amber-500/10" />
           <StatCard icon={CheckCircle} label="Opgelost" value={ticketStats.data?.solved || 0} color="text-green-500" bg="bg-green-500/10" />
@@ -74,10 +74,10 @@ export default function OperationsDashboard() {
 
       {/* Tabs */}
       <Tabs value={activeTab} onValueChange={setActiveTab}>
-        <TabsList>
-          <TabsTrigger value="tickets"><Ticket className="w-4 h-4 mr-1" />Tickets</TabsTrigger>
-          <TabsTrigger value="agenda"><Calendar className="w-4 h-4 mr-1" />Agenda</TabsTrigger>
-          <TabsTrigger value="presence"><Users className="w-4 h-4 mr-1" />Wie is er?</TabsTrigger>
+        <TabsList className="w-full sm:w-auto">
+          <TabsTrigger value="tickets" className="flex-1 sm:flex-none text-xs sm:text-sm"><Ticket className="w-3.5 h-3.5 sm:w-4 sm:h-4 mr-1" />Tickets</TabsTrigger>
+          <TabsTrigger value="agenda" className="flex-1 sm:flex-none text-xs sm:text-sm"><Calendar className="w-3.5 h-3.5 sm:w-4 sm:h-4 mr-1" />Agenda</TabsTrigger>
+          <TabsTrigger value="presence" className="flex-1 sm:flex-none text-xs sm:text-sm"><Users className="w-3.5 h-3.5 sm:w-4 sm:h-4 mr-1" />Wie is er?</TabsTrigger>
         </TabsList>
 
         <TabsContent value="tickets">

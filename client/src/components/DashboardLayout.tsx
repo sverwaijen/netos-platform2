@@ -101,16 +101,16 @@ export default function DashboardLayout({
 
   if (!user) {
     return (
-      <div className="flex items-center justify-center min-h-screen bg-background">
-        <div className="flex flex-col items-center gap-8 p-8 max-w-md w-full">
-            <div className="flex flex-col items-center gap-2">
-            <div className="flex items-center gap-2 mb-4">
-              <img src={BRAND.logo} alt="Mr. Green" className="h-6 opacity-80" />
+      <div className="flex items-center justify-center min-h-screen bg-background px-4">
+        <div className="flex flex-col items-center gap-6 p-6 md:p-8 max-w-md w-full">
+          <div className="flex flex-col items-center gap-2">
+            <div className="flex items-center gap-2 mb-3">
+              <img src={BRAND.logo} alt="Mr. Green" className="h-5 md:h-6 opacity-80" />
             </div>
-            <h1 className="text-xl font-semibold tracking-tight text-center text-foreground">
+            <h1 className="text-lg md:text-xl font-semibold tracking-tight text-center text-foreground">
               Sign in to continue
             </h1>
-            <p className="text-sm text-muted-foreground text-center max-w-sm">
+            <p className="text-xs md:text-sm text-muted-foreground text-center max-w-sm">
               Access to the NET OS platform requires authentication.
             </p>
           </div>
@@ -119,7 +119,7 @@ export default function DashboardLayout({
               window.location.href = getLoginUrl();
             }}
             size="lg"
-            className="w-full shadow-lg hover:shadow-xl transition-all"
+            className="w-full shadow-lg hover:shadow-xl transition-all text-sm md:text-base"
           >
             Sign in
           </Button>
@@ -154,7 +154,7 @@ function DashboardLayoutContent({
 }: DashboardLayoutContentProps) {
   const { user, logout } = useAuth();
   const [location, setLocation] = useLocation();
-  const { state, toggleSidebar } = useSidebar();
+  const { state, toggleSidebar, setOpenMobile } = useSidebar();
   const isCollapsed = state === "collapsed";
   const [isResizing, setIsResizing] = useState(false);
   const sidebarRef = useRef<HTMLDivElement>(null);
@@ -193,6 +193,14 @@ function DashboardLayoutContent({
     };
   }, [isResizing, setSidebarWidth]);
 
+  // Close mobile sidebar on navigation
+  const handleNavClick = (path: string) => {
+    setLocation(path);
+    if (isMobile) {
+      setOpenMobile(false);
+    }
+  };
+
   return (
     <>
       <div className="relative" ref={sidebarRef}>
@@ -226,14 +234,14 @@ function DashboardLayoutContent({
                   <SidebarMenuItem key={item.path}>
                     <SidebarMenuButton
                       isActive={isActive}
-                      onClick={() => setLocation(item.path)}
+                      onClick={() => handleNavClick(item.path)}
                       tooltip={item.label}
                       className="h-10 transition-all font-normal"
                     >
                       <item.icon
-                        className={`h-4 w-4 ${isActive ? "text-primary" : ""}`}
+                        className={`h-4 w-4 shrink-0 ${isActive ? "text-primary" : ""}`}
                       />
-                      <span>{item.label}</span>
+                      <span className="truncate">{item.label}</span>
                     </SidebarMenuButton>
                   </SidebarMenuItem>
                 );
@@ -262,7 +270,7 @@ function DashboardLayoutContent({
               </DropdownMenuTrigger>
               <DropdownMenuContent align="end" className="w-48">
                 <DropdownMenuItem
-                  onClick={() => setLocation("/settings")}
+                  onClick={() => handleNavClick("/settings")}
                   className="cursor-pointer"
                 >
                   <Settings className="mr-2 h-4 w-4" />
@@ -280,31 +288,51 @@ function DashboardLayoutContent({
             </DropdownMenu>
           </SidebarFooter>
         </Sidebar>
-        <div
-          className={`absolute top-0 right-0 w-1 h-full cursor-col-resize hover:bg-primary/20 transition-colors ${isCollapsed ? "hidden" : ""}`}
-          onMouseDown={() => {
-            if (isCollapsed) return;
-            setIsResizing(true);
-          }}
-          style={{ zIndex: 50 }}
-        />
+        {!isMobile && (
+          <div
+            className={`absolute top-0 right-0 w-1 h-full cursor-col-resize hover:bg-primary/20 transition-colors ${isCollapsed ? "hidden" : ""}`}
+            onMouseDown={() => {
+              if (isCollapsed) return;
+              setIsResizing(true);
+            }}
+            style={{ zIndex: 50 }}
+          />
+        )}
       </div>
 
       <SidebarInset>
         {isMobile && (
-          <div className="flex border-b h-14 items-center justify-between bg-background/95 px-2 backdrop-blur supports-[backdrop-filter]:backdrop-blur sticky top-0 z-40">
-            <div className="flex items-center gap-2">
-              <SidebarTrigger className="h-9 w-9 rounded-lg bg-background" />
-              <div className="flex items-center gap-3">
-                <img src={BRAND.logo} alt="Mr. Green" className="h-3.5 opacity-80" />
-                <span className="tracking-tight text-foreground font-medium text-sm">
-                  {activeMenuItem?.label ?? "NET OS"}
-                </span>
-              </div>
+          <div className="flex border-b h-14 items-center justify-between bg-background/95 px-3 backdrop-blur supports-[backdrop-filter]:backdrop-blur sticky top-0 z-40">
+            <div className="flex items-center gap-2 min-w-0">
+              <SidebarTrigger className="h-9 w-9 rounded-lg bg-background shrink-0" />
+              <img src={BRAND.logo} alt="Mr. Green" className="h-3.5 opacity-80 shrink-0" />
+              <span className="tracking-tight text-foreground font-medium text-sm truncate">
+                {activeMenuItem?.label ?? "NET OS"}
+              </span>
             </div>
+            <DropdownMenu>
+              <DropdownMenuTrigger asChild>
+                <button className="h-8 w-8 rounded-full bg-primary/10 flex items-center justify-center shrink-0">
+                  <span className="text-xs font-medium text-primary">
+                    {user?.name?.charAt(0).toUpperCase() ?? "U"}
+                  </span>
+                </button>
+              </DropdownMenuTrigger>
+              <DropdownMenuContent align="end" className="w-48">
+                <DropdownMenuItem onClick={() => handleNavClick("/settings")} className="cursor-pointer">
+                  <Settings className="mr-2 h-4 w-4" />
+                  <span>Settings</span>
+                </DropdownMenuItem>
+                <DropdownMenuSeparator />
+                <DropdownMenuItem onClick={logout} className="cursor-pointer text-destructive focus:text-destructive">
+                  <LogOut className="mr-2 h-4 w-4" />
+                  <span>Sign out</span>
+                </DropdownMenuItem>
+              </DropdownMenuContent>
+            </DropdownMenu>
           </div>
         )}
-        <main className="flex-1 p-6">{children}</main>
+        <main className="flex-1 p-4 md:p-6 overflow-x-hidden">{children}</main>
       </SidebarInset>
     </>
   );

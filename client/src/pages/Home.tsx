@@ -100,7 +100,7 @@ export default function Home() {
       </div>
 
       {/* STATEMENT */}
-      <div className="py-40 px-6 md:px-12 flex justify-center">
+      <div className="py-16 md:py-40 px-6 md:px-12 flex justify-center">
         <div className="max-w-[640px] fade-in">
           <p className="text-[clamp(22px,3vw,34px)] font-extralight leading-[1.5] tracking-[-0.5px] text-white/85">
             We don't sell desks. We curate a community. Every member is <span className="text-[#627653] font-normal">selected</span> for what they bring to the network — not what they pay for a room.
@@ -125,7 +125,7 @@ export default function Home() {
       ))}
 
       {/* NUMBERS */}
-      <div className="grid grid-cols-2 lg:grid-cols-4 gap-px bg-white/[0.04] border-t border-b border-white/[0.06]" style={{ padding: "120px 48px" }}>
+      <div className="grid grid-cols-2 lg:grid-cols-4 gap-px bg-white/[0.04] border-t border-b border-white/[0.06] py-16 px-4 md:py-[120px] md:px-12">
         {[
           { val: "87", label: "Current members" },
           { val: "7", label: "Locations" },
@@ -188,7 +188,7 @@ export default function Home() {
       </div>
 
       {/* APPLY */}
-      <section id="apply" className="py-40 px-6 md:px-12 flex justify-center border-t border-white/[0.06]">
+      <section id="apply" className="py-16 md:py-40 px-6 md:px-12 flex justify-center border-t border-white/[0.06]">
         <div className="max-w-[520px] w-full text-center fade-in">
           <div className="inline-flex items-center gap-2.5 text-xs text-[#b8a472] font-normal tracking-[1px] mb-12">
             <span className="w-[5px] h-[5px] rounded-full bg-[#b8a472] animate-pulse-slow" />

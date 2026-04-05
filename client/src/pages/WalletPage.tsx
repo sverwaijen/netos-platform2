@@ -54,23 +54,23 @@ export default function WalletPage() {
   return (
     <div className="space-y-8 p-1">
       {/* Header */}
-      <div className="flex items-end justify-between">
+      <div className="flex flex-col sm:flex-row sm:items-end justify-between gap-4">
         <div>
           <div className="text-[9px] font-semibold tracking-[4px] uppercase text-[#627653] mb-3">Credits</div>
           <h1 className="text-[clamp(24px,3vw,36px)] font-extralight tracking-[-0.5px]">
             Your <strong className="font-semibold">wallet.</strong>
           </h1>
         </div>
-        <button onClick={() => setTopUpOpen(true)} className="flex items-center gap-2 px-5 py-3 bg-[#627653] text-white text-[10px] font-semibold tracking-[3px] uppercase hover:bg-[#4a5a3f] transition-all">
+        <button onClick={() => setTopUpOpen(true)} className="flex items-center gap-2 px-4 py-2.5 sm:px-5 sm:py-3 bg-[#627653] text-white text-[10px] font-semibold tracking-[3px] uppercase hover:bg-[#4a5a3f] transition-all w-full sm:w-auto justify-center">
           <CreditCard className="w-3.5 h-3.5" />Top up
         </button>
       </div>
 
       {/* Wallet cards */}
       <div className="grid grid-cols-1 md:grid-cols-3 gap-[1px] bg-white/[0.04]">
-        <div className="bg-[#111] p-6">
+        <div className="bg-[#111] p-4 md:p-6">
           <div className="text-[10px] font-medium tracking-[2px] uppercase text-[#888] mb-2">Total Balance</div>
-          <div className="text-[clamp(32px,4vw,48px)] font-extralight tracking-[-1px]">{totalBalance.toFixed(0)}<span className="text-sm text-[#888] ml-1">credits</span></div>
+          <div className="text-3xl md:text-[clamp(32px,4vw,48px)] font-extralight tracking-[-1px]">{totalBalance.toFixed(0)}<span className="text-sm text-[#888] ml-1">credits</span></div>
           <div className="flex gap-4 mt-3 text-[11px] text-[#888]">
             <span className="flex items-center gap-1"><ArrowUpRight className="w-3 h-3 text-[#627653]" />+{analytics.earned.toFixed(0)} in</span>
             <span className="flex items-center gap-1"><ArrowDownRight className="w-3 h-3 text-red-400" />-{analytics.spent.toFixed(0)} out</span>
@@ -96,10 +96,10 @@ export default function WalletPage() {
           { label: "Total Top-ups", value: `${analytics.topups.toFixed(0)}c`, icon: ArrowUpRight, color: "#627653" },
           { label: "Breakage", value: `${analytics.breakage.toFixed(0)}c`, icon: RefreshCw, color: "#888" },
         ].map((item, i) => (
-          <div key={i} className="bg-[#111] p-5 flex items-center gap-3">
-            <item.icon className="w-4 h-4" style={{ color: item.color }} />
-            <div>
-              <div className="text-[10px] text-[#888] tracking-[1px] uppercase">{item.label}</div>
+          <div key={i} className="bg-[#111] p-3 md:p-5 flex items-center gap-2 md:gap-3">
+            <item.icon className="w-4 h-4 shrink-0" style={{ color: item.color }} />
+            <div className="min-w-0">
+              <div className="text-[10px] text-[#888] tracking-[1px] uppercase truncate">{item.label}</div>
               <div className="text-lg font-extralight">{item.value}</div>
             </div>
           </div>
