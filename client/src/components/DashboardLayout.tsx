@@ -46,6 +46,7 @@ import {
   Car,
   Ticket,
   Thermometer,
+  Zap,
 } from "lucide-react";
 import { CSSProperties, useEffect, useRef, useState } from "react";
 import { useLocation } from "wouter";
@@ -70,6 +71,7 @@ const menuItems = [
   { icon: Bell, label: "Notifications", path: "/notifications" },
   { icon: UserPlus, label: "Invites", path: "/invites" },
   { icon: Target, label: "CRM Pipeline", path: "/crm" },
+  { icon: Zap, label: "Marketing Flow", path: "/crm/flow" },
   { icon: Mail, label: "Campaigns", path: "/crm/campaigns" },
   { icon: FileText, label: "Templates", path: "/crm/templates" },
   { icon: Settings, label: "Settings", path: "/settings" },

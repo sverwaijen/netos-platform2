@@ -198,3 +198,31 @@
 - [x] Fix ButlerKiosk mobile layout (stacked layout, responsive cart)
 - [x] Add overflow-x:hidden to html/body for mobile
 - [x] 145 tests passing, 0 TS errors
+
+## Phase 17: Room Control Demo Data (DONE)
+- [x] Seed 13 zones across 2 locations (Amsterdam + Rotterdam)
+- [x] Seed 84 control points (HVAC, lighting, AV, blinds)
+- [x] Seed 1872 sensor readings (temperature, humidity, CO2, noise, light, occupancy)
+- [x] Seed 8 automation rules (schedule-based, occupancy-based, booking-triggered)
+- [x] Seed 7 alert thresholds
+
+## Phase 18: CRM Visual Marketing Flow + Demo Leads (DONE)
+- [x] Visual marketing flow page (/crm/flow) with 5-step pipeline
+- [x] Scrape → Doelgroepanalyse → Outreach → Engagement → Conversie
+- [x] 17 demo leads (Adyen, Booking.com, Mollie, Picnic, Bunq, etc.)
+- [x] 121 lead activities (journey trail per lead)
+- [x] 4 campaigns with email sequences and metrics
+- [x] 5 email templates (incl. AI-generated)
+- [x] Trigger events panel (funding, huurcontract, team groei, etc.)
+
+## Phase 19: Member User App (PWA Web App) (DONE)
+- [x] AppShell component with bottom navigation (Home, Boekingen, Wallet, Toegang, Profiel)
+- [x] App Home (/app) - personalized dashboard with greeting, quick access, upcoming bookings
+- [x] App Bookings (/app/bookings) - upcoming and past bookings
+- [x] App Wallet (/app/wallet) - balance cards, transaction history
+- [x] App Access (/app/access) - digital key (Salto KS), door controls, WiFi (UniFi)
+- [x] App Parking (/app/parking) - zones, reservations, active session
+- [x] App Support (/app/support) - ticket creation, FAQ, ticket history
+- [x] App Profile (/app/profile) - user info, settings menu, logout
+- [x] App route structure (/app/*) with 7 pages
+- [x] 145 tests passing, 0 TS errors
