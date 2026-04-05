@@ -11,6 +11,18 @@ import {
   blockedDatesRouter, resourceCategoriesRouter,
 } from "./routers/resourceAdmin";
 import { productCatalogRouter, kioskOrderRouter, signingRouter } from "./routers/kioskRouter";
+import {
+  parkingZonesRouter, parkingSpotsRouter, parkingPricingRouter,
+  parkingReservationsRouter, parkingSessionsRouter, parkingPermitsRouter,
+} from "./routers/parkingRouter";
+import {
+  ticketsRouter, cannedResponsesRouter, slaRouter,
+  opsAgendaRouter, presenceRouter,
+} from "./routers/opsRouter";
+import {
+  roomControlZonesRouter, roomControlPointsRouter,
+  sensorReadingsRouter, automationRulesRouter, alertThresholdsRouter,
+} from "./routers/roomControlRouter";
 
 const adminProcedure = protectedProcedure.use(({ ctx, next }) => {
   if (ctx.user.role !== "admin") {
@@ -797,6 +809,25 @@ Return JSON with "subject" and "body" fields. The body should be HTML formatted.
   products: productCatalogRouter,
   kioskOrders: kioskOrderRouter,
   signing: signingRouter,
+  // ─── Smart Parking ───
+  parkingZones: parkingZonesRouter,
+  parkingSpots: parkingSpotsRouter,
+  parkingPricing: parkingPricingRouter,
+  parkingReservations: parkingReservationsRouter,
+  parkingSessions: parkingSessionsRouter,
+  parkingPermits: parkingPermitsRouter,
+  // ─── Operations ───
+  tickets: ticketsRouter,
+  cannedResponses: cannedResponsesRouter,
+  sla: slaRouter,
+  opsAgenda: opsAgendaRouter,
+  presence: presenceRouter,
+  // ─── Room Control ───
+  roomControlZones: roomControlZonesRouter,
+  roomControlPoints: roomControlPointsRouter,
+  sensorReadings: sensorReadingsRouter,
+  automationRules: automationRulesRouter,
+  alertThresholds: alertThresholdsRouter,
 });
 
 export type AppRouter = typeof appRouter;

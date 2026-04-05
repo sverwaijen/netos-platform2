@@ -780,3 +780,295 @@ export const bookingAddons = mysqlTable("booking_addons", {
 });
 
 export type BookingAddon = typeof bookingAddons.$inferSelect;
+
+
+// ─── Parking Zones ─────────────────────────────────────────────────
+export const parkingZones = mysqlTable("parking_zones", {
+  id: int("id").autoincrement().primaryKey(),
+  locationId: int("locationId").notNull(),
+  name: varchar("name", { length: 128 }).notNull(),
+  slug: varchar("slug", { length: 64 }).notNull(),
+  totalSpots: int("totalSpots").notNull().default(0),
+  type: mysqlEnum("type", ["indoor", "outdoor", "underground", "rooftop"]).default("outdoor"),
+  accessMethod: mysqlEnum("accessMethod", ["barrier", "anpr", "manual", "salto"]).default("barrier"),
+  isActive: boolean("isActive").default(true),
+  createdAt: timestamp("createdAt").defaultNow().notNull(),
+  updatedAt: timestamp("updatedAt").defaultNow().onUpdateNow().notNull(),
+});
+
+export type ParkingZone = typeof parkingZones.$inferSelect;
+
+// ─── Parking Spots ─────────────────────────────────────────────────
+export const parkingSpots = mysqlTable("parking_spots", {
+  id: int("id").autoincrement().primaryKey(),
+  zoneId: int("zoneId").notNull(),
+  spotNumber: varchar("spotNumber", { length: 16 }).notNull(),
+  type: mysqlEnum("type", ["standard", "electric", "disabled", "motorcycle", "reserved"]).default("standard"),
+  status: mysqlEnum("status", ["available", "occupied", "reserved", "maintenance", "blocked"]).default("available"),
+  sensorId: varchar("sensorId", { length: 128 }),
+  assignedUserId: int("assignedUserId"),
+  assignedCompanyId: int("assignedCompanyId"),
+  isActive: boolean("isActive").default(true),
+});
+
+export type ParkingSpot = typeof parkingSpots.$inferSelect;
+
+// ─── Parking Pricing Rules ─────────────────────────────────────────
+export const parkingPricing = mysqlTable("parking_pricing", {
+  id: int("id").autoincrement().primaryKey(),
+  zoneId: int("zoneId"),
+  name: varchar("name", { length: 128 }).notNull(),
+  rateType: mysqlEnum("rateType", ["hourly", "daily", "monthly", "flat"]).notNull(),
+  priceEur: decimal("priceEur", { precision: 10, scale: 2 }).notNull(),
+  priceCredits: decimal("priceCredits", { precision: 10, scale: 2 }),
+  appliesToType: mysqlEnum("appliesToType", ["all", "members", "guests", "companies"]).default("all"),
+  dayBeforeDiscount: int("dayBeforeDiscount").default(0), // % discount for advance booking
+  maxDailyCapEur: decimal("maxDailyCapEur", { precision: 10, scale: 2 }),
+  freeMinutes: int("freeMinutes").default(0),
+  validDays: json("validDays").$type<number[]>(), // 0-6
+  validTimeStart: varchar("validTimeStart", { length: 5 }),
+  validTimeEnd: varchar("validTimeEnd", { length: 5 }),
+  isActive: boolean("isActive").default(true),
+  createdAt: timestamp("createdAt").defaultNow().notNull(),
+});
+
+export type ParkingPricingRule = typeof parkingPricing.$inferSelect;
+
+// ─── Parking Permits ───────────────────────────────────────────────
+export const parkingPermits = mysqlTable("parking_permits", {
+  id: int("id").autoincrement().primaryKey(),
+  userId: int("userId"),
+  companyId: int("companyId"),
+  zoneId: int("zoneId").notNull(),
+  licensePlate: varchar("licensePlate", { length: 20 }).notNull(),
+  vehicleDescription: varchar("vehicleDescription", { length: 256 }),
+  type: mysqlEnum("type", ["monthly", "annual", "reserved", "visitor"]).default("monthly"),
+  status: mysqlEnum("status", ["active", "expired", "suspended", "cancelled"]).default("active"),
+  startDate: bigint("startDate", { mode: "number" }).notNull(),
+  endDate: bigint("endDate", { mode: "number" }),
+  spotId: int("spotId"), // assigned spot (if reserved)
+  createdAt: timestamp("createdAt").defaultNow().notNull(),
+  updatedAt: timestamp("updatedAt").defaultNow().onUpdateNow().notNull(),
+});
+
+export type ParkingPermit = typeof parkingPermits.$inferSelect;
+
+// ─── Parking Sessions ──────────────────────────────────────────────
+export const parkingSessions = mysqlTable("parking_sessions", {
+  id: int("id").autoincrement().primaryKey(),
+  zoneId: int("zoneId").notNull(),
+  spotId: int("spotId"),
+  userId: int("userId"),
+  permitId: int("permitId"),
+  licensePlate: varchar("licensePlate", { length: 20 }),
+  entryTime: bigint("entryTime", { mode: "number" }).notNull(),
+  exitTime: bigint("exitTime", { mode: "number" }),
+  durationMinutes: int("durationMinutes"),
+  status: mysqlEnum("status", ["active", "completed", "overstay"]).default("active"),
+  amountEur: decimal("amountEur", { precision: 10, scale: 2 }),
+  amountCredits: decimal("amountCredits", { precision: 10, scale: 2 }),
+  paymentMethod: mysqlEnum("paymentMethod", ["credits", "stripe", "permit", "free"]),
+  paymentStatus: mysqlEnum("paymentStatus", ["pending", "paid", "waived"]).default("pending"),
+  createdAt: timestamp("createdAt").defaultNow().notNull(),
+});
+
+export type ParkingSession = typeof parkingSessions.$inferSelect;
+
+// ─── Parking Reservations ──────────────────────────────────────────
+export const parkingReservations = mysqlTable("parking_reservations", {
+  id: int("id").autoincrement().primaryKey(),
+  zoneId: int("zoneId").notNull(),
+  spotId: int("spotId"),
+  userId: int("userId").notNull(),
+  licensePlate: varchar("licensePlate", { length: 20 }),
+  reservationDate: bigint("reservationDate", { mode: "number" }).notNull(),
+  startTime: bigint("startTime", { mode: "number" }).notNull(),
+  endTime: bigint("endTime", { mode: "number" }).notNull(),
+  status: mysqlEnum("status", ["confirmed", "checked_in", "completed", "cancelled", "no_show"]).default("confirmed"),
+  discountApplied: int("discountApplied").default(0),
+  amountEur: decimal("amountEur", { precision: 10, scale: 2 }),
+  amountCredits: decimal("amountCredits", { precision: 10, scale: 2 }),
+  createdAt: timestamp("createdAt").defaultNow().notNull(),
+});
+
+export type ParkingReservation = typeof parkingReservations.$inferSelect;
+
+// ─── Support Tickets (Zendesk-style) ───────────────────────────────
+export const tickets = mysqlTable("tickets", {
+  id: int("id").autoincrement().primaryKey(),
+  ticketNumber: varchar("ticketNumber", { length: 32 }).notNull().unique(),
+  subject: varchar("subject", { length: 512 }).notNull(),
+  description: text("description"),
+  status: mysqlEnum("status", ["new", "open", "pending", "on_hold", "solved", "closed"]).default("new").notNull(),
+  priority: mysqlEnum("priority", ["low", "normal", "high", "urgent"]).default("normal"),
+  category: mysqlEnum("category", [
+    "general", "billing", "access", "booking", "parking", "maintenance",
+    "wifi", "catering", "equipment", "noise", "cleaning", "other",
+  ]).default("general"),
+  channel: mysqlEnum("channel", ["web", "email", "chat", "phone", "app", "walk_in"]).default("web"),
+  requesterId: int("requesterId"), // user who submitted
+  assignedToId: int("assignedToId"), // staff member
+  locationId: int("locationId"),
+  resourceId: int("resourceId"),
+  tags: json("tags").$type<string[]>(),
+  aiSuggestion: text("aiSuggestion"),
+  aiCategory: varchar("aiCategory", { length: 64 }),
+  aiSentiment: mysqlEnum("aiSentiment", ["positive", "neutral", "negative"]),
+  aiAutoResolved: boolean("aiAutoResolved").default(false),
+  slaDeadline: bigint("slaDeadline", { mode: "number" }),
+  firstResponseAt: bigint("firstResponseAt", { mode: "number" }),
+  resolvedAt: bigint("resolvedAt", { mode: "number" }),
+  closedAt: bigint("closedAt", { mode: "number" }),
+  satisfactionRating: int("satisfactionRating"), // 1-5
+  satisfactionComment: text("satisfactionComment"),
+  metadata: json("metadata"),
+  createdAt: timestamp("createdAt").defaultNow().notNull(),
+  updatedAt: timestamp("updatedAt").defaultNow().onUpdateNow().notNull(),
+});
+
+export type Ticket = typeof tickets.$inferSelect;
+
+// ─── Ticket Messages ───────────────────────────────────────────────
+export const ticketMessages = mysqlTable("ticket_messages", {
+  id: int("id").autoincrement().primaryKey(),
+  ticketId: int("ticketId").notNull(),
+  senderId: int("senderId"), // null for system/AI messages
+  senderType: mysqlEnum("senderType", ["requester", "agent", "system", "ai"]).default("requester"),
+  body: text("body").notNull(),
+  isInternal: boolean("isInternal").default(false), // internal note vs public reply
+  attachments: json("attachments").$type<string[]>(),
+  createdAt: timestamp("createdAt").defaultNow().notNull(),
+});
+
+export type TicketMessage = typeof ticketMessages.$inferSelect;
+
+// ─── Ticket SLA Policies ───────────────────────────────────────────
+export const ticketSlaPolicies = mysqlTable("ticket_sla_policies", {
+  id: int("id").autoincrement().primaryKey(),
+  name: varchar("name", { length: 128 }).notNull(),
+  priority: mysqlEnum("priority", ["low", "normal", "high", "urgent"]).notNull(),
+  firstResponseMinutes: int("firstResponseMinutes").notNull(),
+  resolutionMinutes: int("resolutionMinutes").notNull(),
+  isActive: boolean("isActive").default(true),
+  createdAt: timestamp("createdAt").defaultNow().notNull(),
+});
+
+export type TicketSlaPolicy = typeof ticketSlaPolicies.$inferSelect;
+
+// ─── Canned Responses ──────────────────────────────────────────────
+export const cannedResponses = mysqlTable("canned_responses", {
+  id: int("id").autoincrement().primaryKey(),
+  title: varchar("title", { length: 256 }).notNull(),
+  body: text("body").notNull(),
+  category: varchar("category", { length: 64 }),
+  shortcut: varchar("shortcut", { length: 32 }),
+  usageCount: int("usageCount").default(0),
+  createdByUserId: int("createdByUserId"),
+  isActive: boolean("isActive").default(true),
+  createdAt: timestamp("createdAt").defaultNow().notNull(),
+});
+
+export type CannedResponse = typeof cannedResponses.$inferSelect;
+
+// ─── Room Control Zones ────────────────────────────────────────────
+export const roomControlZones = mysqlTable("room_control_zones", {
+  id: int("id").autoincrement().primaryKey(),
+  locationId: int("locationId").notNull(),
+  resourceId: int("resourceId"),
+  name: varchar("name", { length: 128 }).notNull(),
+  floor: varchar("floor", { length: 16 }),
+  type: mysqlEnum("type", ["meeting_room", "open_space", "private_office", "common_area", "lobby", "kitchen"]).default("meeting_room"),
+  hvacEnabled: boolean("hvacEnabled").default(true),
+  lightingEnabled: boolean("lightingEnabled").default(true),
+  avEnabled: boolean("avEnabled").default(false),
+  blindsEnabled: boolean("blindsEnabled").default(false),
+  isActive: boolean("isActive").default(true),
+  createdAt: timestamp("createdAt").defaultNow().notNull(),
+});
+
+export type RoomControlZone = typeof roomControlZones.$inferSelect;
+
+// ─── Room Control Points ───────────────────────────────────────────
+export const roomControlPoints = mysqlTable("room_control_points", {
+  id: int("id").autoincrement().primaryKey(),
+  zoneId: int("zoneId").notNull(),
+  name: varchar("name", { length: 128 }).notNull(),
+  type: mysqlEnum("type", ["hvac_temp", "hvac_mode", "light_level", "light_scene", "av_power", "av_input", "blinds_position", "ventilation"]).notNull(),
+  currentValue: varchar("currentValue", { length: 64 }),
+  targetValue: varchar("targetValue", { length: 64 }),
+  unit: varchar("unit", { length: 16 }),
+  minValue: decimal("minValue", { precision: 8, scale: 2 }),
+  maxValue: decimal("maxValue", { precision: 8, scale: 2 }),
+  isControllable: boolean("isControllable").default(true),
+  lastUpdated: timestamp("lastUpdated"),
+  createdAt: timestamp("createdAt").defaultNow().notNull(),
+});
+
+export type RoomControlPoint = typeof roomControlPoints.$inferSelect;
+
+// ─── Room Sensor Readings (Time-series) ────────────────────────────
+export const roomSensorReadings = mysqlTable("room_sensor_readings", {
+  id: int("id").autoincrement().primaryKey(),
+  zoneId: int("zoneId").notNull(),
+  sensorType: mysqlEnum("sensorType", ["temperature", "humidity", "co2", "noise", "light", "occupancy", "pm25", "voc"]).notNull(),
+  value: decimal("value", { precision: 10, scale: 2 }).notNull(),
+  unit: varchar("unit", { length: 16 }),
+  recordedAt: bigint("recordedAt", { mode: "number" }).notNull(),
+  createdAt: timestamp("createdAt").defaultNow().notNull(),
+});
+
+export type RoomSensorReading = typeof roomSensorReadings.$inferSelect;
+
+// ─── Room Automation Rules ─────────────────────────────────────────
+export const roomAutomationRules = mysqlTable("room_automation_rules", {
+  id: int("id").autoincrement().primaryKey(),
+  zoneId: int("zoneId"),
+  locationId: int("locationId"),
+  name: varchar("name", { length: 256 }).notNull(),
+  triggerType: mysqlEnum("triggerType", ["schedule", "occupancy", "sensor_threshold", "booking_start", "booking_end"]).notNull(),
+  triggerConfig: json("triggerConfig").$type<Record<string, unknown>>(),
+  actionType: mysqlEnum("actionType", ["set_temperature", "set_lights", "set_av", "set_blinds", "send_alert"]).notNull(),
+  actionConfig: json("actionConfig").$type<Record<string, unknown>>(),
+  isActive: boolean("isActive").default(true),
+  createdAt: timestamp("createdAt").defaultNow().notNull(),
+});
+
+export type RoomAutomationRule = typeof roomAutomationRules.$inferSelect;
+
+// ─── Alert Thresholds ──────────────────────────────────────────────
+export const alertThresholds = mysqlTable("alert_thresholds", {
+  id: int("id").autoincrement().primaryKey(),
+  zoneId: int("zoneId"),
+  locationId: int("locationId"),
+  sensorType: mysqlEnum("sensorType", ["temperature", "humidity", "co2", "noise", "light", "occupancy", "pm25", "voc"]).notNull(),
+  operator: mysqlEnum("operator", ["gt", "lt", "gte", "lte", "eq"]).notNull(),
+  thresholdValue: decimal("thresholdValue", { precision: 10, scale: 2 }).notNull(),
+  alertLevel: mysqlEnum("alertLevel", ["info", "warning", "critical"]).default("warning"),
+  notifyRoles: json("notifyRoles").$type<string[]>(),
+  cooldownMinutes: int("cooldownMinutes").default(30),
+  isActive: boolean("isActive").default(true),
+  lastTriggeredAt: bigint("lastTriggeredAt", { mode: "number" }),
+  createdAt: timestamp("createdAt").defaultNow().notNull(),
+});
+
+export type AlertThreshold = typeof alertThresholds.$inferSelect;
+
+// ─── Operations Agenda ─────────────────────────────────────────────
+export const opsAgenda = mysqlTable("ops_agenda", {
+  id: int("id").autoincrement().primaryKey(),
+  locationId: int("locationId").notNull(),
+  title: varchar("title", { length: 256 }).notNull(),
+  description: text("description"),
+  type: mysqlEnum("type", ["event", "maintenance", "cleaning", "delivery", "meeting", "inspection", "other"]).default("event"),
+  startTime: bigint("startTime", { mode: "number" }).notNull(),
+  endTime: bigint("endTime", { mode: "number" }),
+  assignedToId: int("assignedToId"),
+  status: mysqlEnum("status", ["scheduled", "in_progress", "completed", "cancelled"]).default("scheduled"),
+  priority: mysqlEnum("priority", ["low", "normal", "high", "urgent"]).default("normal"),
+  isRecurring: boolean("isRecurring").default(false),
+  recurringPattern: json("recurringPattern").$type<Record<string, unknown>>(),
+  createdAt: timestamp("createdAt").defaultNow().notNull(),
+  updatedAt: timestamp("updatedAt").defaultNow().onUpdateNow().notNull(),
+});
+
+export type OpsAgendaItem = typeof opsAgenda.$inferSelect;

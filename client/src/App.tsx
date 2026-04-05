@@ -27,6 +27,9 @@ import KioskDisplay from "./pages/KioskDisplay";
 import ButlerKiosk from "./pages/ButlerKiosk";
 import ButlerAdmin from "./pages/ButlerAdmin";
 import DashboardLayout from "./components/DashboardLayout";
+import ParkingAdmin from "./pages/ParkingAdmin";
+import OperationsDashboard from "./pages/OperationsDashboard";
+import RoomControl from "./pages/RoomControl";
 
 function WrappedPage({ component: Component }: { component: React.ComponentType }) {
   return (
@@ -59,6 +62,9 @@ function Router() {
       <Route path="/crm">{() => <WrappedPage component={CrmPipeline} />}</Route>
       <Route path="/resources">{() => <WrappedPage component={ResourceManagement} />}</Route>
       <Route path="/butler/admin">{() => <WrappedPage component={ButlerAdmin} />}</Route>
+      <Route path="/parking">{() => <WrappedPage component={ParkingAdmin} />}</Route>
+      <Route path="/operations">{() => <WrappedPage component={OperationsDashboard} />}</Route>
+      <Route path="/room-control">{() => <WrappedPage component={RoomControl} />}</Route>
       <Route path="/butler">{() => <ButlerKiosk />}</Route>
       <Route path="/kiosk/display" component={KioskDisplay} />
       <Route path="/404" component={NotFound} />

@@ -130,3 +130,57 @@
 - [x] Add product photos via CDN for all food & drink items (23 images uploaded)
 - [x] Add VAT rates (9% food/drink, 21% services/equipment)
 - [x] Verify kiosk display with new products and images
+
+## Phase 11: Smart Parking Module (DONE)
+- [x] Research smart parking solutions (ParkBee, Sensorberg, etc.)
+- [x] Database: parking zones, spots, reservations, sessions, pricing rules, permits
+- [x] Backend: parking CRUD, reservation flow, session tracking, pricing engine
+- [x] Admin: parking zone settings, spot management, pricing rules, permit management
+- [x] Member: reserve parking spot, view availability, active session
+- [x] Unregistered: paid parking flow (license plate entry, payment)
+- [x] Registered member bonuses (day-before booking discount, guaranteed spot)
+- [x] Smart unused space optimization (auto-release, waitlist)
+- [x] Parking dashboard with occupancy, revenue, utilization analytics
+- [x] Tests for parking module
+
+## Phase 12: Operations Dashboard (Zendesk-style) (DONE)
+- [x] Research Zendesk ticket system architecture
+- [x] Database: tickets, ticket messages, ticket tags, SLA rules, canned responses
+- [x] Backend: ticket CRUD, assignment, escalation, AI auto-response
+- [x] AI-first ticket handling (auto-categorize, suggest response, auto-resolve)
+- [x] Operations agenda view (daily/weekly schedule, events, maintenance)
+- [x] Who-is-in presence board (live member check-in status)
+- [x] Critical messages/alerts panel
+- [x] Ticket dashboard with SLA metrics, response times, satisfaction
+- [x] Member-facing ticket submission (help/support page)
+- [x] Tests for operations module
+
+## Phase 13: Room Control & Sensor Monitoring (DONE)
+- [x] Database: room zones, control points, sensor readings, automation rules
+- [x] Backend: room control CRUD, sensor data ingestion, automation engine
+- [x] Room control page: HVAC, lighting, AV per room/zone
+- [x] Sensor monitoring: temperature, humidity, CO2, occupancy, noise, PM2.5, VOC
+- [x] Real-time sensor dashboard with zone overview and status indicators
+- [x] Automation rules (auto-adjust based on occupancy/schedule)
+- [x] Alert thresholds and notifications
+- [x] Tests for room control module
+
+## Phase 14: Supabase Integration (DONE)
+- [x] Supabase REST API bridge (insert, upsert, select)
+- [x] Realtime broadcasting for parking, tickets, presence
+- [x] User sync to Supabase mirror tables
+- [x] Migration SQL generator with RLS policies
+- [x] Tests for Supabase integration
+- [ ] Connect Supabase project credentials (needs SUPABASE_URL, SUPABASE_SERVICE_KEY)
+
+## Phase 15: Mobile App Architecture (React Native/Expo) (DONE)
+- [x] Research Salto KS Connect API for mobile access
+- [x] Research UniFi Identity for WiFi provisioning
+- [x] Mobile app architecture document (tech stack, screens, API connection)
+- [x] Salto KS integration module (user management, mobile keys, door access, audit trail)
+- [x] UniFi Identity integration module (WiFi provisioning, device management, profiles)
+- [x] 16 new database tables migrated
+- [x] 145 total tests passing (53 new phase 11-15 tests)
+- [ ] Build Expo mobile app shell (separate project)
+- [ ] Connect Salto KS API credentials
+- [ ] Connect UniFi controller credentials
