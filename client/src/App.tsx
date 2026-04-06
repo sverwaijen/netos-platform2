@@ -31,6 +31,11 @@ import DashboardLayout from "./components/DashboardLayout";
 import ParkingAdmin from "./pages/ParkingAdmin";
 import OperationsDashboard from "./pages/OperationsDashboard";
 import RoomControl from "./pages/RoomControl";
+import CrmTriggers from "./pages/CrmTriggers";
+import CrmLeadEntry from "./pages/CrmLeadEntry";
+import CrmVisitors from "./pages/CrmVisitors";
+import MemberDatabase from "./pages/MemberDatabase";
+import ReEngagementFunnel from "./pages/ReEngagementFunnel";
 import AppShell from "./components/AppShell";
 import AppHome from "./pages/app/AppHome";
 import AppBookings from "./pages/app/AppBookings";
@@ -78,7 +83,12 @@ function Router() {
       <Route path="/crm/campaigns">{() => <WrappedPage component={CrmCampaigns} />}</Route>
       <Route path="/crm/templates">{() => <WrappedPage component={CrmTemplates} />}</Route>
       <Route path="/crm/flow">{() => <WrappedPage component={CrmMarketingFlow} />}</Route>
+      <Route path="/crm/triggers">{() => <WrappedPage component={CrmTriggers} />}</Route>
+      <Route path="/crm/new-lead">{() => <WrappedPage component={CrmLeadEntry} />}</Route>
+      <Route path="/crm/visitors">{() => <WrappedPage component={CrmVisitors} />}</Route>
       <Route path="/crm">{() => <WrappedPage component={CrmPipeline} />}</Route>
+      <Route path="/members">{() => <WrappedPage component={MemberDatabase} />}</Route>
+      <Route path="/re-engagement">{() => <WrappedPage component={ReEngagementFunnel} />}</Route>
       <Route path="/resources">{() => <WrappedPage component={ResourceManagement} />}</Route>
       <Route path="/butler/admin">{() => <WrappedPage component={ButlerAdmin} />}</Route>
       <Route path="/parking">{() => <WrappedPage component={ParkingAdmin} />}</Route>

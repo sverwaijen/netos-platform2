@@ -23,6 +23,9 @@ import {
   roomControlZonesRouter, roomControlPointsRouter,
   sensorReadingsRouter, automationRulesRouter, alertThresholdsRouter,
 } from "./routers/roomControlRouter";
+import {
+  crmTriggersRouter, crmVisitorsRouter, memberProfilesRouter, reengagementRouter,
+} from "./routers/crmAdvancedRouter";
 
 const adminProcedure = protectedProcedure.use(({ ctx, next }) => {
   if (ctx.user.role !== "admin") {
@@ -828,6 +831,11 @@ Return JSON with "subject" and "body" fields. The body should be HTML formatted.
   sensorReadings: sensorReadingsRouter,
   automationRules: automationRulesRouter,
   alertThresholds: alertThresholdsRouter,
+  // ─── CRM Advanced ───
+  crmTriggers: crmTriggersRouter,
+  crmVisitors: crmVisitorsRouter,
+  memberProfiles: memberProfilesRouter,
+  reengagement: reengagementRouter,
 });
 
 export type AppRouter = typeof appRouter;

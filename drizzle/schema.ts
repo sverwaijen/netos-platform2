@@ -1072,3 +1072,153 @@ export const opsAgenda = mysqlTable("ops_agenda", {
 });
 
 export type OpsAgendaItem = typeof opsAgenda.$inferSelect;
+
+// ─── CRM: Automation Triggers ────────────────────────────────────────
+export const crmTriggers = mysqlTable("crm_triggers", {
+  id: int("id").autoincrement().primaryKey(),
+  name: varchar("name", { length: 256 }).notNull(),
+  description: text("description"),
+  isActive: boolean("isActive").default(true),
+  eventType: mysqlEnum("eventType", [
+    "lead_created",
+    "stage_change",
+    "website_visit",
+    "form_submit",
+    "email_opened",
+    "email_replied",
+    "inactivity",
+    "score_threshold",
+    "tag_added",
+    "manual",
+  ]).notNull(),
+  conditions: json("conditions").$type<Record<string, any>>(),
+  actions: json("actions").$type<Array<{
+    type: "ai_enrich" | "ai_score" | "ai_outreach" | "assign_user" | "change_stage" | "add_tag" | "send_email" | "notify_owner" | "create_task" | "ai_analyze";
+    config: Record<string, any>;
+  }>>(),
+  executionCount: int("executionCount").default(0),
+  lastExecutedAt: timestamp("lastExecutedAt"),
+  createdByUserId: int("createdByUserId"),
+  createdAt: timestamp("createdAt").defaultNow().notNull(),
+  updatedAt: timestamp("updatedAt").defaultNow().onUpdateNow().notNull(),
+});
+
+export type CrmTrigger = typeof crmTriggers.$inferSelect;
+export type InsertCrmTrigger = typeof crmTriggers.$inferInsert;
+
+// ─── CRM: Trigger Execution Log ─────────────────────────────────────
+export const crmTriggerLogs = mysqlTable("crm_trigger_logs", {
+  id: int("id").autoincrement().primaryKey(),
+  triggerId: int("triggerId").notNull(),
+  leadId: int("leadId"),
+  eventData: json("eventData"),
+  actionsExecuted: json("actionsExecuted").$type<Array<{
+    type: string;
+    status: "success" | "failed" | "skipped";
+    result?: any;
+    error?: string;
+  }>>(),
+  status: mysqlEnum("status", ["success", "partial", "failed"]).default("success"),
+  executedAt: timestamp("executedAt").defaultNow().notNull(),
+});
+
+export type CrmTriggerLog = typeof crmTriggerLogs.$inferSelect;
+
+// ─── CRM: Website Visitors (LeadInfo-style) ─────────────────────────
+export const crmWebsiteVisitors = mysqlTable("crm_website_visitors", {
+  id: int("id").autoincrement().primaryKey(),
+  sessionId: varchar("sessionId", { length: 128 }).notNull(),
+  ipAddress: varchar("ipAddress", { length: 64 }),
+  companyName: varchar("companyName", { length: 256 }),
+  companyDomain: varchar("companyDomain", { length: 256 }),
+  companyIndustry: varchar("companyIndustry", { length: 128 }),
+  companySize: varchar("companySize", { length: 32 }),
+  companyRevenue: varchar("companyRevenue", { length: 64 }),
+  companyLinkedIn: varchar("companyLinkedIn", { length: 512 }),
+  city: varchar("city", { length: 128 }),
+  country: varchar("country", { length: 64 }),
+  pagesViewed: json("pagesViewed").$type<string[]>(),
+  totalPageViews: int("totalPageViews").default(1),
+  totalVisits: int("totalVisits").default(1),
+  firstVisitAt: timestamp("firstVisitAt").defaultNow().notNull(),
+  lastVisitAt: timestamp("lastVisitAt").defaultNow().notNull(),
+  referrer: varchar("referrer", { length: 512 }),
+  utmSource: varchar("utmSource", { length: 128 }),
+  utmMedium: varchar("utmMedium", { length: 128 }),
+  utmCampaign: varchar("utmCampaign", { length: 128 }),
+  matchedLeadId: int("matchedLeadId"),
+  enrichmentData: json("enrichmentData"),
+  isIdentified: boolean("isIdentified").default(false),
+  status: mysqlEnum("status", ["new", "identified", "matched", "outreach_sent", "ignored"]).default("new"),
+  createdAt: timestamp("createdAt").defaultNow().notNull(),
+});
+
+export type CrmWebsiteVisitor = typeof crmWebsiteVisitors.$inferSelect;
+export type InsertCrmWebsiteVisitor = typeof crmWebsiteVisitors.$inferInsert;
+
+// ─── Members: Tier System ───────────────────────────────────────────
+export const memberProfiles = mysqlTable("member_profiles", {
+  id: int("id").autoincrement().primaryKey(),
+  userId: int("userId"),
+  companyId: int("companyId"),
+  tier: mysqlEnum("tier", [
+    "prospect",
+    "vergaderen",
+    "gebaloteerd",
+  ]).default("prospect").notNull(),
+  displayName: varchar("displayName", { length: 256 }).notNull(),
+  email: varchar("email", { length: 320 }),
+  phone: varchar("phone", { length: 20 }),
+  companyName: varchar("companyName", { length: 256 }),
+  jobTitle: varchar("jobTitle", { length: 128 }),
+  linkedIn: varchar("linkedIn", { length: 512 }),
+  photoUrl: text("photoUrl"),
+  locationPreference: varchar("locationPreference", { length: 128 }),
+  creditBalance: decimal("creditBalance", { precision: 12, scale: 2 }).default("0"),
+  creditBundleType: varchar("creditBundleType", { length: 64 }),
+  totalBookings: int("totalBookings").default(0),
+  totalSpent: decimal("totalSpent", { precision: 12, scale: 2 }).default("0"),
+  lastActiveAt: timestamp("lastActiveAt"),
+  ballotDate: timestamp("ballotDate"),
+  ballotSponsor: varchar("ballotSponsor", { length: 256 }),
+  source: varchar("source", { length: 128 }),
+  funnelStage: varchar("funnelStage", { length: 64 }),
+  notes: text("notes"),
+  tags: json("tags").$type<string[]>(),
+  isActive: boolean("isActive").default(true),
+  createdAt: timestamp("createdAt").defaultNow().notNull(),
+  updatedAt: timestamp("updatedAt").defaultNow().onUpdateNow().notNull(),
+});
+
+export type MemberProfile = typeof memberProfiles.$inferSelect;
+export type InsertMemberProfile = typeof memberProfiles.$inferInsert;
+
+// ─── Re-engagement Funnel ───────────────────────────────────────────
+export const reengagementFunnel = mysqlTable("reengagement_funnel", {
+  id: int("id").autoincrement().primaryKey(),
+  memberProfileId: int("memberProfileId"),
+  contactName: varchar("contactName", { length: 256 }).notNull(),
+  contactEmail: varchar("contactEmail", { length: 320 }),
+  companyName: varchar("companyName", { length: 256 }),
+  previousRelationship: varchar("previousRelationship", { length: 128 }),
+  stage: mysqlEnum("stage", [
+    "identified",
+    "invited",
+    "opened",
+    "applied",
+    "interview",
+    "accepted",
+    "declined",
+  ]).default("identified").notNull(),
+  inviteSentAt: timestamp("inviteSentAt"),
+  inviteOpenedAt: timestamp("inviteOpenedAt"),
+  applicationDate: timestamp("applicationDate"),
+  personalMessage: text("personalMessage"),
+  aiGeneratedInvite: text("aiGeneratedInvite"),
+  notes: text("notes"),
+  createdAt: timestamp("createdAt").defaultNow().notNull(),
+  updatedAt: timestamp("updatedAt").defaultNow().onUpdateNow().notNull(),
+});
+
+export type ReengagementEntry = typeof reengagementFunnel.$inferSelect;
+export type InsertReengagementEntry = typeof reengagementFunnel.$inferInsert;

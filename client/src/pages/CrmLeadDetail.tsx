@@ -76,7 +76,7 @@ export default function CrmLeadDetail() {
     <div className="space-y-6">
       {/* Header */}
       <div className="flex items-center gap-4">
-        <Button variant="ghost" size="sm" onClick={() => navigate("/crm")} className="text-[#111]/50 hover:text-[#111]">
+        <Button variant="ghost" size="sm" onClick={() => navigate("/crm")} className="text-white/50 hover:text-white">
           <ArrowLeft className="w-4 h-4 mr-1" /> Pipeline
         </Button>
       </div>
@@ -84,11 +84,11 @@ export default function CrmLeadDetail() {
       <div className="flex flex-col lg:flex-row gap-6">
         {/* Left: Lead Info */}
         <div className="flex-1 space-y-4">
-          <Card className="p-6 bg-white border-[#e8e6e1]">
+          <Card className="p-6 bg-white/[0.04] border-white/[0.08]">
             <div className="flex items-start justify-between mb-4">
               <div>
-                <h1 className="text-xl font-semibold text-[#111]">{lead.companyName}</h1>
-                {lead.contactName && <p className="text-sm text-[#111]/50 mt-1">{lead.contactName}</p>}
+                <h1 className="text-xl font-semibold text-white">{lead.companyName}</h1>
+                {lead.contactName && <p className="text-sm text-white/50 mt-1">{lead.contactName}</p>}
               </div>
               <div className="flex items-center gap-2">
                 <Badge style={{ backgroundColor: STAGE_COLORS[lead.stage] + "20", color: STAGE_COLORS[lead.stage], border: `1px solid ${STAGE_COLORS[lead.stage]}30` }}>
@@ -111,7 +111,7 @@ export default function CrmLeadDetail() {
                   className={`px-3 py-1.5 text-[10px] uppercase tracking-wider font-medium rounded-full transition-all whitespace-nowrap ${
                     lead.stage === s
                       ? "text-white"
-                      : "text-[#111]/40 hover:text-[#111]/70 bg-[#f6f5f2]"
+                      : "text-white/40 hover:text-white/70 bg-white/[0.04]"
                   }`}
                   style={lead.stage === s ? { backgroundColor: STAGE_COLORS[s] } : {}}
                 >
@@ -136,8 +136,8 @@ export default function CrmLeadDetail() {
                   <div key={i} className="flex items-center gap-2">
                     <item.icon className="w-3.5 h-3.5 text-[#627653]" />
                     <div>
-                      <p className="text-[10px] uppercase tracking-wider text-[#111]/30">{item.label}</p>
-                      <p className="text-sm text-[#111]">{item.value || "—"}</p>
+                      <p className="text-[10px] uppercase tracking-wider text-white/30">{item.label}</p>
+                      <p className="text-sm text-white">{item.value || "—"}</p>
                     </div>
                   </div>
                 ))}
@@ -146,21 +146,21 @@ export default function CrmLeadDetail() {
               <div className="grid grid-cols-2 gap-3">
                 {Object.entries(editData).filter(([k]) => k !== "notes").map(([key, val]) => (
                   <div key={key}>
-                    <Label className="text-[10px] uppercase tracking-wider text-[#111]/40">{key.replace(/([A-Z])/g, " $1")}</Label>
-                    <Input value={val as string} onChange={e => setEditData((p: any) => ({ ...p, [key]: e.target.value }))} className="mt-1 bg-[#f6f5f2] border-[#e8e6e1] text-sm" />
+                    <Label className="text-[10px] uppercase tracking-wider text-white/40">{key.replace(/([A-Z])/g, " $1")}</Label>
+                    <Input value={val as string} onChange={e => setEditData((p: any) => ({ ...p, [key]: e.target.value }))} className="mt-1 bg-white/[0.06] border-white/10 text-sm" />
                   </div>
                 ))}
                 <div className="col-span-2">
-                  <Label className="text-[10px] uppercase tracking-wider text-[#111]/40">Notes</Label>
-                  <Textarea value={editData.notes} onChange={e => setEditData((p: any) => ({ ...p, notes: e.target.value }))} className="mt-1 bg-[#f6f5f2] border-[#e8e6e1]" rows={3} />
+                  <Label className="text-[10px] uppercase tracking-wider text-white/40">Notes</Label>
+                  <Textarea value={editData.notes} onChange={e => setEditData((p: any) => ({ ...p, notes: e.target.value }))} className="mt-1 bg-white/[0.06] border-white/10" rows={3} />
                 </div>
               </div>
             )}
 
-            <div className="flex items-center gap-2 mt-4 pt-4 border-t border-[#e8e6e1]">
+            <div className="flex items-center gap-2 mt-4 pt-4 border-t border-white/10">
               {!editing ? (
                 <>
-                  <Button size="sm" variant="outline" onClick={startEdit} className="border-[#e8e6e1] text-[#111]/70">Edit</Button>
+                  <Button size="sm" variant="outline" onClick={startEdit} className="border-white/10 text-white/70">Edit</Button>
                   <Button size="sm" variant="outline" onClick={() => aiScore.mutate({ id: leadId })} disabled={aiScore.isPending} className="border-[#627653]/30 text-[#627653]">
                     <Zap className="w-3.5 h-3.5 mr-1" /> {aiScore.isPending ? "Scoring..." : "AI Score"}
                   </Button>
@@ -178,7 +178,7 @@ export default function CrmLeadDetail() {
               ) : (
                 <>
                   <Button size="sm" onClick={saveEdit} className="bg-[#627653] hover:bg-[#3a4a34] text-white">Save</Button>
-                  <Button size="sm" variant="outline" onClick={() => setEditing(false)} className="border-[#e8e6e1]">Cancel</Button>
+                  <Button size="sm" variant="outline" onClick={() => setEditing(false)} className="border-white/10">Cancel</Button>
                 </>
               )}
             </div>
@@ -190,47 +190,47 @@ export default function CrmLeadDetail() {
               <div className="flex items-center gap-2 mb-2">
                 <Sparkles className="w-4 h-4 text-[#627653]" />
                 <span className="text-xs font-semibold uppercase tracking-wider text-[#627653]">AI Recommendation</span>
-                <Badge variant="outline" className={`text-[10px] ml-auto ${suggestion.priority === "high" ? "border-red-300 text-red-600" : suggestion.priority === "medium" ? "border-[#b8a472] text-[#b8a472]" : "border-[#e8e6e1] text-[#111]/40"}`}>
+                <Badge variant="outline" className={`text-[10px] ml-auto ${suggestion.priority === "high" ? "border-red-300 text-red-600" : suggestion.priority === "medium" ? "border-[#b8a472] text-[#b8a472]" : "border-white/10 text-white/40"}`}>
                   {suggestion.priority}
                 </Badge>
               </div>
-              <p className="text-sm font-medium text-[#111]">{suggestion.action}</p>
-              <p className="text-xs text-[#111]/50 mt-1">{suggestion.reason}</p>
+              <p className="text-sm font-medium text-white">{suggestion.action}</p>
+              <p className="text-xs text-white/50 mt-1">{suggestion.reason}</p>
             </Card>
           )}
 
           {/* Notes */}
           {lead.notes && (
-            <Card className="p-4 bg-white border-[#e8e6e1]">
-              <h3 className="text-xs font-semibold uppercase tracking-wider text-[#111]/40 mb-2">Notes</h3>
-              <p className="text-sm text-[#111]/70 whitespace-pre-wrap">{lead.notes}</p>
+            <Card className="p-4 bg-white/[0.04] border-white/[0.08]">
+              <h3 className="text-xs font-semibold uppercase tracking-wider text-white/40 mb-2">Notes</h3>
+              <p className="text-sm text-white/70 whitespace-pre-wrap">{lead.notes}</p>
             </Card>
           )}
         </div>
 
         {/* Right: Activity Timeline */}
         <div className="w-full lg:w-96 space-y-4">
-          <Card className="p-4 bg-white border-[#e8e6e1]">
-            <h3 className="text-xs font-semibold uppercase tracking-wider text-[#111]/40 mb-4">Add Activity</h3>
-            <Textarea value={noteText} onChange={e => setNoteText(e.target.value)} placeholder="Add a note or log an activity..." className="bg-[#f6f5f2] border-[#e8e6e1] text-sm" rows={3} />
+          <Card className="p-4 bg-white/[0.04] border-white/[0.08]">
+            <h3 className="text-xs font-semibold uppercase tracking-wider text-white/40 mb-4">Add Activity</h3>
+            <Textarea value={noteText} onChange={e => setNoteText(e.target.value)} placeholder="Add a note or log an activity..." className="bg-white/[0.06] border-white/10 text-sm" rows={3} />
             <div className="flex items-center gap-2 mt-2">
               <Button size="sm" onClick={() => { addActivity.mutate({ leadId, type: "note", title: "Note", description: noteText }); setNoteText(""); }} disabled={!noteText || addActivity.isPending} className="bg-[#627653] hover:bg-[#3a4a34] text-white">
                 <MessageSquare className="w-3.5 h-3.5 mr-1" /> Note
               </Button>
-              <Button size="sm" variant="outline" onClick={() => { addActivity.mutate({ leadId, type: "call", title: "Phone call", description: noteText }); setNoteText(""); }} className="border-[#e8e6e1] text-[#111]/70">
+              <Button size="sm" variant="outline" onClick={() => { addActivity.mutate({ leadId, type: "call", title: "Phone call", description: noteText }); setNoteText(""); }} className="border-white/10 text-white/70">
                 <Phone className="w-3.5 h-3.5 mr-1" /> Call
               </Button>
-              <Button size="sm" variant="outline" onClick={() => { addActivity.mutate({ leadId, type: "email_sent", title: "Email sent", description: noteText }); setNoteText(""); }} className="border-[#e8e6e1] text-[#111]/70">
+              <Button size="sm" variant="outline" onClick={() => { addActivity.mutate({ leadId, type: "email_sent", title: "Email sent", description: noteText }); setNoteText(""); }} className="border-white/10 text-white/70">
                 <Send className="w-3.5 h-3.5 mr-1" /> Email
               </Button>
             </div>
           </Card>
 
-          <Card className="p-4 bg-white border-[#e8e6e1]">
-            <h3 className="text-xs font-semibold uppercase tracking-wider text-[#111]/40 mb-4">Activity Timeline</h3>
+          <Card className="p-4 bg-white/[0.04] border-white/[0.08]">
+            <h3 className="text-xs font-semibold uppercase tracking-wider text-white/40 mb-4">Activity Timeline</h3>
             <div className="space-y-3">
               {activities.length === 0 && (
-                <p className="text-xs text-[#111]/30 text-center py-4">No activities yet</p>
+                <p className="text-xs text-white/30 text-center py-4">No activities yet</p>
               )}
               {activities.map((a: any) => (
                 <div key={a.id} className="flex gap-3">
@@ -240,20 +240,20 @@ export default function CrmLeadDetail() {
                       a.type === "email_sent" ? "bg-blue-50" :
                       a.type === "call" ? "bg-green-50" :
                       a.type === "score_change" ? "bg-[#627653]/10" :
-                      "bg-[#f6f5f2]"
+                      "bg-white/[0.04]"
                     }`}>
                       {a.type === "stage_change" ? <TrendingUp className="w-3 h-3 text-[#b8a472]" /> :
                        a.type === "email_sent" ? <Send className="w-3 h-3 text-blue-500" /> :
                        a.type === "call" ? <Phone className="w-3 h-3 text-green-600" /> :
                        a.type === "score_change" ? <Zap className="w-3 h-3 text-[#627653]" /> :
-                       <MessageSquare className="w-3 h-3 text-[#111]/30" />}
+                       <MessageSquare className="w-3 h-3 text-white/30" />}
                     </div>
                     <div className="w-px h-full bg-[#e8e6e1] mt-1" />
                   </div>
                   <div className="pb-3 flex-1">
-                    <p className="text-sm font-medium text-[#111]">{a.title}</p>
-                    {a.description && <p className="text-xs text-[#111]/50 mt-0.5">{a.description}</p>}
-                    <p className="text-[10px] text-[#111]/30 mt-1">
+                    <p className="text-sm font-medium text-white">{a.title}</p>
+                    {a.description && <p className="text-xs text-white/50 mt-0.5">{a.description}</p>}
+                    <p className="text-[10px] text-white/30 mt-1">
                       <Clock className="w-2.5 h-2.5 inline mr-1" />
                       {new Date(a.createdAt).toLocaleDateString("nl-NL", { day: "numeric", month: "short", hour: "2-digit", minute: "2-digit" })}
                     </p>

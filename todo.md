@@ -235,3 +235,41 @@
 - [x] AppWallet: "Opwaarderen" button added
 - [x] Bottom nav: improved active state visibility
 - [x] UX test report across all 7 app pages
+
+## Phase 21: Text Visibility Fixes (DONE)
+- [x] Audit all pages for invisible/hard-to-read text on dark backgrounds
+- [x] Fix CrmPipeline, CrmLeadDetail, CrmCampaigns, CrmTemplates dark theme colors
+- [x] Fix NotFound, BundlesPage, Home page contrast issues
+- [x] Ensure all form inputs, labels, placeholders are readable
+
+## Phase 22: CRM Trigger System & AI Actions (DONE)
+- [x] Database: triggers table, trigger logs, website visitors (5 new tables)
+- [x] Trigger types: website visit, lead created, pipeline stage change, form submit, inactivity
+- [x] AI action engine: auto-enrich, auto-score, auto-outreach, auto-assign
+- [x] Trigger builder UI (/crm/triggers) with create/edit/toggle triggers
+- [x] Trigger execution log (what fired, what action taken, result)
+- [x] LeadInfo-style website visitor detection (/crm/visitors) → deep company analysis
+- [x] Check visitor against existing pipeline (new vs returning vs lost)
+- [x] Personalized outreach generation based on visitor context
+
+## Phase 23: Lead Manual Entry + AI Enrichment (DONE)
+- [x] Quick-add lead (/crm/new-lead): only name required
+- [x] AI Enrich button: auto-fill company, title, LinkedIn, email, phone, website
+- [x] AI company analysis: revenue, headcount, industry, tech stack, funding
+- [x] AI lead scoring based on enriched data
+- [x] Duplicate detection (check if lead/company already in pipeline)
+
+## Phase 24: Member Database with Tiers (DONE)
+- [x] Member tiers: Gebaloteerd (full member), Vergaderen (meeting access), Prospect (credit bundle)
+- [x] Comprehensive member overview page (/members) with advanced filters
+- [x] Filter by: tier, status, search (name/email/company)
+- [x] Member stats: total, per tier, active, new this month
+- [x] Tier management with upgrade/downgrade actions
+
+## Phase 25: Re-engagement Funnel (Community Transition) (DONE)
+- [x] Funnel page (/re-engagement) for old contacts → besloten community transition
+- [x] "Sleutel geven" flow: invite old funnel contacts to exclusive community
+- [x] AI-generated personalized invite generation
+- [x] Track funnel progress (identified → invited → opened → applied → accepted/declined)
+- [x] Funnel stage counts and filter by stage
+- [x] 145 tests passing, 0 TS errors

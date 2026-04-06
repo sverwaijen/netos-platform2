@@ -73,7 +73,7 @@ export default function BundlesPage() {
                 className={`mt-8 w-full py-[14px] text-[10px] font-semibold tracking-[3px] uppercase transition-all duration-300 ${
                   isPopular
                     ? "bg-[#627653] text-white hover:bg-[#4a5a3f]"
-                    : "border border-white/10 bg-transparent text-white hover:bg-white hover:text-[#111]"
+                    : "border border-white/10 bg-transparent text-white hover:bg-white hover:text-white"
                 }`}
               >
                 {parseFloat(bundle.priceEur) === 0 ? "Get started" : "Subscribe"}

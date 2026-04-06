@@ -66,11 +66,11 @@ export default function CrmPipeline() {
       {/* Header */}
       <div className="flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
         <div>
-          <h1 className="text-2xl font-semibold tracking-tight text-[#111]">Sales Pipeline</h1>
-          <p className="text-sm text-[#111]/50 mt-1 tracking-wide uppercase font-light">Manage leads and track conversions</p>
+          <h1 className="text-2xl font-semibold tracking-tight text-white">Sales Pipeline</h1>
+          <p className="text-sm text-white/50 mt-1 tracking-wide uppercase font-light">Manage leads and track conversions</p>
         </div>
         <div className="flex items-center gap-3">
-          <Button variant="outline" size="sm" className="border-[#e8e6e1] text-[#111]/70" onClick={() => setShowStats(!showStats)}>
+          <Button variant="outline" size="sm" className="border-white/10 text-white/70" onClick={() => setShowStats(!showStats)}>
             <BarChart3 className="w-4 h-4 mr-2" /> Stats
           </Button>
           <Dialog open={showCreate} onOpenChange={setShowCreate}>
@@ -79,43 +79,43 @@ export default function CrmPipeline() {
                 <Plus className="w-4 h-4 mr-2" /> New Lead
               </Button>
             </DialogTrigger>
-            <DialogContent className="max-w-lg bg-[#f6f5f2] border-[#e8e6e1]">
+            <DialogContent className="max-w-lg bg-[#1a1a1a] border-white/10">
               <DialogHeader>
-                <DialogTitle className="text-[#111] font-semibold">Create New Lead</DialogTitle>
+                <DialogTitle className="text-white font-semibold">Create New Lead</DialogTitle>
               </DialogHeader>
               <div className="grid grid-cols-2 gap-3 mt-4">
                 <div className="col-span-2">
-                  <Label className="text-xs uppercase tracking-wider text-[#111]/50">Company Name *</Label>
-                  <Input value={newLead.companyName} onChange={e => setNewLead(p => ({ ...p, companyName: e.target.value }))} className="mt-1 bg-white border-[#e8e6e1]" />
+                  <Label className="text-xs uppercase tracking-wider text-white/50">Company Name *</Label>
+                  <Input value={newLead.companyName} onChange={e => setNewLead(p => ({ ...p, companyName: e.target.value }))} className="mt-1 bg-white/5 border-white/10 text-white placeholder:text-white/30" />
                 </div>
                 <div>
-                  <Label className="text-xs uppercase tracking-wider text-[#111]/50">Contact Name</Label>
-                  <Input value={newLead.contactName} onChange={e => setNewLead(p => ({ ...p, contactName: e.target.value }))} className="mt-1 bg-white border-[#e8e6e1]" />
+                  <Label className="text-xs uppercase tracking-wider text-white/50">Contact Name</Label>
+                  <Input value={newLead.contactName} onChange={e => setNewLead(p => ({ ...p, contactName: e.target.value }))} className="mt-1 bg-white/5 border-white/10 text-white placeholder:text-white/30" />
                 </div>
                 <div>
-                  <Label className="text-xs uppercase tracking-wider text-[#111]/50">Email</Label>
-                  <Input value={newLead.contactEmail} onChange={e => setNewLead(p => ({ ...p, contactEmail: e.target.value }))} className="mt-1 bg-white border-[#e8e6e1]" />
+                  <Label className="text-xs uppercase tracking-wider text-white/50">Email</Label>
+                  <Input value={newLead.contactEmail} onChange={e => setNewLead(p => ({ ...p, contactEmail: e.target.value }))} className="mt-1 bg-white/5 border-white/10 text-white placeholder:text-white/30" />
                 </div>
                 <div>
-                  <Label className="text-xs uppercase tracking-wider text-[#111]/50">Phone</Label>
-                  <Input value={newLead.contactPhone} onChange={e => setNewLead(p => ({ ...p, contactPhone: e.target.value }))} className="mt-1 bg-white border-[#e8e6e1]" />
+                  <Label className="text-xs uppercase tracking-wider text-white/50">Phone</Label>
+                  <Input value={newLead.contactPhone} onChange={e => setNewLead(p => ({ ...p, contactPhone: e.target.value }))} className="mt-1 bg-white/5 border-white/10 text-white placeholder:text-white/30" />
                 </div>
                 <div>
-                  <Label className="text-xs uppercase tracking-wider text-[#111]/50">Company Size</Label>
-                  <Input value={newLead.companySize} onChange={e => setNewLead(p => ({ ...p, companySize: e.target.value }))} placeholder="e.g. 10-50" className="mt-1 bg-white border-[#e8e6e1]" />
+                  <Label className="text-xs uppercase tracking-wider text-white/50">Company Size</Label>
+                  <Input value={newLead.companySize} onChange={e => setNewLead(p => ({ ...p, companySize: e.target.value }))} placeholder="e.g. 10-50" className="mt-1 bg-white/5 border-white/10 text-white placeholder:text-white/30" />
                 </div>
                 <div>
-                  <Label className="text-xs uppercase tracking-wider text-[#111]/50">Industry</Label>
-                  <Input value={newLead.industry} onChange={e => setNewLead(p => ({ ...p, industry: e.target.value }))} className="mt-1 bg-white border-[#e8e6e1]" />
+                  <Label className="text-xs uppercase tracking-wider text-white/50">Industry</Label>
+                  <Input value={newLead.industry} onChange={e => setNewLead(p => ({ ...p, industry: e.target.value }))} className="mt-1 bg-white/5 border-white/10 text-white placeholder:text-white/30" />
                 </div>
                 <div>
-                  <Label className="text-xs uppercase tracking-wider text-[#111]/50">Website</Label>
-                  <Input value={newLead.website} onChange={e => setNewLead(p => ({ ...p, website: e.target.value }))} className="mt-1 bg-white border-[#e8e6e1]" />
+                  <Label className="text-xs uppercase tracking-wider text-white/50">Website</Label>
+                  <Input value={newLead.website} onChange={e => setNewLead(p => ({ ...p, website: e.target.value }))} className="mt-1 bg-white/5 border-white/10 text-white placeholder:text-white/30" />
                 </div>
                 <div>
-                  <Label className="text-xs uppercase tracking-wider text-[#111]/50">Location Preference</Label>
+                  <Label className="text-xs uppercase tracking-wider text-white/50">Location Preference</Label>
                   <Select value={newLead.locationPreference} onValueChange={v => setNewLead(p => ({ ...p, locationPreference: v }))}>
-                    <SelectTrigger className="mt-1 bg-white border-[#e8e6e1]"><SelectValue placeholder="Select..." /></SelectTrigger>
+                    <SelectTrigger className="mt-1 bg-white/5 border-white/10 text-white"><SelectValue placeholder="Select..." /></SelectTrigger>
                     <SelectContent>
                       {["Amsterdam", "Apeldoorn", "Zwolle", "Rotterdam", "Ede", "Klarenbeek", "Spijkenisse"].map(c => (
                         <SelectItem key={c} value={c}>{c}</SelectItem>
@@ -124,21 +124,21 @@ export default function CrmPipeline() {
                   </Select>
                 </div>
                 <div>
-                  <Label className="text-xs uppercase tracking-wider text-[#111]/50">Source</Label>
+                  <Label className="text-xs uppercase tracking-wider text-white/50">Source</Label>
                   <Select value={newLead.source} onValueChange={v => setNewLead(p => ({ ...p, source: v as any }))}>
-                    <SelectTrigger className="mt-1 bg-white border-[#e8e6e1]"><SelectValue /></SelectTrigger>
+                    <SelectTrigger className="mt-1 bg-white/5 border-white/10 text-white"><SelectValue /></SelectTrigger>
                     <SelectContent>
                       {SOURCES.map(s => <SelectItem key={s} value={s}>{s.replace("_", " ")}</SelectItem>)}
                     </SelectContent>
                   </Select>
                 </div>
                 <div>
-                  <Label className="text-xs uppercase tracking-wider text-[#111]/50">Est. Value (EUR)</Label>
-                  <Input value={newLead.estimatedValue} onChange={e => setNewLead(p => ({ ...p, estimatedValue: e.target.value }))} placeholder="e.g. 12000" className="mt-1 bg-white border-[#e8e6e1]" />
+                  <Label className="text-xs uppercase tracking-wider text-white/50">Est. Value (EUR)</Label>
+                  <Input value={newLead.estimatedValue} onChange={e => setNewLead(p => ({ ...p, estimatedValue: e.target.value }))} placeholder="e.g. 12000" className="mt-1 bg-white/5 border-white/10 text-white placeholder:text-white/30" />
                 </div>
                 <div className="col-span-2">
-                  <Label className="text-xs uppercase tracking-wider text-[#111]/50">Notes</Label>
-                  <Textarea value={newLead.notes} onChange={e => setNewLead(p => ({ ...p, notes: e.target.value }))} className="mt-1 bg-white border-[#e8e6e1]" rows={2} />
+                  <Label className="text-xs uppercase tracking-wider text-white/50">Notes</Label>
+                  <Textarea value={newLead.notes} onChange={e => setNewLead(p => ({ ...p, notes: e.target.value }))} className="mt-1 bg-white/5 border-white/10 text-white placeholder:text-white/30" rows={2} />
                 </div>
               </div>
               <Button className="w-full mt-4 bg-[#627653] hover:bg-[#3a4a34] text-white" onClick={() => createLead.mutate(newLead)} disabled={!newLead.companyName || createLead.isPending}>
@@ -160,12 +160,12 @@ export default function CrmPipeline() {
             { label: "Avg Deal", value: `€${Number(stats.avgDealSize).toLocaleString()}`, icon: BarChart3 },
             { label: "Lost", value: stats.lostCount, icon: ArrowUpRight },
           ].map((s, i) => (
-            <Card key={i} className="p-3 bg-white border-[#e8e6e1]">
+            <Card key={i} className="p-3 bg-white/[0.03] border-white/[0.06]">
               <div className="flex items-center gap-2 mb-1">
                 <s.icon className="w-3.5 h-3.5 text-[#627653]" />
-                <span className="text-[10px] uppercase tracking-wider text-[#111]/40 font-medium">{s.label}</span>
+                <span className="text-[10px] uppercase tracking-wider text-white/40 font-medium">{s.label}</span>
               </div>
-              <p className="text-lg font-semibold text-[#111]">{s.value}</p>
+              <p className="text-lg font-semibold text-white">{s.value}</p>
             </Card>
           ))}
         </div>
@@ -174,12 +174,12 @@ export default function CrmPipeline() {
       {/* Filters */}
       <div className="flex items-center gap-3">
         <div className="relative flex-1 max-w-xs">
-          <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-[#111]/30" />
-          <Input value={search} onChange={e => setSearch(e.target.value)} placeholder="Search leads..." className="pl-10 bg-white border-[#e8e6e1]" />
+          <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-white/30" />
+          <Input value={search} onChange={e => setSearch(e.target.value)} placeholder="Search leads..." className="pl-10 bg-white/5 border-white/10 text-white placeholder:text-white/30" />
         </div>
         <Select value={sourceFilter} onValueChange={setSourceFilter}>
-          <SelectTrigger className="w-40 bg-white border-[#e8e6e1]">
-            <Filter className="w-3.5 h-3.5 mr-2 text-[#111]/40" />
+          <SelectTrigger className="w-40 bg-white/5 border-white/10 text-white">
+            <Filter className="w-3.5 h-3.5 mr-2 text-white/40" />
             <SelectValue placeholder="All sources" />
           </SelectTrigger>
           <SelectContent>
@@ -202,9 +202,9 @@ export default function CrmPipeline() {
             <div className="flex items-center justify-between mb-3 px-1">
               <div className="flex items-center gap-2">
                 <div className="w-2 h-2 rounded-full" style={{ backgroundColor: stage.color }} />
-                <span className="text-xs font-semibold uppercase tracking-wider text-[#111]/70">{stage.label}</span>
+                <span className="text-xs font-semibold uppercase tracking-wider text-white/70">{stage.label}</span>
               </div>
-              <Badge variant="secondary" className="text-[10px] bg-[#f6f5f2] text-[#111]/50 border-[#e8e6e1]">
+              <Badge variant="secondary" className="text-[10px] bg-white/[0.06] text-white/50 border-white/10">
                 {leadsByStage[stage.key]?.length || 0}
               </Badge>
             </div>
@@ -217,23 +217,23 @@ export default function CrmPipeline() {
                   draggable
                   onDragStart={e => handleDragStart(e, lead.id)}
                   onClick={() => navigate(`/crm/leads/${lead.id}`)}
-                  className="p-3 bg-white border-[#e8e6e1] cursor-pointer hover:shadow-md transition-all group"
+                  className="p-3 bg-white/[0.04] border-white/[0.08] cursor-pointer hover:bg-white/[0.07] hover:border-white/[0.12] transition-all group"
                 >
                   <div className="flex items-start justify-between mb-2">
-                    <h4 className="text-sm font-semibold text-[#111] leading-tight">{lead.companyName}</h4>
-                    <ChevronRight className="w-3.5 h-3.5 text-[#111]/20 group-hover:text-[#627653] transition-colors" />
+                    <h4 className="text-sm font-semibold text-white leading-tight">{lead.companyName}</h4>
+                    <ChevronRight className="w-3.5 h-3.5 text-white/20 group-hover:text-[#627653] transition-colors" />
                   </div>
                   {lead.contactName && (
-                    <p className="text-xs text-[#111]/50 mb-2">{lead.contactName}</p>
+                    <p className="text-xs text-white/50 mb-2">{lead.contactName}</p>
                   )}
                   <div className="flex items-center gap-2 flex-wrap">
                     {lead.estimatedValue && (
-                      <Badge variant="outline" className="text-[10px] border-[#627653]/20 text-[#627653]">
+                      <Badge variant="outline" className="text-[10px] border-[#627653]/30 text-[#627653]">
                         €{Number(lead.estimatedValue).toLocaleString()}
                       </Badge>
                     )}
                     {lead.source && (
-                      <Badge variant="secondary" className="text-[10px] bg-[#f6f5f2] text-[#111]/40">
+                      <Badge variant="secondary" className="text-[10px] bg-white/[0.06] text-white/40">
                         {lead.source.replace("_", " ")}
                       </Badge>
                     )}
@@ -244,14 +244,14 @@ export default function CrmPipeline() {
                     )}
                   </div>
                   {lead.locationPreference && (
-                    <p className="text-[10px] text-[#111]/30 mt-2 uppercase tracking-wider">{lead.locationPreference}</p>
+                    <p className="text-[10px] text-white/30 mt-2 uppercase tracking-wider">{lead.locationPreference}</p>
                   )}
                 </Card>
               ))}
 
               {(leadsByStage[stage.key] || []).length === 0 && (
-                <div className="border border-dashed border-[#e8e6e1] rounded-lg p-4 text-center">
-                  <p className="text-xs text-[#111]/30">No leads</p>
+                <div className="border border-dashed border-white/10 rounded-lg p-4 text-center">
+                  <p className="text-xs text-white/30">No leads</p>
                 </div>
               )}
             </div>

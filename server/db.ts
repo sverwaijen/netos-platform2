@@ -7,6 +7,10 @@ import {
   notifications, invites,
   crmLeads, InsertCrmLead, crmLeadActivities, crmCampaigns, InsertCrmCampaign,
   crmCampaignSteps, crmCampaignEnrollments, crmEmailTemplates,
+  crmTriggers, InsertCrmTrigger, crmTriggerLogs,
+  crmWebsiteVisitors, InsertCrmWebsiteVisitor,
+  memberProfiles, InsertMemberProfile,
+  reengagementFunnel, InsertReengagementEntry,
 } from "../drizzle/schema";
 import { ENV } from './_core/env';
 
@@ -1005,4 +1009,176 @@ export async function deleteBlockedDate(id: number) {
   const db = await getDb();
   if (!db) return;
   await db.delete(resourceBlockedDates).where(eq(resourceBlockedDates.id, id));
+}
+
+// ─── CRM: Triggers ───
+export async function getCrmTriggers(filters?: { isActive?: boolean; eventType?: string }) {
+  const db = await getDb();
+  if (!db) return [];
+  let q = db.select().from(crmTriggers).orderBy(desc(crmTriggers.createdAt));
+  const rows = await q;
+  let result = rows;
+  if (filters?.isActive !== undefined) result = result.filter(r => r.isActive === filters.isActive);
+  if (filters?.eventType) result = result.filter(r => r.eventType === filters.eventType);
+  return result;
+}
+
+export async function getCrmTriggerById(id: number) {
+  const db = await getDb();
+  if (!db) return null;
+  const rows = await db.select().from(crmTriggers).where(eq(crmTriggers.id, id));
+  return rows[0] || null;
+}
+
+export async function createCrmTrigger(data: InsertCrmTrigger) {
+  const db = await getDb();
+  if (!db) return null;
+  const [result] = await db.insert(crmTriggers).values(data);
+  return result.insertId;
+}
+
+export async function updateCrmTrigger(id: number, data: Partial<InsertCrmTrigger>) {
+  const db = await getDb();
+  if (!db) return;
+  await db.update(crmTriggers).set(data).where(eq(crmTriggers.id, id));
+}
+
+export async function deleteCrmTrigger(id: number) {
+  const db = await getDb();
+  if (!db) return;
+  await db.delete(crmTriggers).where(eq(crmTriggers.id, id));
+}
+
+export async function addCrmTriggerLog(data: { triggerId: number; leadId?: number; eventData?: any; actionsExecuted?: any; status?: string }) {
+  const db = await getDb();
+  if (!db) return;
+  await db.insert(crmTriggerLogs).values(data as any);
+  await db.update(crmTriggers).set({ executionCount: sql`execution_count + 1`, lastExecutedAt: new Date() } as any).where(eq(crmTriggers.id, data.triggerId));
+}
+
+export async function getCrmTriggerLogs(triggerId?: number, limit = 50) {
+  const db = await getDb();
+  if (!db) return [];
+  let q = db.select().from(crmTriggerLogs).orderBy(desc(crmTriggerLogs.executedAt)).limit(limit);
+  if (triggerId) {
+    return db.select().from(crmTriggerLogs).where(eq(crmTriggerLogs.triggerId, triggerId)).orderBy(desc(crmTriggerLogs.executedAt)).limit(limit);
+  }
+  return q;
+}
+
+// ─── CRM: Website Visitors ───
+export async function getCrmWebsiteVisitors(filters?: { status?: string; isIdentified?: boolean }, limit = 100) {
+  const db = await getDb();
+  if (!db) return [];
+  const rows = await db.select().from(crmWebsiteVisitors).orderBy(desc(crmWebsiteVisitors.lastVisitAt)).limit(limit);
+  let result = rows;
+  if (filters?.status) result = result.filter(r => r.status === filters.status);
+  if (filters?.isIdentified !== undefined) result = result.filter(r => r.isIdentified === filters.isIdentified);
+  return result;
+}
+
+export async function createCrmWebsiteVisitor(data: InsertCrmWebsiteVisitor) {
+  const db = await getDb();
+  if (!db) return null;
+  const [result] = await db.insert(crmWebsiteVisitors).values(data);
+  return result.insertId;
+}
+
+export async function updateCrmWebsiteVisitor(id: number, data: Partial<InsertCrmWebsiteVisitor>) {
+  const db = await getDb();
+  if (!db) return;
+  await db.update(crmWebsiteVisitors).set(data).where(eq(crmWebsiteVisitors.id, id));
+}
+
+// ─── Member Profiles ───
+export async function getMemberProfiles(filters?: { tier?: string; search?: string; isActive?: boolean; tags?: string[] }, limit = 200) {
+  const db = await getDb();
+  if (!db) return [];
+  const rows = await db.select().from(memberProfiles).orderBy(desc(memberProfiles.createdAt)).limit(limit);
+  let result = rows;
+  if (filters?.tier) result = result.filter(r => r.tier === filters.tier);
+  if (filters?.isActive !== undefined) result = result.filter(r => r.isActive === filters.isActive);
+  if (filters?.search) {
+    const s = filters.search.toLowerCase();
+    result = result.filter(r =>
+      r.displayName.toLowerCase().includes(s) ||
+      (r.companyName && r.companyName.toLowerCase().includes(s)) ||
+      (r.email && r.email.toLowerCase().includes(s))
+    );
+  }
+  if (filters?.tags?.length) {
+    result = result.filter(r => r.tags && filters.tags!.some(t => (r.tags as string[]).includes(t)));
+  }
+  return result;
+}
+
+export async function getMemberProfileById(id: number) {
+  const db = await getDb();
+  if (!db) return null;
+  const rows = await db.select().from(memberProfiles).where(eq(memberProfiles.id, id));
+  return rows[0] || null;
+}
+
+export async function createMemberProfile(data: InsertMemberProfile) {
+  const db = await getDb();
+  if (!db) return null;
+  const [result] = await db.insert(memberProfiles).values(data);
+  return result.insertId;
+}
+
+export async function updateMemberProfile(id: number, data: Partial<InsertMemberProfile>) {
+  const db = await getDb();
+  if (!db) return;
+  await db.update(memberProfiles).set(data).where(eq(memberProfiles.id, id));
+}
+
+export async function deleteMemberProfile(id: number) {
+  const db = await getDb();
+  if (!db) return;
+  await db.delete(memberProfiles).where(eq(memberProfiles.id, id));
+}
+
+export async function getMemberStats() {
+  const db = await getDb();
+  if (!db) return { total: 0, gebaloteerd: 0, vergaderen: 0, prospect: 0, active: 0 };
+  const rows = await db.select().from(memberProfiles);
+  return {
+    total: rows.length,
+    gebaloteerd: rows.filter(r => r.tier === "gebaloteerd").length,
+    vergaderen: rows.filter(r => r.tier === "vergaderen").length,
+    prospect: rows.filter(r => r.tier === "prospect").length,
+    active: rows.filter(r => r.isActive).length,
+  };
+}
+
+// ─── Re-engagement Funnel ───
+export async function getReengagementEntries(filters?: { stage?: string }, limit = 200) {
+  const db = await getDb();
+  if (!db) return [];
+  const rows = await db.select().from(reengagementFunnel).orderBy(desc(reengagementFunnel.createdAt)).limit(limit);
+  if (filters?.stage) return rows.filter(r => r.stage === filters.stage);
+  return rows;
+}
+
+export async function createReengagementEntry(data: InsertReengagementEntry) {
+  const db = await getDb();
+  if (!db) return null;
+  const [result] = await db.insert(reengagementFunnel).values(data);
+  return result.insertId;
+}
+
+export async function updateReengagementEntry(id: number, data: Partial<InsertReengagementEntry>) {
+  const db = await getDb();
+  if (!db) return;
+  await db.update(reengagementFunnel).set(data).where(eq(reengagementFunnel.id, id));
+}
+
+export async function getReengagementStats() {
+  const db = await getDb();
+  if (!db) return { total: 0, identified: 0, invited: 0, opened: 0, applied: 0, accepted: 0, declined: 0 };
+  const rows = await db.select().from(reengagementFunnel);
+  const stages = ["identified", "invited", "opened", "applied", "interview", "accepted", "declined"] as const;
+  const stats: Record<string, number> = { total: rows.length };
+  stages.forEach(s => { stats[s] = rows.filter(r => r.stage === s).length; });
+  return stats;
 }

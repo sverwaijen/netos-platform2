@@ -47,6 +47,11 @@ import {
   Ticket,
   Thermometer,
   Zap,
+  Eye,
+
+  UsersRound,
+  Crosshair,
+  Key,
 } from "lucide-react";
 import { CSSProperties, useEffect, useRef, useState } from "react";
 import { useLocation } from "wouter";
@@ -70,8 +75,12 @@ const menuItems = [
   { icon: Cpu, label: "Devices & IoT", path: "/devices" },
   { icon: Bell, label: "Notifications", path: "/notifications" },
   { icon: UserPlus, label: "Invites", path: "/invites" },
+  { icon: UsersRound, label: "Members", path: "/members" },
+  { icon: Key, label: "Re-Engagement", path: "/re-engagement" },
   { icon: Target, label: "CRM Pipeline", path: "/crm" },
   { icon: Zap, label: "Marketing Flow", path: "/crm/flow" },
+  { icon: Crosshair, label: "Triggers", path: "/crm/triggers" },
+  { icon: Eye, label: "Website Bezoekers", path: "/crm/visitors" },
   { icon: Mail, label: "Campaigns", path: "/crm/campaigns" },
   { icon: FileText, label: "Templates", path: "/crm/templates" },
   { icon: Settings, label: "Settings", path: "/settings" },
