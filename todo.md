@@ -226,3 +226,12 @@
 - [x] App Profile (/app/profile) - user info, settings menu, logout
 - [x] App route structure (/app/*) with 7 pages
 - [x] 145 tests passing, 0 TS errors
+
+## Phase 20: Member App UX Improvements (DONE)
+- [x] AppShell: safe area insets for notch/dynamic island
+- [x] AppShell: active tab indicator dot + larger touch targets
+- [x] AppShell: "Terug naar website" link on login screen
+- [x] AppWallet: Dutch translations for all transaction descriptions
+- [x] AppWallet: "Opwaarderen" button added
+- [x] Bottom nav: improved active state visibility
+- [x] UX test report across all 7 app pages

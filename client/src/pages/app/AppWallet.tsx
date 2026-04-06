@@ -1,5 +1,18 @@
 import { trpc } from "@/lib/trpc";
-import { Wallet, ArrowUpRight, ArrowDownRight, CreditCard, TrendingUp } from "lucide-react";
+import { Wallet, ArrowUpRight, ArrowDownRight, CreditCard, TrendingUp, Plus } from "lucide-react";
+import { toast } from "sonner";
+
+function translateDescription(desc: string): string {
+  if (!desc) return "Transactie";
+  return desc
+    .replace(/^Top-up of (\d+) credits$/, "Opwaardering van $1 credits")
+    .replace(/^Booking: (.+) \((.+)\)$/, "Boeking: $1 ($2)")
+    .replace(/^Refund for cancelled booking #(\d+)$/, "Terugbetaling geannuleerde boeking #$1")
+    .replace(/^Kiosk order (.+)$/, "Kiosk bestelling $1")
+    .replace(/^Payment for parking session$/, "Betaling parkeersessie")
+    .replace(/^Credit purchase$/, "Credits aankoop")
+    .replace(/^Manual adjustment$/, "Handmatige aanpassing");
+}
 
 export default function AppWallet() {
   const { data: wallets = [] } = trpc.wallets.mine.useQuery();
@@ -8,13 +21,21 @@ export default function AppWallet() {
     { walletId: personalWalletId!, limit: 20 },
     { enabled: !!personalWalletId }
   );
-
   const personalWallet = wallets.find((w: any) => w.type === "personal");
   const companyWallet = wallets.find((w: any) => w.type === "company");
 
   return (
     <div className="px-5 pt-6 pb-4 space-y-6">
-      <h1 className="text-xl font-light text-white">Wallet</h1>
+      <div className="flex items-center justify-between">
+        <h1 className="text-xl font-light text-white">Wallet</h1>
+        <button
+          onClick={() => toast.info("Opwaarderen via iDEAL komt binnenkort", { description: "Binnenkort beschikbaar" })}
+          className="flex items-center gap-1.5 bg-[#627653] text-white text-xs font-medium px-4 py-2 rounded-full active:scale-95 transition-transform"
+        >
+          <Plus className="w-3.5 h-3.5" />
+          Opwaarderen
+        </button>
+      </div>
 
       {/* Balance Cards */}
       <div className="space-y-3">
@@ -78,7 +99,7 @@ export default function AppWallet() {
                     )}
                   </div>
                   <div className="flex-1 min-w-0">
-                    <p className="text-white text-sm truncate">{tx.description || tx.type}</p>
+                    <p className="text-white text-sm truncate">{translateDescription(tx.description || tx.type)}</p>
                     <p className="text-white/30 text-xs mt-0.5">
                       {new Date(tx.createdAt).toLocaleDateString("nl-NL", { day: "numeric", month: "short", hour: "2-digit", minute: "2-digit" })}
                     </p>

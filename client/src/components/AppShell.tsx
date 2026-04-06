@@ -3,7 +3,7 @@ import { useLocation } from "wouter";
 import { useAuth } from "@/_core/hooks/useAuth";
 import { getLoginUrl } from "@/const";
 import {
-  Home, Calendar, Wallet, Key, Car, LifeBuoy, User,
+  Home, Calendar, Wallet, Key, User,
 } from "lucide-react";
 
 const NAV_ITEMS = [
@@ -45,20 +45,29 @@ export default function AppShell({ children }: { children: ReactNode }) {
         >
           Inloggen
         </a>
+        <button
+          onClick={() => navigate("/")}
+          className="mt-6 text-white/30 text-xs hover:text-white/50 transition-colors"
+        >
+          Terug naar website
+        </button>
       </div>
     );
   }
 
   return (
     <div className="w-screen h-screen bg-[#111] flex flex-col overflow-hidden" style={{ fontFamily: "'Montserrat', sans-serif" }}>
+      {/* Safe area top spacer */}
+      <div className="flex-shrink-0" style={{ height: "env(safe-area-inset-top, 0px)" }} />
+
       {/* Content area */}
-      <div className="flex-1 overflow-y-auto pb-20">
+      <div className="flex-1 overflow-y-auto pb-24">
         {children}
       </div>
 
       {/* Bottom navigation */}
-      <nav className="fixed bottom-0 left-0 right-0 bg-[#111]/95 backdrop-blur-xl border-t border-white/[0.06] px-2 pb-[env(safe-area-inset-bottom)] z-50">
-        <div className="flex items-center justify-around max-w-lg mx-auto">
+      <nav className="fixed bottom-0 left-0 right-0 bg-[#0d0d0d]/98 backdrop-blur-2xl border-t border-white/[0.06] z-50">
+        <div className="flex items-center justify-around max-w-lg mx-auto px-1">
           {NAV_ITEMS.map((item) => {
             const Icon = item.icon;
             const isActive = location === item.path || (item.path !== "/app" && location.startsWith(item.path));
@@ -66,16 +75,22 @@ export default function AppShell({ children }: { children: ReactNode }) {
               <button
                 key={item.path}
                 onClick={() => navigate(item.path)}
-                className={`flex flex-col items-center gap-1 py-3 px-3 transition-colors ${
-                  isActive ? "text-[#627653]" : "text-white/40"
+                className={`relative flex flex-col items-center gap-0.5 py-2.5 px-4 min-w-[60px] transition-all ${
+                  isActive ? "text-[#627653]" : "text-white/30 active:text-white/50"
                 }`}
               >
-                <Icon className="w-5 h-5" />
-                <span className="text-[10px] font-medium">{item.label}</span>
+                {/* Active indicator dot */}
+                {isActive && (
+                  <div className="absolute top-1 w-1 h-1 rounded-full bg-[#627653]" />
+                )}
+                <Icon className={`w-[22px] h-[22px] transition-transform ${isActive ? "scale-105" : ""}`} strokeWidth={isActive ? 2.2 : 1.5} />
+                <span className={`text-[10px] mt-0.5 ${isActive ? "font-semibold" : "font-medium"}`}>{item.label}</span>
               </button>
             );
           })}
         </div>
+        {/* Safe area bottom spacer */}
+        <div style={{ height: "env(safe-area-inset-bottom, 8px)", minHeight: "8px" }} />
       </nav>
     </div>
   );
