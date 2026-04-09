@@ -1182,3 +1182,159 @@ export async function getReengagementStats() {
   stages.forEach(s => { stats[s] = rows.filter(r => r.stage === s).length; });
   return stats;
 }
+
+
+// ═══════════════════════════════════════════════════════════════════════
+// ─── ROZ HUUROVEREENKOMSTEN ─────────────────────────────────────────
+// ═══════════════════════════════════════════════════════════════════════
+import {
+  rozPricingTiers, InsertRozPricingTier,
+  rozContracts, InsertRozContract,
+  rozInvoices, InsertRozInvoice,
+} from "../drizzle/schema";
+
+// ─── ROZ Pricing Tiers ───
+export async function getRozPricingTiers(filters?: { resourceId?: number; locationId?: number; resourceTypeId?: number }) {
+  const db = await getDb();
+  if (!db) return [];
+  const conditions = [eq(rozPricingTiers.isActive, true)];
+  if (filters?.resourceId) conditions.push(eq(rozPricingTiers.resourceId, filters.resourceId));
+  if (filters?.locationId) conditions.push(eq(rozPricingTiers.locationId, filters.locationId));
+  if (filters?.resourceTypeId) conditions.push(eq(rozPricingTiers.resourceTypeId, filters.resourceTypeId));
+  return db.select().from(rozPricingTiers).where(and(...conditions)).orderBy(asc(rozPricingTiers.sortOrder));
+}
+
+export async function getRozPricingTierById(id: number) {
+  const db = await getDb();
+  if (!db) return undefined;
+  const result = await db.select().from(rozPricingTiers).where(eq(rozPricingTiers.id, id)).limit(1);
+  return result[0];
+}
+
+export async function createRozPricingTier(data: InsertRozPricingTier) {
+  const db = await getDb();
+  if (!db) return null;
+  const result = await db.insert(rozPricingTiers).values(data);
+  return result[0]?.insertId;
+}
+
+export async function updateRozPricingTier(id: number, data: Partial<InsertRozPricingTier>) {
+  const db = await getDb();
+  if (!db) return;
+  await db.update(rozPricingTiers).set(data).where(eq(rozPricingTiers.id, id));
+}
+
+export async function deleteRozPricingTier(id: number) {
+  const db = await getDb();
+  if (!db) return;
+  await db.update(rozPricingTiers).set({ isActive: false }).where(eq(rozPricingTiers.id, id));
+}
+
+// ─── ROZ Contracts ───
+export async function getRozContracts(filters?: { status?: string; resourceId?: number; companyId?: number; userId?: number }) {
+  const db = await getDb();
+  if (!db) return [];
+  const rows = await db.select().from(rozContracts).orderBy(desc(rozContracts.createdAt));
+  let result = rows;
+  if (filters?.status) result = result.filter(r => r.status === filters.status);
+  if (filters?.resourceId) result = result.filter(r => r.resourceId === filters.resourceId);
+  if (filters?.companyId) result = result.filter(r => r.companyId === filters.companyId);
+  if (filters?.userId) result = result.filter(r => r.userId === filters.userId);
+  return result;
+}
+
+export async function getRozContractById(id: number) {
+  const db = await getDb();
+  if (!db) return undefined;
+  const result = await db.select().from(rozContracts).where(eq(rozContracts.id, id)).limit(1);
+  return result[0];
+}
+
+export async function createRozContract(data: InsertRozContract) {
+  const db = await getDb();
+  if (!db) return null;
+  const result = await db.insert(rozContracts).values(data);
+  return result[0]?.insertId;
+}
+
+export async function updateRozContract(id: number, data: Partial<InsertRozContract>) {
+  const db = await getDb();
+  if (!db) return;
+  await db.update(rozContracts).set(data).where(eq(rozContracts.id, id));
+}
+
+// ─── ROZ Invoices ───
+export async function getRozInvoices(filters?: { contractId?: number; status?: string }) {
+  const db = await getDb();
+  if (!db) return [];
+  const rows = await db.select().from(rozInvoices).orderBy(desc(rozInvoices.createdAt));
+  let result = rows;
+  if (filters?.contractId) result = result.filter(r => r.contractId === filters.contractId);
+  if (filters?.status) result = result.filter(r => r.status === filters.status);
+  return result;
+}
+
+export async function getRozInvoiceById(id: number) {
+  const db = await getDb();
+  if (!db) return undefined;
+  const result = await db.select().from(rozInvoices).where(eq(rozInvoices.id, id)).limit(1);
+  return result[0];
+}
+
+export async function createRozInvoice(data: InsertRozInvoice) {
+  const db = await getDb();
+  if (!db) return null;
+  const result = await db.insert(rozInvoices).values(data);
+  return result[0]?.insertId;
+}
+
+export async function updateRozInvoice(id: number, data: Partial<InsertRozInvoice>) {
+  const db = await getDb();
+  if (!db) return;
+  await db.update(rozInvoices).set(data).where(eq(rozInvoices.id, id));
+}
+
+// ─── ROZ Resource Update (set ROZ fields on a resource) ───
+export async function updateResourceRozSettings(resourceId: number, data: {
+  areaM2?: string; isRozEligible?: boolean; rozContractType?: string;
+  rozServiceChargeModel?: string; rozVatRate?: string; rozIndexation?: string;
+  rozIndexationPct?: string; rozTenantProtection?: boolean;
+  rozMinLeaseTerm?: number; rozNoticePeriodMonths?: number;
+}) {
+  const db = await getDb();
+  if (!db) return;
+  const updateSet: Record<string, unknown> = {};
+  if (data.areaM2 !== undefined) {
+    updateSet.areaM2 = data.areaM2;
+    // Auto-set ROZ eligibility based on area >= 100m²
+    updateSet.isRozEligible = parseFloat(data.areaM2) >= 100;
+  }
+  if (data.isRozEligible !== undefined) updateSet.isRozEligible = data.isRozEligible;
+  if (data.rozContractType !== undefined) updateSet.rozContractType = data.rozContractType;
+  if (data.rozServiceChargeModel !== undefined) updateSet.rozServiceChargeModel = data.rozServiceChargeModel;
+  if (data.rozVatRate !== undefined) updateSet.rozVatRate = data.rozVatRate;
+  if (data.rozIndexation !== undefined) updateSet.rozIndexation = data.rozIndexation;
+  if (data.rozIndexationPct !== undefined) updateSet.rozIndexationPct = data.rozIndexationPct;
+  if (data.rozTenantProtection !== undefined) updateSet.rozTenantProtection = data.rozTenantProtection;
+  if (data.rozMinLeaseTerm !== undefined) updateSet.rozMinLeaseTerm = data.rozMinLeaseTerm;
+  if (data.rozNoticePeriodMonths !== undefined) updateSet.rozNoticePeriodMonths = data.rozNoticePeriodMonths;
+  if (Object.keys(updateSet).length > 0) {
+    await db.update(resources).set(updateSet).where(eq(resources.id, resourceId));
+  }
+}
+
+// ─── ROZ Stats ───
+export async function getRozStats() {
+  const db = await getDb();
+  if (!db) return { totalContracts: 0, activeContracts: 0, totalMonthlyRevenue: 0, rozEligibleResources: 0 };
+  const contracts = await db.select().from(rozContracts);
+  const rozResources = await db.select().from(resources).where(eq(resources.isRozEligible, true));
+  const active = contracts.filter(c => c.status === "active");
+  const monthlyRevenue = active.reduce((sum, c) => sum + parseFloat(c.monthlyRentCredits) + parseFloat(c.monthlyServiceCharge || "0"), 0);
+  return {
+    totalContracts: contracts.length,
+    activeContracts: active.length,
+    totalMonthlyRevenue: Math.round(monthlyRevenue * 100) / 100,
+    rozEligibleResources: rozResources.length,
+  };
+}

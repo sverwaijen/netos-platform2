@@ -75,6 +75,17 @@ export const resources = mysqlTable("resources", {
   isActive: boolean("isActive").default(true),
   mapX: decimal("mapX", { precision: 6, scale: 2 }),
   mapY: decimal("mapY", { precision: 6, scale: 2 }),
+  // ROZ fields
+  areaM2: decimal("areaM2", { precision: 8, scale: 2 }),
+  isRozEligible: boolean("isRozEligible").default(false),
+  rozContractType: varchar("rozContractType", { length: 64 }),
+  rozServiceChargeModel: varchar("rozServiceChargeModel", { length: 64 }).default("voorschot"),
+  rozVatRate: decimal("rozVatRate", { precision: 5, scale: 2 }).default("21.00"),
+  rozIndexation: varchar("rozIndexation", { length: 32 }).default("CPI"),
+  rozIndexationPct: decimal("rozIndexationPct", { precision: 5, scale: 2 }).default("2.50"),
+  rozTenantProtection: boolean("rozTenantProtection").default(true),
+  rozMinLeaseTerm: int("rozMinLeaseTerm").default(1),
+  rozNoticePeriodMonths: int("rozNoticePeriodMonths").default(3),
   createdAt: timestamp("createdAt").defaultNow().notNull(),
 });
 
@@ -1753,3 +1764,96 @@ export const menuArrangements = mysqlTable("menu_arrangements", {
 });
 export type MenuArrangement = typeof menuArrangements.$inferSelect;
 export type InsertMenuArrangement = typeof menuArrangements.$inferInsert;
+
+// ═══════════════════════════════════════════════════════════════════════
+// ─── ROZ HUUROVEREENKOMSTEN MODULE ─────────────────────────────────
+// ═══════════════════════════════════════════════════════════════════════
+
+// ─── ROZ Pricing Tiers (Staffelprijzen per looptijd) ──────────────
+export const rozPricingTiers = mysqlTable("roz_pricing_tiers", {
+  id: int("id").autoincrement().primaryKey(),
+  resourceId: int("resourceId"),
+  resourceTypeId: int("resourceTypeId"),
+  locationId: int("locationId"),
+  name: varchar("name", { length: 128 }).notNull(),
+  periodType: mysqlEnum("periodType", [
+    "month", "6_months", "1_year", "2_year", "3_year", "5_year", "10_year",
+  ]).notNull(),
+  periodMonths: int("periodMonths").notNull(),
+  creditCostPerMonth: decimal("creditCostPerMonth", { precision: 12, scale: 2 }).notNull(),
+  creditCostPerM2PerMonth: decimal("creditCostPerM2PerMonth", { precision: 10, scale: 2 }),
+  discountPercent: decimal("discountPercent", { precision: 5, scale: 2 }).default("0.00"),
+  serviceChargePerMonth: decimal("serviceChargePerMonth", { precision: 10, scale: 2 }).default("0.00"),
+  depositMonths: int("depositMonths").default(3),
+  isActive: boolean("isActive").default(true),
+  sortOrder: int("sortOrder").default(0),
+  createdAt: timestamp("createdAt").defaultNow().notNull(),
+  updatedAt: timestamp("updatedAt").defaultNow().onUpdateNow().notNull(),
+});
+
+export type RozPricingTier = typeof rozPricingTiers.$inferSelect;
+export type InsertRozPricingTier = typeof rozPricingTiers.$inferInsert;
+
+// ─── ROZ Contracts (Actieve huurovereenkomsten) ───────────────
+export const rozContracts = mysqlTable("roz_contracts", {
+  id: int("id").autoincrement().primaryKey(),
+  contractNumber: varchar("contractNumber", { length: 64 }).notNull().unique(),
+  resourceId: int("resourceId").notNull(),
+  locationId: int("locationId").notNull(),
+  userId: int("userId"),
+  companyId: int("companyId"),
+  walletId: int("walletId"),
+  pricingTierId: int("pricingTierId"),
+  periodType: mysqlEnum("periodType", [
+    "month", "6_months", "1_year", "2_year", "3_year", "5_year", "10_year",
+  ]).notNull(),
+  startDate: bigint("startDate", { mode: "number" }).notNull(),
+  endDate: bigint("endDate", { mode: "number" }).notNull(),
+  monthlyRentCredits: decimal("monthlyRentCredits", { precision: 12, scale: 2 }).notNull(),
+  monthlyServiceCharge: decimal("monthlyServiceCharge", { precision: 10, scale: 2 }).default("0.00"),
+  depositAmount: decimal("depositAmount", { precision: 12, scale: 2 }).default("0.00"),
+  depositPaid: boolean("depositPaid").default(false),
+  indexationMethod: varchar("indexationMethod", { length: 32 }).default("CPI"),
+  indexationPct: decimal("indexationPct", { precision: 5, scale: 2 }).default("2.50"),
+  lastIndexationDate: bigint("lastIndexationDate", { mode: "number" }),
+  nextIndexationDate: bigint("nextIndexationDate", { mode: "number" }),
+  noticePeriodMonths: int("noticePeriodMonths").default(3),
+  noticeGivenDate: bigint("noticeGivenDate", { mode: "number" }),
+  rozTemplateVersion: varchar("rozTemplateVersion", { length: 32 }).default("2024"),
+  rozDocumentUrl: text("rozDocumentUrl"),
+  status: mysqlEnum("status", [
+    "draft", "pending_signature", "active", "notice_given", "expired", "terminated",
+  ]).default("draft").notNull(),
+  notes: text("notes"),
+  createdAt: timestamp("createdAt").defaultNow().notNull(),
+  updatedAt: timestamp("updatedAt").defaultNow().onUpdateNow().notNull(),
+});
+
+export type RozContract = typeof rozContracts.$inferSelect;
+export type InsertRozContract = typeof rozContracts.$inferInsert;
+
+// ─── ROZ Invoices (Maandelijkse facturatie) ───────────────────
+export const rozInvoices = mysqlTable("roz_invoices", {
+  id: int("id").autoincrement().primaryKey(),
+  contractId: int("contractId").notNull(),
+  invoiceNumber: varchar("invoiceNumber", { length: 64 }).notNull().unique(),
+  periodStart: bigint("periodStart", { mode: "number" }).notNull(),
+  periodEnd: bigint("periodEnd", { mode: "number" }).notNull(),
+  rentCredits: decimal("rentCredits", { precision: 12, scale: 2 }).notNull(),
+  serviceChargeCredits: decimal("serviceChargeCredits", { precision: 10, scale: 2 }).default("0.00"),
+  indexationAdjustment: decimal("indexationAdjustment", { precision: 10, scale: 2 }).default("0.00"),
+  totalCredits: decimal("totalCredits", { precision: 12, scale: 2 }).notNull(),
+  walletId: int("walletId"),
+  ledgerEntryId: int("ledgerEntryId"),
+  status: mysqlEnum("status", [
+    "draft", "sent", "paid", "overdue", "cancelled",
+  ]).default("draft").notNull(),
+  dueDate: bigint("dueDate", { mode: "number" }).notNull(),
+  paidDate: bigint("paidDate", { mode: "number" }),
+  notes: text("notes"),
+  createdAt: timestamp("createdAt").defaultNow().notNull(),
+  updatedAt: timestamp("updatedAt").defaultNow().onUpdateNow().notNull(),
+});
+
+export type RozInvoice = typeof rozInvoices.$inferSelect;
+export type InsertRozInvoice = typeof rozInvoices.$inferInsert;

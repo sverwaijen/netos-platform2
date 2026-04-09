@@ -37,6 +37,10 @@ import {
   menuSeasonsRouter, menuCategoriesRouter, menuItemsRouter,
   menuSeasonItemsRouter, menuPreparationsRouter, menuArrangementsRouter,
 } from "./routers/menuRouter";
+import {
+  rozPricingTiersRouter, rozContractsRouter, rozInvoicesRouter,
+  rozResourceSettingsRouter,
+} from "./routers/rozRouter";
 
 const adminProcedure = protectedProcedure.use(({ ctx, next }) => {
   if (ctx.user.role !== "admin") {
@@ -868,6 +872,11 @@ Return JSON with "subject" and "body" fields. The body should be HTML formatted.
   menuSeasonItems: menuSeasonItemsRouter,
   menuPreparations: menuPreparationsRouter,
   menuArrangements: menuArrangementsRouter,
+  // ─── ROZ Huurovereenkomsten ───
+  rozPricingTiers: rozPricingTiersRouter,
+  rozContracts: rozContractsRouter,
+  rozInvoices: rozInvoicesRouter,
+  rozResourceSettings: rozResourceSettingsRouter,
 });
 
 export type AppRouter = typeof appRouter;

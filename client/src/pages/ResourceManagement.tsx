@@ -15,9 +15,10 @@ import { toast } from "sonner";
 import {
   Layers, DollarSign, ShieldCheck, Clock, Coffee, CalendarOff,
   Plus, Pencil, Trash2, Settings2, AlertTriangle, ChevronRight,
-  Monitor, Users, Zap, Timer, Ban, CheckCircle2, Info,
+  Monitor, Users, Zap, Timer, Ban, CheckCircle2, Info, Building2,
 } from "lucide-react";
 import { useState, useMemo } from "react";
+import RozAdminTab from "@/components/RozAdminTab";
 
 const CHARGING_UNITS: Record<string, string> = {
   per_hour: "Per Hour", per_day: "Per Day", per_use: "Per Use",
@@ -650,6 +651,9 @@ export default function ResourceManagement() {
           <TabsTrigger value="blocked" className="data-[state=active]:bg-[#627653] data-[state=active]:text-white">
             <CalendarOff className="w-4 h-4 mr-1.5" /> Blocked
           </TabsTrigger>
+          <TabsTrigger value="roz" className="data-[state=active]:bg-amber-500 data-[state=active]:text-white">
+            <Building2 className="w-4 h-4 mr-1.5" /> ROZ Huur
+          </TabsTrigger>
         </TabsList>
 
         <TabsContent value="types"><ResourceTypesTab /></TabsContent>
@@ -659,6 +663,7 @@ export default function ResourceManagement() {
         <TabsContent value="amenities"><AmenitiesTab /></TabsContent>
         <TabsContent value="schedules"><SchedulesTab /></TabsContent>
         <TabsContent value="blocked"><BlockedDatesTab /></TabsContent>
+        <TabsContent value="roz"><RozAdminTab /></TabsContent>
       </Tabs>
     </div>
   );

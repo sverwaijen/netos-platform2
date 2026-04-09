@@ -13,9 +13,12 @@ import { useParams, Link } from "wouter";
 import { useState, useMemo } from "react";
 import {
   ArrowLeft, MapPin, Users as UsersIcon, Clock, Filter, Search,
-  Monitor, Phone, Coffee, Dumbbell, Calendar, ChevronLeft, ChevronRight, CreditCard
+  Monitor, Phone, Coffee, Dumbbell, Calendar, ChevronLeft, ChevronRight, CreditCard, ShieldCheck
 } from "lucide-react";
 import { getLocationImage } from "@/lib/brand";
+import RozBadge from "@/components/RozBadge";
+import RozInfoModal from "@/components/RozInfoModal";
+import RozBookingModal from "@/components/RozBookingModal";
 
 const RESOURCE_ICONS: Record<string, any> = {
   desk: Monitor, meeting_room: UsersIcon, private_office: Coffee,
@@ -58,6 +61,12 @@ export default function LocationDetail() {
   const [selectedWalletType, setSelectedWalletType] = useState("personal");
   const [page, setPage] = useState(0);
   const PAGE_SIZE = 12;
+
+  // ROZ state
+  const [rozInfoOpen, setRozInfoOpen] = useState(false);
+  const [rozInfoResource, setRozInfoResource] = useState<any>(null);
+  const [rozBookingOpen, setRozBookingOpen] = useState(false);
+  const [rozBookingResource, setRozBookingResource] = useState<any>(null);
 
   const { data: availability } = trpc.resources.availability.useQuery(
     { resourceId: bookingResource?.id ?? 0, dateStart: selectedDate.getTime(), dateEnd: selectedDate.getTime() + 86400000 },
@@ -244,8 +253,19 @@ export default function LocationDetail() {
                         <p className="text-xs text-muted-foreground capitalize">{r.type.replace("_", " ")} · Floor {r.floor || "1"}</p>
                       </div>
                     </div>
-                    <Badge className={`text-[10px] ${ZONE_COLORS[r.zone] || ""}`}>{r.zone.replace("_", " ")}</Badge>
+                    <div className="flex items-center gap-1">
+                      {r.isRozEligible && (
+                        <RozBadge onClick={() => { setRozInfoResource(r); setRozInfoOpen(true); }} />
+                      )}
+                      <Badge className={`text-[10px] ${ZONE_COLORS[r.zone] || ""}`}>{r.zone.replace("_", " ")}</Badge>
+                    </div>
                   </div>
+                  {r.isRozEligible && r.areaM2 && (
+                    <div className="flex items-center gap-2 text-xs text-muted-foreground mb-2">
+                      <span className="text-amber-500 font-medium">{parseFloat(r.areaM2).toFixed(0)}m²</span>
+                      <span className="text-[10px]">ROZ Huurovereenkomst</span>
+                    </div>
+                  )}
                   <div className="flex items-center gap-4 text-xs text-muted-foreground mb-3">
                     <span className="flex items-center gap-1"><UsersIcon className="w-3 h-3" />{r.capacity ?? 1}</span>
                     <span className="flex items-center gap-1"><CreditCard className="w-3 h-3" />{parseFloat(r.creditCostPerHour).toFixed(1)}c/h</span>
@@ -258,9 +278,20 @@ export default function LocationDetail() {
                       {r.amenities.length > 4 && <span className="text-[10px] text-muted-foreground">+{r.amenities.length - 4}</span>}
                     </div>
                   )}
-                  <Button size="sm" className="w-full bg-primary/10 text-primary hover:bg-primary hover:text-primary-foreground transition-all" onClick={() => { setBookingResource(r); setSelectedStart(null); setSelectedEnd(null); }}>
-                    <Calendar className="w-3 h-3 mr-1.5" />Book Now
-                  </Button>
+                  {r.isRozEligible ? (
+                    <div className="flex gap-2">
+                      <Button size="sm" className="flex-1 bg-primary/10 text-primary hover:bg-primary hover:text-primary-foreground transition-all" onClick={() => { setBookingResource(r); setSelectedStart(null); setSelectedEnd(null); }}>
+                        <Calendar className="w-3 h-3 mr-1.5" />Flex Book
+                      </Button>
+                      <Button size="sm" className="flex-1 bg-amber-500/10 text-amber-500 hover:bg-amber-500 hover:text-white transition-all" onClick={() => { setRozBookingResource(r); setRozBookingOpen(true); }}>
+                        <ShieldCheck className="w-3 h-3 mr-1.5" />ROZ Huur
+                      </Button>
+                    </div>
+                  ) : (
+                    <Button size="sm" className="w-full bg-primary/10 text-primary hover:bg-primary hover:text-primary-foreground transition-all" onClick={() => { setBookingResource(r); setSelectedStart(null); setSelectedEnd(null); }}>
+                      <Calendar className="w-3 h-3 mr-1.5" />Book Now
+                    </Button>
+                  )}
                 </CardContent>
               </Card>
             );
@@ -349,6 +380,22 @@ export default function LocationDetail() {
           </DialogFooter>
         </DialogContent>
       </Dialog>
+      {/* ROZ Info Modal */}
+      <RozInfoModal
+        open={rozInfoOpen}
+        onOpenChange={setRozInfoOpen}
+        resource={rozInfoResource}
+      />
+
+      {/* ROZ Booking Modal */}
+      {rozBookingResource && location && (
+        <RozBookingModal
+          open={rozBookingOpen}
+          onOpenChange={setRozBookingOpen}
+          resource={rozBookingResource}
+          locationId={location.id}
+        />
+      )}
     </div>
   );
 }
