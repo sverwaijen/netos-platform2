@@ -66,7 +66,7 @@ const menuItems = [
   { icon: CreditCard, label: "Bundles", path: "/bundles" },
   { icon: Building2, label: "Companies", path: "/companies" },
   { icon: Users, label: "Visitors", path: "/visitors" },
-  { icon: Monitor, label: "Signing", path: "/signing" },
+  { icon: Monitor, label: "Signage", path: "/signing" },
   { icon: Layers, label: "Resources", path: "/resources" },
   { icon: Coffee, label: "Butler Kiosk", path: "/butler/admin" },
   { icon: Car, label: "Parking", path: "/parking" },

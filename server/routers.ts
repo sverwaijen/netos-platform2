@@ -26,6 +26,11 @@ import {
 import {
   crmTriggersRouter, crmVisitorsRouter, memberProfilesRouter, reengagementRouter,
 } from "./routers/crmAdvancedRouter";
+import {
+  signageScreensRouter, signageGroupsRouter, signageContentRouter,
+  signagePlaylistsRouter, signageProvisioningRouter, wayfindingRouter,
+  kitchenMenuRouter, gymScheduleRouter, signageDisplayRouter,
+} from "./routers/signageRouter";
 
 const adminProcedure = protectedProcedure.use(({ ctx, next }) => {
   if (ctx.user.role !== "admin") {
@@ -836,6 +841,16 @@ Return JSON with "subject" and "body" fields. The body should be HTML formatted.
   crmVisitors: crmVisitorsRouter,
   memberProfiles: memberProfilesRouter,
   reengagement: reengagementRouter,
+  // ─── Signage Module ───
+  signageScreens: signageScreensRouter,
+  signageGroups: signageGroupsRouter,
+  signageContent: signageContentRouter,
+  signagePlaylists: signagePlaylistsRouter,
+  signageProvisioning: signageProvisioningRouter,
+  wayfinding: wayfindingRouter,
+  kitchenMenu: kitchenMenuRouter,
+  gymSchedule: gymScheduleRouter,
+  signageDisplay: signageDisplayRouter,
 });
 
 export type AppRouter = typeof appRouter;

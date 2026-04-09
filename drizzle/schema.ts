@@ -1222,3 +1222,296 @@ export const reengagementFunnel = mysqlTable("reengagement_funnel", {
 
 export type ReengagementEntry = typeof reengagementFunnel.$inferSelect;
 export type InsertReengagementEntry = typeof reengagementFunnel.$inferInsert;
+
+// ═══════════════════════════════════════════════════════════════════════
+// ─── SIGNAGE MODULE ─────────────────────────────────────────────────
+// ═══════════════════════════════════════════════════════════════════════
+
+// ─── Signage Screens (Physical display devices) ────────────────────
+export const signageScreens = mysqlTable("signage_screens", {
+  id: int("id").autoincrement().primaryKey(),
+  locationId: int("locationId").notNull(),
+  name: varchar("name", { length: 256 }).notNull(),
+  screenType: mysqlEnum("screenType", [
+    "reception",
+    "gym",
+    "kitchen",
+    "wayfinding",
+    "general",
+    "meeting_room",
+    "elevator",
+    "parking",
+  ]).notNull(),
+  orientation: mysqlEnum("orientation", ["portrait", "landscape"]).default("portrait"),
+  resolution: varchar("resolution", { length: 32 }).default("1080x1920"), // WxH
+  floor: varchar("floor", { length: 16 }),
+  zone: varchar("zone", { length: 64 }),
+  provisioningToken: varchar("provisioningToken", { length: 128 }).unique(),
+  status: mysqlEnum("status", ["online", "offline", "provisioning", "maintenance", "error"]).default("provisioning"),
+  lastHeartbeat: timestamp("lastHeartbeat"),
+  currentPlaylistId: int("currentPlaylistId"),
+  ipAddress: varchar("ipAddress", { length: 45 }),
+  macAddress: varchar("macAddress", { length: 17 }),
+  userAgent: text("userAgent"),
+  firmwareVersion: varchar("firmwareVersion", { length: 32 }),
+  brightness: int("brightness").default(100),
+  volume: int("volume").default(0),
+  isActive: boolean("isActive").default(true),
+  tags: json("tags").$type<string[]>(),
+  metadata: json("metadata").$type<Record<string, unknown>>(),
+  createdAt: timestamp("createdAt").defaultNow().notNull(),
+  updatedAt: timestamp("updatedAt").defaultNow().onUpdateNow().notNull(),
+});
+
+export type SignageScreen = typeof signageScreens.$inferSelect;
+export type InsertSignageScreen = typeof signageScreens.$inferInsert;
+
+// ─── Signage Screen Groups (Logical grouping for bulk management) ──
+export const signageScreenGroups = mysqlTable("signage_screen_groups", {
+  id: int("id").autoincrement().primaryKey(),
+  name: varchar("name", { length: 128 }).notNull(),
+  description: text("description"),
+  locationId: int("locationId"),
+  screenType: mysqlEnum("screenType", [
+    "reception", "gym", "kitchen", "wayfinding", "general",
+    "meeting_room", "elevator", "parking",
+  ]),
+  color: varchar("color", { length: 7 }).default("#627653"),
+  isActive: boolean("isActive").default(true),
+  createdAt: timestamp("createdAt").defaultNow().notNull(),
+});
+
+export type SignageScreenGroup = typeof signageScreenGroups.$inferSelect;
+
+// ─── Screen-Group Membership ───────────────────────────────────────
+export const signageScreenGroupMembers = mysqlTable("signage_screen_group_members", {
+  id: int("id").autoincrement().primaryKey(),
+  screenId: int("screenId").notNull(),
+  groupId: int("groupId").notNull(),
+});
+
+// ─── Signage Content Items ─────────────────────────────────────────
+export const signageContent = mysqlTable("signage_content", {
+  id: int("id").autoincrement().primaryKey(),
+  title: varchar("title", { length: 256 }).notNull(),
+  contentType: mysqlEnum("contentType", [
+    "image",
+    "video",
+    "html",
+    "url",
+    "menu_card",
+    "wayfinding",
+    "gym_schedule",
+    "weather",
+    "clock",
+    "news_ticker",
+    "company_presence",
+    "welcome_screen",
+    "announcement",
+  ]).notNull(),
+  mediaUrl: text("mediaUrl"),
+  htmlContent: text("htmlContent"),
+  externalUrl: text("externalUrl"),
+  duration: int("duration").default(15), // seconds to display
+  templateData: json("templateData").$type<Record<string, unknown>>(), // dynamic data for templates
+  targetScreenTypes: json("targetScreenTypes").$type<string[]>(), // which screen types can show this
+  locationId: int("locationId"), // null = all locations
+  isActive: boolean("isActive").default(true),
+  validFrom: timestamp("validFrom"),
+  validUntil: timestamp("validUntil"),
+  priority: int("priority").default(0), // higher = more important
+  createdByUserId: int("createdByUserId"),
+  createdAt: timestamp("createdAt").defaultNow().notNull(),
+  updatedAt: timestamp("updatedAt").defaultNow().onUpdateNow().notNull(),
+});
+
+export type SignageContentItem = typeof signageContent.$inferSelect;
+export type InsertSignageContent = typeof signageContent.$inferInsert;
+
+// ─── Signage Playlists ─────────────────────────────────────────────
+export const signagePlaylists = mysqlTable("signage_playlists", {
+  id: int("id").autoincrement().primaryKey(),
+  name: varchar("name", { length: 256 }).notNull(),
+  description: text("description"),
+  screenType: mysqlEnum("screenType", [
+    "reception", "gym", "kitchen", "wayfinding", "general",
+    "meeting_room", "elevator", "parking",
+  ]),
+  locationId: int("locationId"), // null = global
+  isDefault: boolean("isDefault").default(false),
+  isActive: boolean("isActive").default(true),
+  scheduleType: mysqlEnum("scheduleType", ["always", "time_based", "day_based"]).default("always"),
+  scheduleConfig: json("scheduleConfig").$type<Record<string, unknown>>(),
+  createdAt: timestamp("createdAt").defaultNow().notNull(),
+  updatedAt: timestamp("updatedAt").defaultNow().onUpdateNow().notNull(),
+});
+
+export type SignagePlaylist = typeof signagePlaylists.$inferSelect;
+export type InsertSignagePlaylist = typeof signagePlaylists.$inferInsert;
+
+// ─── Playlist Items (Content in a playlist with ordering) ──────────
+export const signagePlaylistItems = mysqlTable("signage_playlist_items", {
+  id: int("id").autoincrement().primaryKey(),
+  playlistId: int("playlistId").notNull(),
+  contentId: int("contentId").notNull(),
+  sortOrder: int("sortOrder").default(0),
+  durationOverride: int("durationOverride"), // override content default duration
+  isActive: boolean("isActive").default(true),
+});
+
+export type SignagePlaylistItem = typeof signagePlaylistItems.$inferSelect;
+
+// ─── Signage Provisioning Templates ────────────────────────────────
+export const signageProvisioningTemplates = mysqlTable("signage_provisioning_templates", {
+  id: int("id").autoincrement().primaryKey(),
+  name: varchar("name", { length: 128 }).notNull(),
+  screenType: mysqlEnum("screenType", [
+    "reception", "gym", "kitchen", "wayfinding", "general",
+    "meeting_room", "elevator", "parking",
+  ]).notNull(),
+  defaultPlaylistId: int("defaultPlaylistId"),
+  defaultOrientation: mysqlEnum("defaultOrientation", ["portrait", "landscape"]).default("portrait"),
+  defaultResolution: varchar("defaultResolution", { length: 32 }).default("1080x1920"),
+  defaultBrightness: int("defaultBrightness").default(100),
+  autoAssignLocation: boolean("autoAssignLocation").default(true),
+  isActive: boolean("isActive").default(true),
+  createdAt: timestamp("createdAt").defaultNow().notNull(),
+});
+
+export type SignageProvisioningTemplate = typeof signageProvisioningTemplates.$inferSelect;
+
+// ─── Wayfinding: Building Directory ────────────────────────────────
+export const wayfindingBuildings = mysqlTable("wayfinding_buildings", {
+  id: int("id").autoincrement().primaryKey(),
+  locationId: int("locationId").notNull(),
+  name: varchar("name", { length: 128 }).notNull(),
+  code: varchar("code", { length: 16 }), // e.g. "A", "B", "C"
+  address: text("address"),
+  floors: int("floors").default(1),
+  isActive: boolean("isActive").default(true),
+  createdAt: timestamp("createdAt").defaultNow().notNull(),
+});
+
+export type WayfindingBuilding = typeof wayfindingBuildings.$inferSelect;
+
+// ─── Wayfinding: Company-Building Assignments ──────────────────────
+export const wayfindingCompanyAssignments = mysqlTable("wayfinding_company_assignments", {
+  id: int("id").autoincrement().primaryKey(),
+  companyId: int("companyId").notNull(),
+  buildingId: int("buildingId").notNull(),
+  floor: varchar("floor", { length: 16 }),
+  roomNumber: varchar("roomNumber", { length: 32 }),
+  isActive: boolean("isActive").default(true),
+  createdAt: timestamp("createdAt").defaultNow().notNull(),
+});
+
+export type WayfindingCompanyAssignment = typeof wayfindingCompanyAssignments.$inferSelect;
+
+// ─── Wayfinding: Company Check-In/Out (Dynamic Presence) ──────────
+export const wayfindingCompanyPresence = mysqlTable("wayfinding_company_presence", {
+  id: int("id").autoincrement().primaryKey(),
+  companyId: int("companyId").notNull(),
+  locationId: int("locationId").notNull(),
+  buildingId: int("buildingId"),
+  isPresent: boolean("isPresent").default(false),
+  checkedInAt: timestamp("checkedInAt"),
+  checkedOutAt: timestamp("checkedOutAt"),
+  checkedInByUserId: int("checkedInByUserId"),
+  method: mysqlEnum("method", ["manual", "access_log", "auto", "api"]).default("manual"),
+  date: varchar("date", { length: 10 }).notNull(), // YYYY-MM-DD for daily tracking
+  createdAt: timestamp("createdAt").defaultNow().notNull(),
+  updatedAt: timestamp("updatedAt").defaultNow().onUpdateNow().notNull(),
+});
+
+export type WayfindingCompanyPresence = typeof wayfindingCompanyPresence.$inferSelect;
+
+// ─── Signage Screen Heartbeats (Monitoring) ────────────────────────
+export const signageHeartbeats = mysqlTable("signage_heartbeats", {
+  id: int("id").autoincrement().primaryKey(),
+  screenId: int("screenId").notNull(),
+  status: mysqlEnum("status", ["online", "offline", "error", "maintenance", "provisioning"]).default("online"),
+  currentContentId: int("currentContentId"),
+  currentPlaylistId: int("currentPlaylistId"),
+  cpuUsage: decimal("cpuUsage", { precision: 5, scale: 2 }),
+  memoryUsage: decimal("memoryUsage", { precision: 5, scale: 2 }),
+  temperature: decimal("temperature", { precision: 5, scale: 2 }),
+  uptime: int("uptime"), // seconds
+  errorMessage: text("errorMessage"),
+  createdAt: timestamp("createdAt").defaultNow().notNull(),
+});
+
+export type SignageHeartbeat = typeof signageHeartbeats.$inferSelect;
+
+// ─── Signage Audit Log ─────────────────────────────────────────────
+export const signageAuditLog = mysqlTable("signage_audit_log", {
+  id: int("id").autoincrement().primaryKey(),
+  screenId: int("screenId"),
+  action: mysqlEnum("action", [
+    "provisioned",
+    "content_changed",
+    "playlist_assigned",
+    "screen_online",
+    "screen_offline",
+    "settings_changed",
+    "error_reported",
+    "reboot",
+    "firmware_update",
+  ]).notNull(),
+  description: text("description"),
+  userId: int("userId"),
+  metadata: json("metadata").$type<Record<string, unknown>>(),
+  createdAt: timestamp("createdAt").defaultNow().notNull(),
+});
+
+export type SignageAuditLogEntry = typeof signageAuditLog.$inferSelect;
+
+// ─── Kitchen Menu Items (for kitchen screens) ──────────────────────
+export const kitchenMenuItems = mysqlTable("kitchen_menu_items", {
+  id: int("id").autoincrement().primaryKey(),
+  locationId: int("locationId").notNull(),
+  name: varchar("name", { length: 256 }).notNull(),
+  description: text("description"),
+  category: mysqlEnum("category", [
+    "breakfast", "lunch", "dinner", "snack", "drink",
+    "soup", "salad", "sandwich", "special",
+  ]).notNull(),
+  price: decimal("price", { precision: 8, scale: 2 }),
+  imageUrl: text("imageUrl"),
+  allergens: json("allergens").$type<string[]>(),
+  isVegan: boolean("isVegan").default(false),
+  isVegetarian: boolean("isVegetarian").default(false),
+  isGlutenFree: boolean("isGlutenFree").default(false),
+  isAvailable: boolean("isAvailable").default(true),
+  dayOfWeek: json("dayOfWeek").$type<number[]>(), // null = every day
+  sortOrder: int("sortOrder").default(0),
+  createdAt: timestamp("createdAt").defaultNow().notNull(),
+  updatedAt: timestamp("updatedAt").defaultNow().onUpdateNow().notNull(),
+});
+
+export type KitchenMenuItem = typeof kitchenMenuItems.$inferSelect;
+export type InsertKitchenMenuItem = typeof kitchenMenuItems.$inferInsert;
+
+// ─── Gym Schedules (for gym screens) ───────────────────────────────
+export const gymSchedules = mysqlTable("gym_schedules", {
+  id: int("id").autoincrement().primaryKey(),
+  locationId: int("locationId").notNull(),
+  className: varchar("className", { length: 256 }).notNull(),
+  instructor: varchar("instructor", { length: 128 }),
+  description: text("description"),
+  category: mysqlEnum("category", [
+    "cardio", "strength", "yoga", "pilates", "hiit",
+    "cycling", "boxing", "stretching", "meditation", "egym",
+  ]).notNull(),
+  dayOfWeek: int("dayOfWeek").notNull(), // 0=Sunday
+  startTime: varchar("startTime", { length: 5 }).notNull(), // HH:MM
+  endTime: varchar("endTime", { length: 5 }).notNull(),
+  maxParticipants: int("maxParticipants").default(20),
+  currentParticipants: int("currentParticipants").default(0),
+  imageUrl: text("imageUrl"),
+  isActive: boolean("isActive").default(true),
+  createdAt: timestamp("createdAt").defaultNow().notNull(),
+  updatedAt: timestamp("updatedAt").defaultNow().onUpdateNow().notNull(),
+});
+
+export type GymSchedule = typeof gymSchedules.$inferSelect;
+export type InsertGymSchedule = typeof gymSchedules.$inferInsert;

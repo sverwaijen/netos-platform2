@@ -64,6 +64,13 @@
       "when": 1775476096132,
       "tag": "0008_slow_molly_hayes",
       "breakpoints": true
+    },
+    {
+      "idx": 9,
+      "version": "5",
+      "when": 1775908800000,
+      "tag": "0009_signage_module",
+      "breakpoints": true
     }
   ]
 }
