@@ -789,8 +789,17 @@ export const parkingZones = mysqlTable("parking_zones", {
   name: varchar("name", { length: 128 }).notNull(),
   slug: varchar("slug", { length: 64 }).notNull(),
   totalSpots: int("totalSpots").notNull().default(0),
+  reservedSpots: int("reservedSpots").default(0), // platinum/fixed spots excluded from overbooking
   type: mysqlEnum("type", ["indoor", "outdoor", "underground", "rooftop"]).default("outdoor"),
   accessMethod: mysqlEnum("accessMethod", ["barrier", "anpr", "manual", "salto"]).default("barrier"),
+  // Overbooking settings
+  overbookingEnabled: boolean("overbookingEnabled").default(false),
+  overbookingRatio: decimal("overbookingRatio", { precision: 4, scale: 2 }).default("1.20"), // e.g. 1.20 = 20% overbooked
+  noShowRateAvg: decimal("noShowRateAvg", { precision: 4, scale: 2 }).default("0.25"), // historical avg
+  costUnderbooking: decimal("costUnderbooking", { precision: 8, scale: 2 }).default("75.00"), // Cu
+  costOverbooking: decimal("costOverbooking", { precision: 8, scale: 2 }).default("50.00"), // Co
+  payPerUseEnabled: boolean("payPerUseEnabled").default(false),
+  payPerUseThreshold: int("payPerUseThreshold").default(85), // close pay-per-use at this % occupancy
   isActive: boolean("isActive").default(true),
   createdAt: timestamp("createdAt").defaultNow().notNull(),
   updatedAt: timestamp("updatedAt").defaultNow().onUpdateNow().notNull(),
@@ -839,14 +848,18 @@ export const parkingPermits = mysqlTable("parking_permits", {
   id: int("id").autoincrement().primaryKey(),
   userId: int("userId"),
   companyId: int("companyId"),
+  poolId: int("poolId"), // link to pool if part of a pool subscription
   zoneId: int("zoneId").notNull(),
   licensePlate: varchar("licensePlate", { length: 20 }).notNull(),
   vehicleDescription: varchar("vehicleDescription", { length: 256 }),
-  type: mysqlEnum("type", ["monthly", "annual", "reserved", "visitor"]).default("monthly"),
+  type: mysqlEnum("type", ["monthly", "annual", "reserved", "visitor", "pool", "external"]).default("monthly"),
+  slaTier: mysqlEnum("slaTier", ["platinum", "gold", "silver", "bronze"]).default("silver"),
   status: mysqlEnum("status", ["active", "expired", "suspended", "cancelled"]).default("active"),
   startDate: bigint("startDate", { mode: "number" }).notNull(),
   endDate: bigint("endDate", { mode: "number" }),
-  spotId: int("spotId"), // assigned spot (if reserved)
+  spotId: int("spotId"), // assigned spot (if reserved/platinum)
+  noShowCount: int("noShowCount").default(0),
+  penaltyPoints: int("penaltyPoints").default(0),
   createdAt: timestamp("createdAt").defaultNow().notNull(),
   updatedAt: timestamp("updatedAt").defaultNow().onUpdateNow().notNull(),
 });
@@ -860,14 +873,17 @@ export const parkingSessions = mysqlTable("parking_sessions", {
   spotId: int("spotId"),
   userId: int("userId"),
   permitId: int("permitId"),
+  poolId: int("poolId"), // if parked via pool
   licensePlate: varchar("licensePlate", { length: 20 }),
+  entryMethod: mysqlEnum("entryMethod", ["anpr", "qr", "manual", "app"]).default("anpr"),
+  accessType: mysqlEnum("accessType", ["member", "visitor", "external", "pay_per_use", "pool_guaranteed", "pool_overflow"]).default("member"),
   entryTime: bigint("entryTime", { mode: "number" }).notNull(),
   exitTime: bigint("exitTime", { mode: "number" }),
   durationMinutes: int("durationMinutes"),
   status: mysqlEnum("status", ["active", "completed", "overstay"]).default("active"),
   amountEur: decimal("amountEur", { precision: 10, scale: 2 }),
   amountCredits: decimal("amountCredits", { precision: 10, scale: 2 }),
-  paymentMethod: mysqlEnum("paymentMethod", ["credits", "stripe", "permit", "free"]),
+  paymentMethod: mysqlEnum("paymentMethod", ["credits", "stripe", "permit", "free", "pool"]),
   paymentStatus: mysqlEnum("paymentStatus", ["pending", "paid", "waived"]).default("pending"),
   createdAt: timestamp("createdAt").defaultNow().notNull(),
 });
@@ -1515,3 +1531,120 @@ export const gymSchedules = mysqlTable("gym_schedules", {
 
 export type GymSchedule = typeof gymSchedules.$inferSelect;
 export type InsertGymSchedule = typeof gymSchedules.$inferInsert;
+
+// ─── Parking Pools (Shared Subscription Pools) ───────────────────
+export const parkingPools = mysqlTable("parking_pools", {
+  id: int("id").autoincrement().primaryKey(),
+  zoneId: int("zoneId").notNull(),
+  companyId: int("companyId"), // owning company (optional)
+  name: varchar("name", { length: 128 }).notNull(),
+  guaranteedSpots: int("guaranteedSpots").notNull().default(30), // first N cars guaranteed
+  maxMembers: int("maxMembers").default(0), // 0 = unlimited pool members
+  overflowPriceEur: decimal("overflowPriceEur", { precision: 8, scale: 2 }).default("2.50"), // per-hour for car 31+
+  overflowPriceDay: decimal("overflowPriceDay", { precision: 8, scale: 2 }).default("15.00"), // day cap for overflow
+  monthlyFeeEur: decimal("monthlyFeeEur", { precision: 10, scale: 2 }).default("0"), // monthly pool subscription cost
+  slaTier: mysqlEnum("slaTier", ["platinum", "gold", "silver", "bronze"]).default("gold"),
+  isActive: boolean("isActive").default(true),
+  createdAt: timestamp("createdAt").defaultNow().notNull(),
+  updatedAt: timestamp("updatedAt").defaultNow().onUpdateNow().notNull(),
+});
+
+export type ParkingPool = typeof parkingPools.$inferSelect;
+
+// ─── Parking Pool Members ─────────────────────────────────────────
+export const parkingPoolMembers = mysqlTable("parking_pool_members", {
+  id: int("id").autoincrement().primaryKey(),
+  poolId: int("poolId").notNull(),
+  userId: int("userId").notNull(),
+  licensePlate: varchar("licensePlate", { length: 20 }),
+  licensePlate2: varchar("licensePlate2", { length: 20 }), // secondary vehicle
+  role: mysqlEnum("role", ["admin", "member"]).default("member"),
+  status: mysqlEnum("status", ["active", "suspended", "removed"]).default("active"),
+  joinedAt: timestamp("joinedAt").defaultNow().notNull(),
+  totalSessions: int("totalSessions").default(0),
+  totalOverflowSessions: int("totalOverflowSessions").default(0),
+  noShowCount: int("noShowCount").default(0),
+});
+
+export type ParkingPoolMember = typeof parkingPoolMembers.$inferSelect;
+
+// ─── Parking Access Log (ANPR/QR Events) ──────────────────────────
+export const parkingAccessLog = mysqlTable("parking_access_log", {
+  id: int("id").autoincrement().primaryKey(),
+  zoneId: int("zoneId").notNull(),
+  direction: mysqlEnum("direction", ["entry", "exit"]).notNull(),
+  method: mysqlEnum("method", ["anpr", "qr", "manual", "app"]).notNull(),
+  licensePlate: varchar("licensePlate", { length: 20 }),
+  qrToken: varchar("qrToken", { length: 128 }),
+  userId: int("userId"),
+  permitId: int("permitId"),
+  poolId: int("poolId"),
+  granted: boolean("granted").notNull().default(false),
+  denialReason: varchar("denialReason", { length: 256 }),
+  sessionId: int("sessionId"), // linked parking session
+  responseTimeMs: int("responseTimeMs"), // gate response latency
+  timestamp: bigint("timestamp", { mode: "number" }).notNull(),
+});
+
+export type ParkingAccessLogEntry = typeof parkingAccessLog.$inferSelect;
+
+// ─── Parking Visitor Permits (QR-based guest access) ──────────────
+export const parkingVisitorPermits = mysqlTable("parking_visitor_permits", {
+  id: int("id").autoincrement().primaryKey(),
+  zoneId: int("zoneId").notNull(),
+  invitedByUserId: int("invitedByUserId").notNull(),
+  visitorName: varchar("visitorName", { length: 256 }).notNull(),
+  visitorEmail: varchar("visitorEmail", { length: 320 }),
+  visitorPhone: varchar("visitorPhone", { length: 20 }),
+  licensePlate: varchar("licensePlate", { length: 20 }),
+  qrToken: varchar("qrToken", { length: 128 }).notNull(),
+  validFrom: bigint("validFrom", { mode: "number" }).notNull(),
+  validUntil: bigint("validUntil", { mode: "number" }).notNull(),
+  maxEntries: int("maxEntries").default(1),
+  usedEntries: int("usedEntries").default(0),
+  status: mysqlEnum("status", ["active", "used", "expired", "cancelled"]).default("active"),
+  shareMethod: mysqlEnum("shareMethod", ["whatsapp", "email", "sms", "link"]),
+  notes: text("notes"),
+  createdAt: timestamp("createdAt").defaultNow().notNull(),
+});
+
+export type ParkingVisitorPermit = typeof parkingVisitorPermits.$inferSelect;
+
+// ─── Parking SLA Violations (Compensation Tracking) ───────────────
+export const parkingSlaViolations = mysqlTable("parking_sla_violations", {
+  id: int("id").autoincrement().primaryKey(),
+  zoneId: int("zoneId").notNull(),
+  userId: int("userId").notNull(),
+  permitId: int("permitId"),
+  poolId: int("poolId"),
+  slaTier: mysqlEnum("slaTier", ["platinum", "gold", "silver", "bronze"]).notNull(),
+  violationType: mysqlEnum("violationType", ["denied_entry", "no_spot_available", "downgrade"]).notNull(),
+  compensationEur: decimal("compensationEur", { precision: 8, scale: 2 }).default("0"),
+  compensationCredits: decimal("compensationCredits", { precision: 8, scale: 2 }).default("0"),
+  compensationStatus: mysqlEnum("compensationStatus", ["pending", "credited", "waived"]).default("pending"),
+  alternativeOffered: varchar("alternativeOffered", { length: 256 }),
+  timestamp: bigint("timestamp", { mode: "number" }).notNull(),
+  resolvedAt: bigint("resolvedAt", { mode: "number" }),
+  notes: text("notes"),
+});
+
+export type ParkingSlaViolation = typeof parkingSlaViolations.$inferSelect;
+
+// ─── Parking Capacity Snapshots (for analytics & predictions) ─────
+export const parkingCapacitySnapshots = mysqlTable("parking_capacity_snapshots", {
+  id: int("id").autoincrement().primaryKey(),
+  zoneId: int("zoneId").notNull(),
+  timestamp: bigint("timestamp", { mode: "number" }).notNull(),
+  totalSpots: int("totalSpots").notNull(),
+  occupied: int("occupied").notNull(),
+  reserved: int("reserved").default(0),
+  poolGuaranteed: int("poolGuaranteed").default(0),
+  poolOverflow: int("poolOverflow").default(0),
+  payPerUse: int("payPerUse").default(0),
+  visitors: int("visitors").default(0),
+  occupancyPercent: decimal("occupancyPercent", { precision: 5, scale: 2 }).notNull(),
+  predictedPeak: decimal("predictedPeak", { precision: 5, scale: 2 }),
+  overbookingHeadroom: int("overbookingHeadroom").default(0), // extra permits safe to issue
+});
+
+export type ParkingCapacitySnapshot = typeof parkingCapacitySnapshots.$inferSelect;

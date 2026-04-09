@@ -14,6 +14,8 @@ import { productCatalogRouter, kioskOrderRouter, signingRouter } from "./routers
 import {
   parkingZonesRouter, parkingSpotsRouter, parkingPricingRouter,
   parkingReservationsRouter, parkingSessionsRouter, parkingPermitsRouter,
+  parkingPoolsRouter, parkingAccessRouter, parkingVisitorPermitsRouter,
+  parkingSlaRouter,
 } from "./routers/parkingRouter";
 import {
   ticketsRouter, cannedResponsesRouter, slaRouter,
@@ -824,6 +826,10 @@ Return JSON with "subject" and "body" fields. The body should be HTML formatted.
   parkingReservations: parkingReservationsRouter,
   parkingSessions: parkingSessionsRouter,
   parkingPermits: parkingPermitsRouter,
+  parkingPools: parkingPoolsRouter,
+  parkingAccess: parkingAccessRouter,
+  parkingVisitorPermits: parkingVisitorPermitsRouter,
+  parkingSla: parkingSlaRouter,
   // ─── Operations ───
   tickets: ticketsRouter,
   cannedResponses: cannedResponsesRouter,

@@ -44,6 +44,7 @@ import AppAccess from "./pages/app/AppAccess";
 import AppProfile from "./pages/app/AppProfile";
 import AppSupport from "./pages/app/AppSupport";
 import AppParking from "./pages/app/AppParking";
+import ParkingVisitor from "./pages/app/ParkingVisitor";
 import SignageDisplay from "./pages/SignageDisplay";
 
 function WrappedPage({ component: Component }: { component: React.ComponentType }) {
@@ -99,6 +100,8 @@ function Router() {
       <Route path="/butler">{() => <ButlerKiosk />}</Route>
       <Route path="/kiosk/display" component={KioskDisplay} />
       <Route path="/signage/display" component={SignageDisplay} />
+      {/* Public parking visitor page */}
+      <Route path="/parking/visitor/:qrToken" component={ParkingVisitor} />
       {/* Member App routes (mobile-first PWA) */}
       <Route path="/app/bookings">{() => <WrappedApp component={AppBookings} />}</Route>
       <Route path="/app/wallet">{() => <WrappedApp component={AppWallet} />}</Route>

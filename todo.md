@@ -273,3 +273,33 @@
 - [x] Track funnel progress (identified → invited → opened → applied → accepted/declined)
 - [x] Funnel stage counts and filter by stage
 - [x] 145 tests passing, 0 TS errors
+
+## Phase 26: Next-Level Parking Platform (DONE)
+- [x] Database: parking_pools, parking_pool_members, parking_access_log, parking_visitor_permits, parking_sla_violations, parking_capacity_snapshots (6 new tables)
+- [x] Database: extended parking_zones with overbooking fields (overbookingEnabled, overbookingRatio, noShowRateAvg, costUnderbooking, costOverbooking, payPerUseEnabled, payPerUseThreshold)
+- [x] Database: extended parking_permits with poolId, slaTier, noShowCount, penaltyPoints
+- [x] Database: extended parking_sessions with poolId, entryMethod, accessType
+- [x] Capacity Engine (server/parking/capacityEngine.ts): real-time capacity calculation, overbooking model based on Critical Ratio (Cu/(Cu+Co)), pool FCFS logic
+- [x] Pool subscription model: N guaranteed spots for M members, overflow billing (per-hour + day cap)
+- [x] SLA tier system: Platinum (100% guarantee, fixed spot) → Gold (99.5%) → Silver (95%) → Bronze (off-peak only)
+- [x] Access Decision Engine: priority-based gate control (Platinum → Gold → Pool guaranteed → Silver → Pool overflow → Bronze → Pay-per-use → Visitor)
+- [x] ANPR/QR access webhook: requestAccess endpoint for barrier/camera integration
+- [x] Visitor permits: QR-based guest access with WhatsApp/email/SMS sharing
+- [x] Visitor landing page (/parking/visitor/:qrToken) with QR display and instructions
+- [x] SLA violation tracking with automatic compensation calculation per tier
+- [x] Overbooking advisor: headroom calculation, risk level assessment, permit issuance guidance
+- [x] Capacity snapshots for analytics and peak prediction
+- [x] Admin: Pools tab (create pool, view members, live pool status with guaranteed/overflow breakdown)
+- [x] Admin: Yield Management tab (per-zone overbooking metrics, critical ratio, headroom, no-show rate)
+- [x] Admin: Access Log tab (entry/exit events, method, latency, granted/denied status)
+- [x] Admin: SLA violations summary card
+- [x] Admin: enhanced stats cards (pool, visitors, pay-per-use, revenue breakdown)
+- [x] Admin: enhanced sessions table with access type and entry method columns
+- [x] Admin: enhanced permits list with SLA tier badges
+- [x] Member App: live pool status card (guaranteed spots bar, overflow indicator, pricing)
+- [x] Member App: invite visitor flow (WhatsApp + QR link sharing)
+- [x] Member App: live zone capacity with occupancy breakdown
+- [x] Member App: active session card with access type and entry method
+- [x] SQL migration: 0010_parking_pools_upgrade.sql
+- [x] 4 new tRPC routers: parkingPools, parkingAccess, parkingVisitorPermits, parkingSla
+- [x] Route registration in routers.ts and App.tsx
