@@ -46,6 +46,8 @@ import AppSupport from "./pages/app/AppSupport";
 import AppParking from "./pages/app/AppParking";
 import ParkingVisitor from "./pages/app/ParkingVisitor";
 import SignageDisplay from "./pages/SignageDisplay";
+import MenuDashboard from "./pages/MenuDashboard";
+import KitchenPrepDisplay from "./pages/KitchenPrepDisplay";
 
 function WrappedPage({ component: Component }: { component: React.ComponentType }) {
   return (
@@ -96,12 +98,14 @@ function Router() {
       <Route path="/parking">{() => <WrappedPage component={ParkingAdmin} />}</Route>
       <Route path="/operations">{() => <WrappedPage component={OperationsDashboard} />}</Route>
       <Route path="/room-control">{() => <WrappedPage component={RoomControl} />}</Route>
+      <Route path="/menu">{() => <WrappedPage component={MenuDashboard} />}</Route>
       {/* Standalone kiosk routes */}
       <Route path="/butler">{() => <ButlerKiosk />}</Route>
       <Route path="/kiosk/display" component={KioskDisplay} />
       <Route path="/signage/display" component={SignageDisplay} />
       {/* Public parking visitor page */}
       <Route path="/parking/visitor/:qrToken" component={ParkingVisitor} />
+      <Route path="/kitchen/prep" component={KitchenPrepDisplay} />
       {/* Member App routes (mobile-first PWA) */}
       <Route path="/app/bookings">{() => <WrappedApp component={AppBookings} />}</Route>
       <Route path="/app/wallet">{() => <WrappedApp component={AppWallet} />}</Route>

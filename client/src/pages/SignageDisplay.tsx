@@ -6,6 +6,7 @@ import SignageKitchenDisplay from "@/components/signage/SignageKitchenDisplay";
 import SignageWayfindingDisplay from "@/components/signage/SignageWayfindingDisplay";
 import SignageReceptionDisplay from "@/components/signage/SignageReceptionDisplay";
 import SignageGenericDisplay from "@/components/signage/SignageGenericDisplay";
+import SignageMenuDisplay from "@/components/signage/SignageMenuDisplay";
 import SignageProvisioningScreen from "@/components/signage/SignageProvisioningScreen";
 
 // ─── Get screen ID from URL params ──────────────────────────────────
@@ -120,6 +121,8 @@ export default function SignageDisplay() {
       return <SignageGymDisplay {...displayProps} />;
     case "kitchen":
       return <SignageKitchenDisplay {...displayProps} />;
+    case "menu":
+      return <SignageMenuDisplay {...displayProps} />;
     case "wayfinding":
       return <SignageWayfindingDisplay {...displayProps} />;
     case "reception":

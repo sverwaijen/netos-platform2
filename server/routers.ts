@@ -33,6 +33,10 @@ import {
   signagePlaylistsRouter, signageProvisioningRouter, wayfindingRouter,
   kitchenMenuRouter, gymScheduleRouter, signageDisplayRouter,
 } from "./routers/signageRouter";
+import {
+  menuSeasonsRouter, menuCategoriesRouter, menuItemsRouter,
+  menuSeasonItemsRouter, menuPreparationsRouter, menuArrangementsRouter,
+} from "./routers/menuRouter";
 
 const adminProcedure = protectedProcedure.use(({ ctx, next }) => {
   if (ctx.user.role !== "admin") {
@@ -857,6 +861,13 @@ Return JSON with "subject" and "body" fields. The body should be HTML formatted.
   kitchenMenu: kitchenMenuRouter,
   gymSchedule: gymScheduleRouter,
   signageDisplay: signageDisplayRouter,
+  // ─── Menukaart Module ───
+  menuSeasons: menuSeasonsRouter,
+  menuCategories: menuCategoriesRouter,
+  menuItems: menuItemsRouter,
+  menuSeasonItems: menuSeasonItemsRouter,
+  menuPreparations: menuPreparationsRouter,
+  menuArrangements: menuArrangementsRouter,
 });
 
 export type AppRouter = typeof appRouter;

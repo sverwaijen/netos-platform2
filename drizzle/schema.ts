@@ -1257,6 +1257,7 @@ export const signageScreens = mysqlTable("signage_screens", {
     "meeting_room",
     "elevator",
     "parking",
+    "menu",
   ]).notNull(),
   orientation: mysqlEnum("orientation", ["portrait", "landscape"]).default("portrait"),
   resolution: varchar("resolution", { length: 32 }).default("1080x1920"), // WxH
@@ -1383,7 +1384,7 @@ export const signageProvisioningTemplates = mysqlTable("signage_provisioning_tem
   name: varchar("name", { length: 128 }).notNull(),
   screenType: mysqlEnum("screenType", [
     "reception", "gym", "kitchen", "wayfinding", "general",
-    "meeting_room", "elevator", "parking",
+    "meeting_room", "elevator", "parking", "menu",
   ]).notNull(),
   defaultPlaylistId: int("defaultPlaylistId"),
   defaultOrientation: mysqlEnum("defaultOrientation", ["portrait", "landscape"]).default("portrait"),
@@ -1648,3 +1649,107 @@ export const parkingCapacitySnapshots = mysqlTable("parking_capacity_snapshots",
 });
 
 export type ParkingCapacitySnapshot = typeof parkingCapacitySnapshots.$inferSelect;
+
+// ═══════════════════════════════════════════════════════════════════════
+// ─── MENUKAART MODULE ──────────────────────────────────────────────
+// ═══════════════════════════════════════════════════════════════════════
+
+// ─── Menu Seasons (Q1-Q4 per year) ─────────────────────────────────
+export const menuSeasons = mysqlTable("menu_seasons", {
+  id: int("id").autoincrement().primaryKey(),
+  year: int("year").notNull(),
+  quarter: mysqlEnum("quarter", ["Q1", "Q2", "Q3", "Q4"]).notNull(),
+  name: varchar("name", { length: 128 }).notNull(), // e.g. "Lente 2026"
+  startDate: varchar("startDate", { length: 10 }).notNull(), // YYYY-MM-DD
+  endDate: varchar("endDate", { length: 10 }).notNull(),
+  isActive: boolean("isActive").default(false),
+  driveMenuSheetId: varchar("driveMenuSheetId", { length: 256 }), // Google Sheets ID
+  driveFoodbookDocId: varchar("driveFoodbookDocId", { length: 256 }), // Google Docs ID
+  createdAt: timestamp("createdAt").defaultNow().notNull(),
+  updatedAt: timestamp("updatedAt").defaultNow().onUpdateNow().notNull(),
+});
+export type MenuSeason = typeof menuSeasons.$inferSelect;
+export type InsertMenuSeason = typeof menuSeasons.$inferInsert;
+
+// ─── Menu Categories ───────────────────────────────────────────────
+export const menuCategories = mysqlTable("menu_categories", {
+  id: int("id").autoincrement().primaryKey(),
+  name: varchar("name", { length: 128 }).notNull(), // e.g. "Soepen", "Sandwiches"
+  slug: varchar("slug", { length: 64 }).notNull(),
+  icon: varchar("icon", { length: 64 }), // lucide icon name
+  sortOrder: int("sortOrder").default(0),
+  isActive: boolean("isActive").default(true),
+  createdAt: timestamp("createdAt").defaultNow().notNull(),
+});
+export type MenuCategory = typeof menuCategories.$inferSelect;
+export type InsertMenuCategory = typeof menuCategories.$inferInsert;
+
+// ─── Menu Items (master dish database) ─────────────────────────────
+export const menuItems = mysqlTable("menu_items", {
+  id: int("id").autoincrement().primaryKey(),
+  categoryId: int("categoryId").notNull(),
+  name: varchar("name", { length: 256 }).notNull(),
+  subtitle: varchar("subtitle", { length: 512 }), // ingredients line
+  description: text("description"),
+  priceEur: decimal("priceEur", { precision: 8, scale: 2 }),
+  priceLargeEur: decimal("priceLargeEur", { precision: 8, scale: 2 }), // for items with size options
+  imageUrl: text("imageUrl"),
+  allergens: json("allergens").$type<string[]>(),
+  isVegan: boolean("isVegan").default(false),
+  isVegetarian: boolean("isVegetarian").default(false),
+  isGlutenFree: boolean("isGlutenFree").default(false),
+  isSignature: boolean("isSignature").default(false),
+  isActive: boolean("isActive").default(true),
+  sortOrder: int("sortOrder").default(0),
+  createdAt: timestamp("createdAt").defaultNow().notNull(),
+  updatedAt: timestamp("updatedAt").defaultNow().onUpdateNow().notNull(),
+});
+export type MenuItem = typeof menuItems.$inferSelect;
+export type InsertMenuItem = typeof menuItems.$inferInsert;
+
+// ─── Menu Season Items (links items to seasons with overrides) ─────
+export const menuSeasonItems = mysqlTable("menu_season_items", {
+  id: int("id").autoincrement().primaryKey(),
+  seasonId: int("seasonId").notNull(),
+  menuItemId: int("menuItemId").notNull(),
+  locationId: int("locationId"), // null = all locations
+  priceOverrideEur: decimal("priceOverrideEur", { precision: 8, scale: 2 }), // season-specific price
+  priceLargeOverrideEur: decimal("priceLargeOverrideEur", { precision: 8, scale: 2 }),
+  isAvailable: boolean("isAvailable").default(true),
+  sortOrder: int("sortOrder").default(0),
+  createdAt: timestamp("createdAt").defaultNow().notNull(),
+});
+export type MenuSeasonItem = typeof menuSeasonItems.$inferSelect;
+export type InsertMenuSeasonItem = typeof menuSeasonItems.$inferInsert;
+
+// ─── Menu Preparation Instructions (Foodbook) ─────────────────────
+export const menuPreparations = mysqlTable("menu_preparations", {
+  id: int("id").autoincrement().primaryKey(),
+  menuItemId: int("menuItemId").notNull(),
+  seasonId: int("seasonId"), // null = universal recipe
+  steps: json("steps").$type<string[]>().notNull(), // ordered prep steps
+  ingredients: json("ingredients").$type<{ name: string; amount: string; unit: string }[]>(),
+  prepTimeMinutes: int("prepTimeMinutes"),
+  notes: text("notes"),
+  imageUrl: text("imageUrl"),
+  createdAt: timestamp("createdAt").defaultNow().notNull(),
+  updatedAt: timestamp("updatedAt").defaultNow().onUpdateNow().notNull(),
+});
+export type MenuPreparation = typeof menuPreparations.$inferSelect;
+export type InsertMenuPreparation = typeof menuPreparations.$inferInsert;
+
+// ─── Menu Arrangements (deals/packages) ────────────────────────────
+export const menuArrangements = mysqlTable("menu_arrangements", {
+  id: int("id").autoincrement().primaryKey(),
+  seasonId: int("seasonId"),
+  name: varchar("name", { length: 256 }).notNull(),
+  description: text("description"),
+  priceEur: decimal("priceEur", { precision: 8, scale: 2 }).notNull(),
+  memberPriceEur: decimal("memberPriceEur", { precision: 8, scale: 2 }),
+  isActive: boolean("isActive").default(true),
+  sortOrder: int("sortOrder").default(0),
+  createdAt: timestamp("createdAt").defaultNow().notNull(),
+  updatedAt: timestamp("updatedAt").defaultNow().onUpdateNow().notNull(),
+});
+export type MenuArrangement = typeof menuArrangements.$inferSelect;
+export type InsertMenuArrangement = typeof menuArrangements.$inferInsert;

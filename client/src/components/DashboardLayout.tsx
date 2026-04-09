@@ -52,6 +52,7 @@ import {
   UsersRound,
   Crosshair,
   Key,
+  ChefHat,
 } from "lucide-react";
 import { CSSProperties, useEffect, useRef, useState } from "react";
 import { useLocation } from "wouter";
@@ -69,6 +70,7 @@ const menuItems = [
   { icon: Monitor, label: "Signage", path: "/signing" },
   { icon: Layers, label: "Resources", path: "/resources" },
   { icon: Coffee, label: "Butler Kiosk", path: "/butler/admin" },
+  { icon: ChefHat, label: "Menukaart", path: "/menu" },
   { icon: Car, label: "Parking", path: "/parking" },
   { icon: Ticket, label: "Operations", path: "/operations" },
   { icon: Thermometer, label: "Room Control", path: "/room-control" },
