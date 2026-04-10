@@ -19,7 +19,7 @@ export default function InvitesPage() {
 
   const [email, setEmail] = useState("");
   const [phone, setPhone] = useState("");
-  const [role, setRole] = useState<"user" | "guest">("guest");
+  const [role, setRole] = useState<"administrator" | "host" | "teamadmin" | "member" | "guest">("guest");
   const [companyId, setCompanyId] = useState<string>("");
   const [lastLink, setLastLink] = useState("");
   const [dialogOpen, setDialogOpen] = useState(false);
@@ -160,11 +160,14 @@ export default function InvitesPage() {
             </div>
             <div>
               <label className="text-[10px] text-[#888] tracking-[2px] uppercase font-medium">Access Level</label>
-              <Select value={role} onValueChange={(v) => setRole(v as "user" | "guest")}>
+              <Select value={role} onValueChange={(v) => setRole(v as "administrator" | "host" | "teamadmin" | "member" | "guest")}>
                 <SelectTrigger className="mt-1 bg-white/[0.03] border-white/[0.06]"><SelectValue /></SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="guest">Guest (Lite Access)</SelectItem>
-                  <SelectItem value="user">Full Member</SelectItem>
+                  <SelectItem value="guest">Guest</SelectItem>
+                   <SelectItem value="member">Member</SelectItem>
+                   <SelectItem value="teamadmin">Team Admin</SelectItem>
+                   <SelectItem value="host">Host (Boss)</SelectItem>
+                   <SelectItem value="administrator">Administrator</SelectItem>
                 </SelectContent>
               </Select>
             </div>

@@ -48,6 +48,7 @@ import ParkingVisitor from "./pages/app/ParkingVisitor";
 import SignageDisplay from "./pages/SignageDisplay";
 import MenuDashboard from "./pages/MenuDashboard";
 import KitchenPrepDisplay from "./pages/KitchenPrepDisplay";
+import UserRolesPage from "./pages/UserRolesPage";
 
 function WrappedPage({ component: Component }: { component: React.ComponentType }) {
   return (
@@ -82,6 +83,7 @@ function Router() {
       <Route path="/devices">{() => <WrappedPage component={DevicesPage} />}</Route>
       <Route path="/notifications">{() => <WrappedPage component={NotificationsPage} />}</Route>
       <Route path="/invites">{() => <WrappedPage component={InvitesPage} />}</Route>
+      <Route path="/settings/roles">{() => <WrappedPage component={UserRolesPage} />}</Route>
       <Route path="/settings">{() => <WrappedPage component={SettingsPage} />}</Route>
       <Route path="/crm/leads/:id">{() => <DashboardLayout><CrmLeadDetail /></DashboardLayout>}</Route>
       <Route path="/crm/campaigns">{() => <WrappedPage component={CrmCampaigns} />}</Route>
@@ -123,7 +125,7 @@ function Router() {
 function App() {
   return (
     <ErrorBoundary>
-      <ThemeProvider defaultTheme="dark">
+      <ThemeProvider defaultTheme="dark" switchable={true}>
         <TooltipProvider>
           <Toaster />
           <Router />

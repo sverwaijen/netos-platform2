@@ -10,7 +10,7 @@ import { eq, and, desc, sql, gte, lte, ne, like, or } from "drizzle-orm";
 import { nanoid } from "nanoid";
 
 const adminProcedure = protectedProcedure.use(({ ctx, next }) => {
-  if (ctx.user.role !== "admin") throw new Error("Forbidden");
+  if (ctx.user.role !== "administrator" && ctx.user.role !== "host") throw new Error("Forbidden");
   return next({ ctx });
 });
 
@@ -35,7 +35,7 @@ export const ticketsRouter = router({
     if (input?.requesterId) conditions.push(eq(tickets.requesterId, input.requesterId));
     if (input?.search) conditions.push(or(like(tickets.subject, `%${input.search}%`), like(tickets.ticketNumber, `%${input.search}%`)));
     // Non-admin users only see their own tickets
-    if (ctx.user.role !== "admin") {
+    if (ctx.user.role !== "administrator" && ctx.user.role !== "host") {
       conditions.push(eq(tickets.requesterId, ctx.user.id));
     }
     const q = conditions.length > 0
@@ -174,7 +174,7 @@ export const ticketsRouter = router({
   })).mutation(async ({ ctx, input }) => {
     const db = await getDb();
     if (!db) return { success: false };
-    const senderType = ctx.user.role === "admin" ? "agent" : "requester";
+    const senderType = (ctx.user.role === "administrator" || ctx.user.role === "host") ? "agent" : "requester";
     await db.insert(ticketMessages).values({
       ticketId: input.ticketId,
       senderId: ctx.user.id,

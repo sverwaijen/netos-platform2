@@ -5,6 +5,7 @@ import { Switch } from "@/components/ui/switch";
 import { toast } from "sonner";
 import { useState, useEffect } from "react";
 import { User, Bell, Key, Plug, Save, LogOut, Phone, Mail, Car, Lock, Wifi, CreditCard, Calendar, Smartphone, Check } from "lucide-react";
+import { usePermissions } from "@/hooks/usePermissions";
 
 export default function SettingsPage() {
   const { user, logout } = useAuth();
@@ -12,6 +13,7 @@ export default function SettingsPage() {
   const { data: profile } = trpc.profile.get.useQuery();
   const { data: myWallets } = trpc.wallets.mine.useQuery();
   const { data: accessLog } = trpc.access.myLog.useQuery();
+  const { roleLabel } = usePermissions();
 
   const updateProfile = trpc.profile.update.useMutation({
     onSuccess: () => { toast.success("Profile updated."); utils.profile.get.invalidate(); },
@@ -61,7 +63,7 @@ export default function SettingsPage() {
             <div>
               <p className="text-lg font-light">{name || user?.name || "Member"}</p>
               <div className="flex items-center gap-3 text-[11px] text-[#888] mt-0.5">
-                <span className="text-[10px] font-semibold tracking-[2px] uppercase text-[#627653]">{user?.role === "admin" ? "Admin" : "Member"}</span>
+                <span className="text-[10px] font-semibold tracking-[2px] uppercase text-[#627653]">{roleLabel}</span>
                 {personalWallet && <span>{parseFloat(personalWallet.balance).toFixed(0)} credits</span>}
               </div>
             </div>

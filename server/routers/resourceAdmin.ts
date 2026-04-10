@@ -3,7 +3,7 @@ import { z } from "zod";
 import * as db from "../db";
 
 const adminProcedure = protectedProcedure.use(({ ctx, next }) => {
-  if (ctx.user.role !== "admin") {
+  if (ctx.user.role !== "administrator" && ctx.user.role !== "host") {
     throw new Error("Forbidden: admin access required");
   }
   return next({ ctx });

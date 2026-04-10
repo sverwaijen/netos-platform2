@@ -40,7 +40,7 @@ export default function OperationsDashboard() {
   const [selectedTicket, setSelectedTicket] = useState<number | null>(null);
   const [showCreateTicket, setShowCreateTicket] = useState(false);
 
-  const ticketStats = trpc.tickets.stats.useQuery(undefined, { enabled: user?.role === "admin" });
+  const ticketStats = trpc.tickets.stats.useQuery(undefined, { enabled: (user?.role === "administrator" || user?.role === "host") });
   const presenceStats = trpc.presence.stats.useQuery();
   const whoIsIn = trpc.presence.whoIsIn.useQuery();
 
@@ -61,7 +61,7 @@ export default function OperationsDashboard() {
       </div>
 
       {/* Quick Stats */}
-      {user?.role === "admin" && (
+      {(user?.role === "administrator" || user?.role === "host") && (
         <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-2 md:gap-3">
           <StatCard icon={Ticket} label="Open tickets" value={ticketStats.data?.open || 0} color="text-blue-500" bg="bg-blue-500/10" />
           <StatCard icon={Clock} label="In behandeling" value={ticketStats.data?.pending || 0} color="text-amber-500" bg="bg-amber-500/10" />
@@ -278,7 +278,7 @@ function TicketDetail({ ticketId, onBack }: { ticketId: number; onBack: () => vo
               <h2 className="text-lg font-medium">{t.subject}</h2>
               {t.description && <p className="text-sm text-muted-foreground mt-1">{t.description}</p>}
             </div>
-            {user?.role === "admin" && (
+            {(user?.role === "administrator" || user?.role === "host") && (
               <div className="flex gap-2">
                 <Select value={t.status} onValueChange={v => updateTicket.mutate({ id: ticketId, status: v as any })}>
                   <SelectTrigger className="w-32 h-8 text-xs"><SelectValue /></SelectTrigger>
@@ -325,7 +325,7 @@ function TicketDetail({ ticketId, onBack }: { ticketId: number; onBack: () => vo
           <div className="pt-3 border-t border-border/20">
             <Textarea placeholder="Typ je antwoord..." rows={3} value={reply} onChange={e => setReply(e.target.value)} />
             <div className="flex items-center justify-between mt-2">
-              {user?.role === "admin" && (
+              {(user?.role === "administrator" || user?.role === "host") && (
                 <Button variant="outline" size="sm" onClick={() => aiSuggest.mutate({ ticketId })} disabled={aiSuggest.isPending}>
                   <Sparkles className="w-3.5 h-3.5 mr-1" />{aiSuggest.isPending ? "Denkt na..." : "AI suggestie"}
                 </Button>

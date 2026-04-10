@@ -4,7 +4,7 @@ import * as db from "../db";
 import { invokeLLM } from "../_core/llm";
 
 const adminProcedure = protectedProcedure.use(({ ctx, next }) => {
-  if (ctx.user.role !== "admin") throw new Error("Forbidden: admin access required");
+  if (ctx.user.role !== "administrator" && ctx.user.role !== "host") throw new Error("Forbidden: admin access required");
   return next({ ctx });
 });
 

@@ -8,7 +8,7 @@ import {
 import { eq, and, desc, gte, lte } from "drizzle-orm";
 
 const adminProcedure = protectedProcedure.use(({ ctx, next }) => {
-  if (ctx.user.role !== "admin") throw new Error("Forbidden");
+  if (ctx.user.role !== "administrator" && ctx.user.role !== "host") throw new Error("Forbidden");
   return next({ ctx });
 });
 

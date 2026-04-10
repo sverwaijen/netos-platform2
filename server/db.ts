@@ -46,7 +46,7 @@ export async function upsertUser(user: InsertUser): Promise<void> {
   textFields.forEach(assignNullable);
   if (user.lastSignedIn !== undefined) { values.lastSignedIn = user.lastSignedIn; updateSet.lastSignedIn = user.lastSignedIn; }
   if (user.role !== undefined) { values.role = user.role; updateSet.role = user.role; }
-  else if (user.openId === ENV.ownerOpenId) { values.role = 'admin'; updateSet.role = 'admin'; }
+  else if (user.openId === ENV.ownerOpenId) { values.role = 'administrator'; updateSet.role = 'administrator'; }
   if (!values.lastSignedIn) values.lastSignedIn = new Date();
   if (Object.keys(updateSet).length === 0) updateSet.lastSignedIn = new Date();
   await db.insert(users).values(values).onDuplicateKeyUpdate({ set: updateSet });
@@ -92,6 +92,26 @@ export async function searchUsers(query: string, limit = 20) {
   return db.select().from(users).where(
     or(like(users.name, `%${query}%`), like(users.email, `%${query}%`))
   ).orderBy(desc(users.createdAt)).limit(limit);
+}
+
+export async function updateUserRole(userId: number, role: string) {
+  const db = await getDb();
+  if (!db) return;
+  await db.update(users).set({ role: role as any }).where(eq(users.id, userId));
+}
+
+export async function getAllUsersWithRoles() {
+  const db = await getDb();
+  if (!db) return [];
+  return db.select({
+    id: users.id,
+    name: users.name,
+    email: users.email,
+    role: users.role,
+    avatarUrl: users.avatarUrl,
+    createdAt: users.createdAt,
+    lastSignedIn: users.lastSignedIn,
+  }).from(users).orderBy(desc(users.createdAt));
 }
 
 // ─── Locations ───
