@@ -1,5 +1,5 @@
 import { trpc } from "@/lib/trpc";
-import { useState, useEffect, useCallback } from "react";
+import { useState, useEffect } from "react";
 import { BRAND } from "@/lib/brand";
 import SignageGymDisplay from "@/components/signage/SignageGymDisplay";
 import SignageKitchenDisplay from "@/components/signage/SignageKitchenDisplay";
@@ -9,77 +9,67 @@ import SignageGenericDisplay from "@/components/signage/SignageGenericDisplay";
 import SignageMenuDisplay from "@/components/signage/SignageMenuDisplay";
 import SignageProvisioningScreen from "@/components/signage/SignageProvisioningScreen";
 
-// ─── Get screen ID from URL params ──────────────────────────────────
-function getScreenId(): number | null {
+// ─── Parse URL params ──────────────────────────────────────────────
+function getParams() {
   const params = new URLSearchParams(window.location.search);
-  const id = params.get("screenId");
-  return id ? parseInt(id) : null;
-}
-
-function getProvisioningToken(): string | null {
-  const params = new URLSearchParams(window.location.search);
-  return params.get("token");
+  return {
+    screenId: params.get("screenId") ? parseInt(params.get("screenId")!) : null,
+    token: params.get("token"),
+    type: params.get("type"),
+    locationId: params.get("locationId") ? parseInt(params.get("locationId")!) : null,
+    demo: params.get("demo") === "true",
+  };
 }
 
 export default function SignageDisplay() {
-  const screenId = getScreenId();
-  const token = getProvisioningToken();
+  const { screenId, token, type, locationId: paramLocationId, demo } = getParams();
   const [provisionedScreenId, setProvisionedScreenId] = useState<number | null>(null);
   const [time, setTime] = useState(new Date());
 
   const effectiveScreenId = screenId || provisionedScreenId;
+  const isDemoMode = demo && type && paramLocationId;
 
-  // ─── Screen config query ──────────────────────────────────────────
+  // ─── Screen config query (only when not in demo mode) ────────────
   const { data: config, refetch: refetchConfig } = trpc.signageDisplay.getScreenConfig.useQuery(
     { screenId: effectiveScreenId! },
-    { enabled: !!effectiveScreenId, refetchInterval: 30000 }
+    { enabled: !!effectiveScreenId && !isDemoMode, refetchInterval: 30000 }
   );
 
-  // ─── Heartbeat mutation ───────────────────────────────────────────
+  // ─── Heartbeat ───────────────────────────────────────────────────
   const heartbeat = trpc.signageScreens.heartbeat.useMutation();
 
-  // ─── Provisioning mutation ────────────────────────────────────────
+  // ─── Provisioning ────────────────────────────────────────────────
   const provision = trpc.signageScreens.provision.useMutation({
     onSuccess: (data) => {
       setProvisionedScreenId(data.screenId);
-      // Store for future visits
       localStorage.setItem("signage_screen_id", data.screenId.toString());
     },
   });
 
   // ─── Auto-provision on load ───────────────────────────────────────
   useEffect(() => {
+    if (isDemoMode) return;
     if (!screenId && !provisionedScreenId) {
-      // Check localStorage
       const stored = localStorage.getItem("signage_screen_id");
       if (stored) {
         setProvisionedScreenId(parseInt(stored));
         return;
       }
-      // If we have a token, provision
       if (token) {
-        provision.mutate({
-          token,
-          ipAddress: undefined,
-          userAgent: navigator.userAgent,
-        });
+        provision.mutate({ token, ipAddress: undefined, userAgent: navigator.userAgent });
       }
     }
-  }, [screenId, token, provisionedScreenId]);
+  }, [screenId, token, provisionedScreenId, isDemoMode]);
 
-  // ─── Send heartbeat every 60s ─────────────────────────────────────
+  // ─── Heartbeat every 60s ──────────────────────────────────────────
   useEffect(() => {
-    if (!effectiveScreenId) return;
+    if (!effectiveScreenId || isDemoMode) return;
     const interval = setInterval(() => {
-      heartbeat.mutate({
-        screenId: effectiveScreenId,
-        status: "online",
-      });
+      heartbeat.mutate({ screenId: effectiveScreenId, status: "online" });
     }, 60000);
-    // Send initial heartbeat
     heartbeat.mutate({ screenId: effectiveScreenId, status: "online" });
     return () => clearInterval(interval);
-  }, [effectiveScreenId]);
+  }, [effectiveScreenId, isDemoMode]);
 
   // ─── Clock ────────────────────────────────────────────────────────
   useEffect(() => {
@@ -87,12 +77,52 @@ export default function SignageDisplay() {
     return () => clearInterval(interval);
   }, []);
 
-  // ─── No screen ID and no token → show provisioning screen ────────
+  // ═══ DEMO MODE ═══════════════════════════════════════════════════
+  if (isDemoMode && type && paramLocationId) {
+    const demoConfig = {
+      screen: {
+        id: 0,
+        name: `Demo ${type}`,
+        screenType: type,
+        locationId: paramLocationId,
+        status: "online",
+        orientation: "portrait",
+        brightness: 100,
+        volume: 50,
+      },
+      location: { id: paramLocationId, name: "Demo Locatie" },
+      playlist: null,
+      items: [],
+    };
+
+    const displayProps = {
+      config: demoConfig as any,
+      time,
+      locationId: paramLocationId,
+      onRefresh: () => {},
+      isDemo: true,
+    };
+
+    switch (type) {
+      case "gym":
+        return <SignageGymDisplay {...displayProps} />;
+      case "kitchen":
+        return <SignageKitchenDisplay {...displayProps} />;
+      case "wayfinding":
+        return <SignageWayfindingDisplay {...displayProps} />;
+      case "reception":
+        return <SignageReceptionDisplay {...displayProps} />;
+      default:
+        return <SignageGenericDisplay {...displayProps} />;
+    }
+  }
+
+  // ═══ PROVISIONING SCREEN ═════════════════════════════════════════
   if (!effectiveScreenId && !token) {
     return <SignageProvisioningScreen />;
   }
 
-  // ─── Loading ──────────────────────────────────────────────────────
+  // ═══ LOADING ═════════════════════════════════════════════════════
   if (!config) {
     return (
       <div className="fixed inset-0 bg-[#1a2614] flex items-center justify-center">
@@ -105,7 +135,7 @@ export default function SignageDisplay() {
     );
   }
 
-  // ─── Route to correct display based on screen type ────────────────
+  // ═══ ROUTE TO DISPLAY ════════════════════════════════════════════
   const screenType = config.screen.screenType;
   const locationId = config.screen.locationId;
 
@@ -114,6 +144,7 @@ export default function SignageDisplay() {
     time,
     locationId,
     onRefresh: refetchConfig,
+    isDemo: false,
   };
 
   switch (screenType) {

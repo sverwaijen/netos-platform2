@@ -1,18 +1,18 @@
 import { trpc } from "@/lib/trpc";
 import SignageLayout from "./SignageLayout";
-import { Dumbbell, Clock, Users, Flame, Heart, Zap, Activity } from "lucide-react";
+import { Dumbbell, Users, Flame, Heart, Zap, Activity, Trophy } from "lucide-react";
 
-const CATEGORY_CONFIG: Record<string, { icon: any; color: string; gradient: string }> = {
-  cardio: { icon: Heart, color: "#e74c3c", gradient: "from-red-900/30 to-red-800/10" },
-  strength: { icon: Dumbbell, color: "#c4a68a", gradient: "from-amber-900/30 to-amber-800/10" },
-  yoga: { icon: Activity, color: "#7cb342", gradient: "from-green-900/30 to-green-800/10" },
-  pilates: { icon: Activity, color: "#ab47bc", gradient: "from-purple-900/30 to-purple-800/10" },
-  hiit: { icon: Flame, color: "#ff7043", gradient: "from-orange-900/30 to-orange-800/10" },
-  cycling: { icon: Zap, color: "#42a5f5", gradient: "from-blue-900/30 to-blue-800/10" },
-  boxing: { icon: Zap, color: "#ef5350", gradient: "from-red-900/30 to-red-800/10" },
-  stretching: { icon: Activity, color: "#66bb6a", gradient: "from-green-900/30 to-green-800/10" },
-  meditation: { icon: Heart, color: "#7e57c2", gradient: "from-purple-900/30 to-purple-800/10" },
-  egym: { icon: Dumbbell, color: "#c4a68a", gradient: "from-amber-900/30 to-amber-800/10" },
+const CATEGORY_META: Record<string, { icon: any; color: string; label: string }> = {
+  cardio: { icon: Heart, color: "#ef4444", label: "Cardio" },
+  strength: { icon: Dumbbell, color: "#3b82f6", label: "Strength" },
+  yoga: { icon: Activity, color: "#7cb342", label: "Yoga" },
+  pilates: { icon: Activity, color: "#ab47bc", label: "Pilates" },
+  hiit: { icon: Flame, color: "#ff7043", label: "HIIT" },
+  cycling: { icon: Zap, color: "#42a5f5", label: "Cycling" },
+  boxing: { icon: Flame, color: "#ef5350", label: "Boxing" },
+  stretching: { icon: Activity, color: "#66bb6a", label: "Stretching" },
+  meditation: { icon: Heart, color: "#7e57c2", label: "Meditation" },
+  egym: { icon: Trophy, color: "#14b8a6", label: "EGYM" },
 };
 
 interface Props {
@@ -20,73 +20,76 @@ interface Props {
   time: Date;
   locationId: number;
   onRefresh: () => void;
+  isDemo?: boolean;
 }
 
-export default function SignageGymDisplay({ config, time, locationId, onRefresh }: Props) {
+const DEMO_CLASSES = [
+  { className: "Power Yoga", instructor: "Lisa", category: "yoga", startTime: "07:00", endTime: "08:00", maxParticipants: 15 },
+  { className: "HIIT Blast", instructor: "Mark", category: "hiit", startTime: "08:30", endTime: "09:15", maxParticipants: 20 },
+  { className: "Spinning", instructor: "Sophie", category: "cycling", startTime: "09:30", endTime: "10:15", maxParticipants: 25 },
+  { className: "Muscle Strength", instructor: "Tom", category: "strength", startTime: "10:30", endTime: "11:30", maxParticipants: 12 },
+  { className: "EGYM Circuit", instructor: "EGYM", category: "egym", startTime: "12:00", endTime: "12:45", maxParticipants: 8 },
+  { className: "Boxing Fit", instructor: "Ahmed", category: "boxing", startTime: "13:00", endTime: "14:00", maxParticipants: 16 },
+  { className: "Stretch & Relax", instructor: "Eva", category: "stretching", startTime: "17:00", endTime: "17:45", maxParticipants: 20 },
+  { className: "Endurance Run", instructor: "Pieter", category: "cardio", startTime: "18:00", endTime: "19:00", maxParticipants: 30 },
+];
+
+const VITALITY_TIPS = [
+  "Drink minimaal 2 liter water per dag",
+  "Neem elke 45 minuten een beweegpauze",
+  "Gebruik de trap in plaats van de lift",
+  "Stretch je schouders en nek regelmatig",
+];
+
+export default function SignageGymDisplay({ config, time, locationId, onRefresh, isDemo }: Props) {
   const { data: schedule } = trpc.signageDisplay.getGymSchedule.useQuery(
     { locationId },
-    { refetchInterval: 120000 }
+    { enabled: !isDemo, refetchInterval: 60000 }
   );
 
-  const currentHour = time.getHours();
-  const currentMinute = time.getMinutes();
-  const currentTimeStr = `${currentHour.toString().padStart(2, "0")}:${currentMinute.toString().padStart(2, "0")}`;
+  const classes = isDemo ? DEMO_CLASSES : (schedule || []);
+  const now = time.toLocaleTimeString("nl-NL", { hour: "2-digit", minute: "2-digit" });
 
-  // Find current and upcoming classes
-  const sortedSchedule = (schedule || []).sort((a: any, b: any) => a.startTime.localeCompare(b.startTime));
-  const currentClass = sortedSchedule.find((c: any) => c.startTime <= currentTimeStr && c.endTime > currentTimeStr);
-  const upcomingClasses = sortedSchedule.filter((c: any) => c.startTime > currentTimeStr);
-  const pastClasses = sortedSchedule.filter((c: any) => c.endTime <= currentTimeStr);
+  const sortedClasses = [...classes].sort((a: any, b: any) => a.startTime.localeCompare(b.startTime));
+  const currentClass = sortedClasses.find((c: any) => c.startTime <= now && c.endTime > now);
+  const upcomingClasses = sortedClasses.filter((c: any) => c.startTime > now);
+  const pastClasses = sortedClasses.filter((c: any) => c.endTime <= now);
 
-  const dayNames = ["Zondag", "Maandag", "Dinsdag", "Woensdag", "Donderdag", "Vrijdag", "Zaterdag"];
+  const tipIndex = Math.floor(time.getMinutes() / 15) % VITALITY_TIPS.length;
 
   return (
-    <SignageLayout
-      theme="brown"
-      locationName={config.location?.name}
-      time={time}
-      footerText="Vitality made easy"
-    >
-      <div className="h-full flex flex-col gap-6">
-        {/* Title */}
-        <div>
-          <div className="text-[10px] tracking-[4px] uppercase text-[#c4a68a]/60 font-semibold mb-2">
-            Gym Rooster — {dayNames[time.getDay()]}
-          </div>
-          <h2 className="text-3xl font-extralight">
-            Stay <strong className="font-semibold">Active.</strong>
+    <SignageLayout theme="gym" locationName={config.location?.name} time={time} footerText="Exercise made easy" isDemo={isDemo}>
+      <div className="h-full flex flex-col gap-4">
+        {/* Header */}
+        <div className="shrink-0">
+          <div className="text-[9px] tracking-[5px] uppercase font-semibold text-teal-400/60 mb-2">Exercise Made Easy</div>
+          <h2 className="text-[clamp(24px,4vw,36px)] font-black uppercase tracking-tight leading-none text-white">
+            Work That<br />Body
           </h2>
         </div>
 
-        {/* Current Class Highlight */}
+        {/* Current class highlight */}
         {currentClass && (
-          <div className="bg-[#c4a68a]/10 border border-[#c4a68a]/20 rounded-2xl p-6 relative overflow-hidden">
-            <div className="absolute top-3 right-4 flex items-center gap-2">
-              <div className="w-2 h-2 rounded-full bg-[#c4a68a] animate-pulse" />
-              <span className="text-[10px] tracking-[2px] uppercase text-[#c4a68a] font-semibold">Nu bezig</span>
-            </div>
-            <div className="flex items-center gap-5">
-              <div className="w-16 h-16 rounded-xl bg-[#c4a68a]/20 flex items-center justify-center">
-                {(() => {
-                  const cat = CATEGORY_CONFIG[currentClass.category] || CATEGORY_CONFIG.cardio;
-                  const Icon = cat.icon;
-                  return <Icon className="w-8 h-8" style={{ color: cat.color }} />;
-                })()}
+          <div className="shrink-0 rounded-2xl overflow-hidden border border-teal-500/20" style={{ background: "linear-gradient(135deg, rgba(20,184,166,0.15), rgba(20,184,166,0.05))" }}>
+            <div className="p-5">
+              <div className="flex items-center gap-2 mb-2">
+                <div className="w-2 h-2 rounded-full bg-teal-400 animate-pulse" />
+                <span className="text-[9px] tracking-[3px] uppercase text-teal-400 font-semibold">Nu bezig</span>
               </div>
-              <div className="flex-1">
-                <h3 className="text-2xl font-light">{currentClass.className}</h3>
-                <div className="flex items-center gap-4 mt-1">
-                  {currentClass.instructor && (
-                    <span className="text-sm text-white/50">{currentClass.instructor}</span>
-                  )}
-                  <span className="text-sm text-[#c4a68a]">{currentClass.startTime} — {currentClass.endTime}</span>
-                  <span className="text-sm text-white/40 capitalize">{currentClass.category}</span>
+              <div className="flex items-center gap-4">
+                <div className="w-14 h-14 rounded-xl flex items-center justify-center" style={{ background: `${CATEGORY_META[currentClass.category]?.color || "#14b8a6"}20` }}>
+                  {(() => { const Icon = CATEGORY_META[currentClass.category]?.icon || Dumbbell; return <Icon className="w-7 h-7" style={{ color: CATEGORY_META[currentClass.category]?.color || "#14b8a6" }} />; })()}
                 </div>
-              </div>
-              <div className="text-right">
-                <div className="flex items-center gap-1 text-white/40">
-                  <Users className="w-4 h-4" />
-                  <span className="text-sm">{currentClass.currentParticipants || 0}/{currentClass.maxParticipants}</span>
+                <div className="flex-1">
+                  <h3 className="text-xl font-semibold">{currentClass.className}</h3>
+                  <div className="flex items-center gap-3 mt-1 text-[11px] text-white/40">
+                    <span>{currentClass.startTime} - {currentClass.endTime}</span>
+                    {currentClass.instructor && <span>{currentClass.instructor}</span>}
+                    {currentClass.maxParticipants && <span><Users className="w-3 h-3 inline mr-0.5" />{currentClass.maxParticipants}</span>}
+                  </div>
+                </div>
+                <div className="text-right">
+                  <div className="text-2xl font-extralight text-teal-400">{currentClass.startTime}</div>
                 </div>
               </div>
             </div>
@@ -94,65 +97,72 @@ export default function SignageGymDisplay({ config, time, locationId, onRefresh 
         )}
 
         {!currentClass && (
-          <div className="bg-white/[0.03] border border-white/[0.06] rounded-2xl p-8 text-center">
-            <Dumbbell className="w-10 h-10 text-[#c4a68a]/30 mx-auto mb-3" />
-            <p className="text-lg font-light text-white/40">Geen les op dit moment</p>
-            <p className="text-sm text-white/20 mt-1">
-              {upcomingClasses.length > 0
-                ? `Volgende les om ${upcomingClasses[0].startTime}`
-                : "Geen lessen meer vandaag"}
+          <div className="shrink-0 bg-white/[0.03] border border-white/[0.06] rounded-2xl p-6 text-center">
+            <Dumbbell className="w-8 h-8 text-teal-400/20 mx-auto mb-2" />
+            <p className="text-base font-light text-white/35">Geen les op dit moment</p>
+            <p className="text-xs text-white/20 mt-1">
+              {upcomingClasses.length > 0 ? `Volgende les om ${upcomingClasses[0].startTime}` : "Geen lessen meer vandaag"}
             </p>
           </div>
         )}
 
-        {/* Upcoming Classes */}
-        {upcomingClasses.length > 0 && (
-          <div className="flex-1 overflow-hidden">
-            <div className="text-[10px] tracking-[3px] uppercase text-white/30 font-semibold mb-3">
-              Komende lessen
-            </div>
-            <div className="space-y-2">
-              {upcomingClasses.slice(0, 6).map((cls: any, i: number) => {
-                const cat = CATEGORY_CONFIG[cls.category] || CATEGORY_CONFIG.cardio;
-                const Icon = cat.icon;
-                return (
-                  <div
-                    key={cls.id || i}
-                    className="flex items-center gap-4 py-3 px-4 rounded-xl bg-white/[0.02] border border-white/[0.04] hover:bg-white/[0.04] transition-colors"
-                  >
-                    <div className="w-10 h-10 rounded-lg flex items-center justify-center" style={{ background: `${cat.color}15` }}>
-                      <Icon className="w-5 h-5" style={{ color: cat.color }} />
-                    </div>
-                    <div className="flex-1">
-                      <p className="text-sm font-light">{cls.className}</p>
-                      <p className="text-[11px] text-white/30">{cls.instructor || cls.category}</p>
-                    </div>
-                    <div className="text-right">
-                      <p className="text-sm font-mono text-[#c4a68a]">{cls.startTime}</p>
-                      <p className="text-[10px] text-white/30">{cls.endTime}</p>
-                    </div>
-                    <div className="flex items-center gap-1 text-white/20 min-w-[60px] justify-end">
-                      <Users className="w-3 h-3" />
-                      <span className="text-[11px]">{cls.currentParticipants || 0}/{cls.maxParticipants}</span>
+        {/* Schedule list */}
+        <div className="flex-1 overflow-hidden">
+          <div className="text-[9px] tracking-[3px] uppercase text-white/30 font-semibold mb-2">
+            {currentClass ? "Volgende lessen" : "Rooster vandaag"}
+          </div>
+          <div className="space-y-1.5 overflow-y-auto h-full pr-1" style={{ scrollbarWidth: "none" }}>
+            {(currentClass ? upcomingClasses : sortedClasses).map((cls: any, idx: number) => {
+              const meta = CATEGORY_META[cls.category] || { icon: Dumbbell, color: "#14b8a6", label: cls.category };
+              const Icon = meta.icon;
+              const isPast = pastClasses.includes(cls);
+              return (
+                <div key={idx} className={`flex items-center gap-3 py-2.5 px-3 rounded-xl border transition-all ${isPast ? "bg-white/[0.01] border-white/[0.02] opacity-40" : "bg-white/[0.03] border-white/[0.05]"}`}>
+                  <div className="w-9 h-9 rounded-lg flex items-center justify-center shrink-0" style={{ background: `${meta.color}15` }}>
+                    <Icon className="w-4 h-4" style={{ color: meta.color }} />
+                  </div>
+                  <div className="flex-1 min-w-0">
+                    <p className="text-[13px] font-medium truncate">{cls.className}</p>
+                    <div className="flex items-center gap-2 text-[9px] text-white/30">
+                      <span className="capitalize">{meta.label}</span>
+                      {cls.instructor && <span>{cls.instructor}</span>}
                     </div>
                   </div>
-                );
-              })}
-            </div>
+                  <div className="text-right shrink-0">
+                    <div className="text-sm font-light text-white/70">{cls.startTime}</div>
+                    <div className="text-[9px] text-white/25">{cls.endTime}</div>
+                  </div>
+                </div>
+              );
+            })}
+            {classes.length === 0 && (
+              <div className="text-center py-12">
+                <Dumbbell className="w-8 h-8 text-white/10 mx-auto mb-3" />
+                <p className="text-sm text-white/25">Geen lessen vandaag</p>
+              </div>
+            )}
           </div>
-        )}
+        </div>
 
-        {/* Vitality Tips */}
-        <div className="grid grid-cols-3 gap-3 shrink-0">
+        {/* Vitality tip */}
+        <div className="shrink-0 rounded-xl bg-[#627653]/10 border border-[#627653]/15 p-3 flex items-center gap-3">
+          <Trophy className="w-4 h-4 text-[#627653] shrink-0" />
+          <div>
+            <div className="text-[8px] tracking-[3px] uppercase text-[#627653]/60 font-semibold">Vitality Tip</div>
+            <p className="text-[11px] text-white/50 font-light">{VITALITY_TIPS[tipIndex]}</p>
+          </div>
+        </div>
+
+        {/* EGYM categories */}
+        <div className="shrink-0 grid grid-cols-3 gap-2">
           {[
-            { icon: Heart, text: "Beweeg elke 30 min", sub: "Sta op en stretch" },
-            { icon: Activity, text: "Ergonomisch werken", sub: "Stel je bureau goed in" },
-            { icon: Flame, text: "Stay hydrated", sub: "Drink 2L water per dag" },
-          ].map((tip, i) => (
-            <div key={i} className="bg-white/[0.02] border border-white/[0.04] rounded-xl p-4 text-center">
-              <tip.icon className="w-5 h-5 text-[#c4a68a]/50 mx-auto mb-2" />
-              <p className="text-[11px] font-medium">{tip.text}</p>
-              <p className="text-[10px] text-white/30 mt-0.5">{tip.sub}</p>
+            { label: "Muscle Strength", sub: "Lift those weights!", color: "#3b82f6" },
+            { label: "Endurance", sub: "Raise that heartbeat!", color: "#ef4444" },
+            { label: "Mobility", sub: "Stretch that body!", color: "#a855f7" },
+          ].map((cat, i) => (
+            <div key={i} className="bg-white/[0.02] border border-white/[0.04] rounded-xl p-2.5 text-center">
+              <p className="text-[10px] font-semibold" style={{ color: cat.color }}>{cat.label}</p>
+              <p className="text-[8px] text-white/25 italic mt-0.5">{cat.sub}</p>
             </div>
           ))}
         </div>
