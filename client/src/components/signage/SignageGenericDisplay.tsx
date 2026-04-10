@@ -88,6 +88,9 @@ export default function SignageGenericDisplay({ config, time, locationId, onRefr
             {slide.contentType === "url" && slide.externalUrl && (
               <iframe src={slide.externalUrl} className="w-full h-full rounded-2xl border-0" allow="autoplay" />
             )}
+            {slide.contentType === "pdf" && slide.mediaUrl && (
+              <iframe src={`${slide.mediaUrl}#toolbar=0&navpanes=0&scrollbar=0`} className="w-full h-full rounded-2xl border-0 bg-white" />
+            )}
             {slide.contentType === "announcement" && (
               <div className="h-full w-full flex items-center justify-center rounded-2xl" style={{ background: "linear-gradient(135deg, #627653dd, #3a4a34ee)" }}>
                 <div className="text-center max-w-3xl px-12">

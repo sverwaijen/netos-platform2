@@ -408,7 +408,7 @@ export const signageContentRouter = router({
   create: adminProcedure.input(z.object({
     title: z.string().min(1),
     contentType: z.enum([
-      "image", "video", "html", "url", "menu_card", "wayfinding",
+      "image", "video", "pdf", "html", "url", "menu_card", "wayfinding",
       "gym_schedule", "weather", "clock", "news_ticker",
       "company_presence", "welcome_screen", "announcement",
     ]),

@@ -13,12 +13,13 @@ import {
   Copy, ExternalLink, FileImage, Video, Globe, Type, Edit3,
   ArrowUp, ArrowDown, Maximize2, X, Leaf, Wheat, Users,
   Layers, Sun, GripVertical, Settings, Link2, Play, RefreshCw,
+  FileText, Upload, RotateCw, Smartphone, MonitorSmartphone, Image,
 } from "lucide-react";
 
 // ─── Constants ──────────────────────────────────────────────────────
 type TabKey = "screens" | "content" | "playlists" | "wayfinding" | "kitchen" | "gym" | "provisioning";
 const SCREEN_TYPES = ["reception", "gym", "kitchen", "wayfinding", "general", "meeting_room", "elevator", "parking"] as const;
-const CONTENT_TYPES = ["image", "video", "html", "url", "announcement", "welcome_screen", "menu_card", "wayfinding", "gym_schedule", "weather", "clock", "news_ticker", "company_presence"] as const;
+const CONTENT_TYPES = ["image", "video", "pdf", "html", "url", "announcement", "welcome_screen", "menu_card", "wayfinding", "gym_schedule", "weather", "clock", "news_ticker", "company_presence"] as const;
 const MENU_CATEGORIES = ["breakfast", "lunch", "dinner", "snack", "drink", "soup", "salad", "sandwich", "special"] as const;
 const GYM_CATEGORIES = ["cardio", "strength", "yoga", "pilates", "hiit", "cycling", "boxing", "stretching", "meditation", "egym"] as const;
 const DAYS = ["Zondag", "Maandag", "Dinsdag", "Woensdag", "Donderdag", "Vrijdag", "Zaterdag"];
@@ -45,6 +46,7 @@ const STATUS_META: Record<string, { color: string; icon: any; label: string }> =
 const CONTENT_TYPE_META: Record<string, { icon: any; label: string }> = {
   image: { icon: FileImage, label: "Afbeelding" },
   video: { icon: Video, label: "Video" },
+  pdf: { icon: FileText, label: "PDF" },
   html: { icon: Type, label: "HTML" },
   url: { icon: Globe, label: "URL" },
   announcement: { icon: Zap, label: "Aankondiging" },
@@ -158,19 +160,56 @@ function ScreenPreview({ screenType, status }: { screenType: string; status: str
 }
 
 // ─── Content Preview Thumbnail ──────────────────────────────────────
-function ContentThumb({ type, url, title }: { type: string; url?: string | null; title: string }) {
-  if (type === "image" && url) {
+function ContentThumb({ type, url, title, size = "sm" }: { type: string; url?: string | null; title: string; size?: "sm" | "lg" }) {
+  const dim = size === "lg" ? "w-full aspect-video" : "w-10 h-10";
+  if ((type === "image" || type === "pdf") && url) {
     return (
-      <div className="w-10 h-10 rounded bg-white/[0.04] overflow-hidden flex-shrink-0">
+      <div className={`${dim} rounded bg-white/[0.04] overflow-hidden flex-shrink-0`}>
         <img src={url} alt={title} className="w-full h-full object-cover" />
+      </div>
+    );
+  }
+  if (type === "video" && url) {
+    return (
+      <div className={`${dim} rounded bg-white/[0.04] overflow-hidden flex-shrink-0 relative`}>
+        <video src={url} className="w-full h-full object-cover" muted />
+        <div className="absolute inset-0 flex items-center justify-center bg-black/30">
+          <Play className="w-4 h-4 text-white/80" />
+        </div>
       </div>
     );
   }
   const meta = CONTENT_TYPE_META[type] || { icon: FileImage, label: type };
   const Icon = meta.icon;
   return (
-    <div className="w-10 h-10 rounded bg-white/[0.04] flex items-center justify-center flex-shrink-0">
+    <div className={`${dim} rounded bg-white/[0.04] flex items-center justify-center flex-shrink-0`}>
       <Icon className="w-4 h-4 text-white/30" />
+    </div>
+  );
+}
+
+// ─── Orientation Toggle ────────────────────────────────────────────
+function OrientationToggle({ value, onChange }: { value: string; onChange: (v: string) => void }) {
+  return (
+    <div className="flex bg-white/[0.04] rounded-lg p-0.5 gap-0.5">
+      <button
+        onClick={() => onChange("portrait")}
+        className={`flex items-center gap-1.5 px-3 py-1.5 rounded text-[10px] transition-all ${
+          value === "portrait" ? "bg-[#627653]/30 text-[#627653]" : "text-[#888] hover:text-white"
+        }`}
+      >
+        <Smartphone className="w-3 h-3" />
+        Portrait
+      </button>
+      <button
+        onClick={() => onChange("landscape")}
+        className={`flex items-center gap-1.5 px-3 py-1.5 rounded text-[10px] transition-all ${
+          value === "landscape" ? "bg-[#627653]/30 text-[#627653]" : "text-[#888] hover:text-white"
+        }`}
+      >
+        <MonitorSmartphone className="w-3 h-3" />
+        Landscape
+      </button>
     </div>
   );
 }
@@ -522,32 +561,58 @@ export default function SigningPage() {
             </Button>
           </div>
 
-          <div className="space-y-2">
+          {/* Visual Grid View */}
+          <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-4">
             {(content || []).map((item: any) => {
               const meta = CONTENT_TYPE_META[item.contentType] || { icon: FileImage, label: item.contentType };
               const Icon = meta.icon;
               return (
-                <div key={item.id} className="flex items-center gap-3 p-3 rounded-lg bg-[#111] border border-white/[0.06] hover:border-white/[0.12] transition-all group">
-                  <ContentThumb type={item.contentType} url={item.mediaUrl} title={item.title} />
-                  <div className="flex-1 min-w-0">
-                    <div className="flex items-center gap-2">
-                      <p className="text-sm font-light truncate">{item.title}</p>
-                      <Badge variant="outline" className="text-[8px] shrink-0">{meta.label}</Badge>
+                <div key={item.id} className="group cursor-pointer" onClick={() => setEditingContent(item)}>
+                  {/* Preview */}
+                  <div className="relative aspect-[9/16] rounded-xl overflow-hidden border border-white/[0.08] hover:border-[#627653]/30 transition-all bg-[#111]">
+                    {(item.contentType === "image" || item.contentType === "pdf") && item.mediaUrl ? (
+                      <img src={item.mediaUrl} alt={item.title} className="w-full h-full object-cover" />
+                    ) : item.contentType === "video" && item.mediaUrl ? (
+                      <>
+                        <video src={item.mediaUrl} className="w-full h-full object-cover" muted />
+                        <div className="absolute inset-0 flex items-center justify-center bg-black/30">
+                          <Play className="w-8 h-8 text-white/80" />
+                        </div>
+                      </>
+                    ) : (
+                      <div className="w-full h-full flex flex-col items-center justify-center gap-2 bg-gradient-to-b from-white/[0.02] to-transparent">
+                        <Icon className="w-8 h-8 text-white/15" />
+                        <span className="text-[8px] text-white/20 tracking-[2px] uppercase">{meta.label}</span>
+                      </div>
+                    )}
+                    {/* Type badge */}
+                    <div className="absolute top-1.5 left-1.5">
+                      <Badge variant="outline" className="text-[7px] bg-black/60 backdrop-blur-sm border-white/10">{meta.label}</Badge>
                     </div>
-                    <div className="flex items-center gap-3 mt-0.5 text-[10px] text-[#888]">
-                      <span>{item.duration}s</span>
-                      {item.mediaUrl && <span className="truncate max-w-[200px]">{item.mediaUrl}</span>}
-                      {item.priority > 0 && <span>Prioriteit: {item.priority}</span>}
+                    {/* Duration badge */}
+                    <div className="absolute bottom-1.5 right-1.5">
+                      <span className="text-[8px] bg-black/60 backdrop-blur-sm text-white/60 px-1.5 py-0.5 rounded">{item.duration}s</span>
+                    </div>
+                    {/* Hover overlay */}
+                    <div className="absolute inset-0 bg-black/50 opacity-0 group-hover:opacity-100 transition-all flex items-center justify-center gap-2">
+                      <Edit3 className="w-4 h-4 text-white" />
+                      <span className="text-[10px] text-white">Bewerken</span>
                     </div>
                   </div>
-                  <div className="flex gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
-                    <Button variant="ghost" size="sm" className="h-7 w-7 p-0" onClick={() => setEditingContent(item)}>
-                      <Edit3 className="w-3.5 h-3.5" />
-                    </Button>
-                    <Button variant="ghost" size="sm" className="h-7 w-7 p-0 text-red-400 hover:text-red-300" onClick={() => {
+                  {/* Info */}
+                  <div className="mt-1.5 px-0.5">
+                    <p className="text-[11px] font-medium truncate">{item.title}</p>
+                    <div className="flex items-center gap-1.5 mt-0.5">
+                      {item.priority > 0 && <span className="text-[8px] text-[#627653]">P{item.priority}</span>}
+                    </div>
+                  </div>
+                  {/* Quick delete on hover */}
+                  <div className="flex gap-1 mt-1 opacity-0 group-hover:opacity-100 transition-opacity">
+                    <Button variant="ghost" size="sm" className="h-5 px-1.5 text-[8px] text-red-400 hover:text-red-300" onClick={(e) => {
+                      e.stopPropagation();
                       if (confirm("Content verwijderen?")) deleteContent.mutate({ id: item.id });
                     }}>
-                      <Trash2 className="w-3.5 h-3.5" />
+                      <Trash2 className="w-2.5 h-2.5 mr-0.5" />Verwijder
                     </Button>
                   </div>
                 </div>
@@ -559,6 +624,7 @@ export default function SigningPage() {
             <div className="text-center py-16">
               <FileImage className="w-8 h-8 text-[#888] mx-auto mb-3 opacity-30" />
               <p className="text-sm text-[#888] font-light">Nog geen content items</p>
+              <p className="text-xs text-[#888] font-light mt-1">Upload afbeeldingen, video's, PDF's of maak HTML content aan</p>
             </div>
           )}
         </div>
@@ -1264,52 +1330,101 @@ export default function SigningPage() {
 
       {/* ═══ CREATE CONTENT DIALOG ═══ */}
       <Dialog open={showCreateContent} onOpenChange={setShowCreateContent}>
-        <DialogContent className="bg-[#111] border-white/[0.06] sm:max-w-lg">
+        <DialogContent className="bg-[#111] border-white/[0.06] sm:max-w-2xl">
           <DialogHeader><DialogTitle className="font-light text-lg">Nieuwe content</DialogTitle></DialogHeader>
-          <div className="space-y-4">
-            <div>
-              <label className="text-[10px] text-[#888] tracking-[2px] uppercase font-medium">Titel</label>
-              <Input value={contentForm.title} onChange={(e) => setContentForm({ ...contentForm, title: e.target.value })} placeholder="Welkom bij Mr. Green" className="mt-1 bg-white/[0.03] border-white/[0.06]" />
+          <div className="grid grid-cols-5 gap-6">
+            {/* Left: Form */}
+            <div className="col-span-3 space-y-4">
+              <div>
+                <label className="text-[10px] text-[#888] tracking-[2px] uppercase font-medium">Titel</label>
+                <Input value={contentForm.title} onChange={(e) => setContentForm({ ...contentForm, title: e.target.value })} placeholder="Welkom bij Mr. Green" className="mt-1 bg-white/[0.03] border-white/[0.06]" />
+              </div>
+              <div className="grid grid-cols-2 gap-4">
+                <div>
+                  <label className="text-[10px] text-[#888] tracking-[2px] uppercase font-medium">Type</label>
+                  <Select value={contentForm.contentType} onValueChange={(v) => setContentForm({ ...contentForm, contentType: v })}>
+                    <SelectTrigger className="mt-1 bg-white/[0.03] border-white/[0.06]"><SelectValue /></SelectTrigger>
+                    <SelectContent>
+                      {CONTENT_TYPES.map(t => <SelectItem key={t} value={t}>{CONTENT_TYPE_META[t]?.label || t}</SelectItem>)}
+                    </SelectContent>
+                  </Select>
+                </div>
+                <div>
+                  <label className="text-[10px] text-[#888] tracking-[2px] uppercase font-medium">Duur (sec)</label>
+                  <Input type="number" value={contentForm.duration} onChange={(e) => setContentForm({ ...contentForm, duration: parseInt(e.target.value) || 15 })} className="mt-1 bg-white/[0.03] border-white/[0.06]" />
+                </div>
+              </div>
+
+              {/* Media URL for image, video, pdf */}
+              {["image", "video", "pdf"].includes(contentForm.contentType) && (
+                <div>
+                  <label className="text-[10px] text-[#888] tracking-[2px] uppercase font-medium">
+                    {contentForm.contentType === "pdf" ? "PDF URL" : contentForm.contentType === "video" ? "Video URL" : "Afbeelding URL"}
+                  </label>
+                  <Input value={contentForm.mediaUrl} onChange={(e) => setContentForm({ ...contentForm, mediaUrl: e.target.value })} placeholder="https://..." className="mt-1 bg-white/[0.03] border-white/[0.06]" />
+                  <p className="text-[9px] text-[#888] mt-1">
+                    {contentForm.contentType === "pdf" ? "Directe link naar PDF bestand. PDF wordt fullscreen weergegeven op het scherm." :
+                     contentForm.contentType === "video" ? "Directe link naar MP4/WebM video." :
+                     "Directe link naar afbeelding (JPG/PNG/WebP)."}
+                  </p>
+                </div>
+              )}
+
+              {contentForm.contentType === "url" && (
+                <div>
+                  <label className="text-[10px] text-[#888] tracking-[2px] uppercase font-medium">Externe URL</label>
+                  <Input value={contentForm.externalUrl} onChange={(e) => setContentForm({ ...contentForm, externalUrl: e.target.value })} placeholder="https://..." className="mt-1 bg-white/[0.03] border-white/[0.06]" />
+                  <p className="text-[9px] text-[#888] mt-1">Webpagina wordt als iframe geladen op het scherm.</p>
+                </div>
+              )}
+
+              {contentForm.contentType === "html" && (
+                <div>
+                  <label className="text-[10px] text-[#888] tracking-[2px] uppercase font-medium">HTML Content</label>
+                  <textarea value={contentForm.htmlContent} onChange={(e) => setContentForm({ ...contentForm, htmlContent: e.target.value })} placeholder="<div>...</div>" className="mt-1 w-full h-32 bg-white/[0.03] border border-white/[0.06] rounded p-3 text-sm font-mono resize-none" />
+                </div>
+              )}
+
+              {contentForm.contentType === "announcement" && (
+                <div>
+                  <label className="text-[10px] text-[#888] tracking-[2px] uppercase font-medium">Bericht</label>
+                  <Input value={(contentForm.templateData as any)?.message || ""} onChange={(e) => setContentForm({ ...contentForm, templateData: { ...contentForm.templateData, message: e.target.value } })} placeholder="Belangrijke aankondiging..." className="mt-1 bg-white/[0.03] border-white/[0.06]" />
+                </div>
+              )}
+
+              <div>
+                <label className="text-[10px] text-[#888] tracking-[2px] uppercase font-medium">Prioriteit</label>
+                <Input type="number" value={contentForm.priority} onChange={(e) => setContentForm({ ...contentForm, priority: parseInt(e.target.value) || 0 })} className="mt-1 bg-white/[0.03] border-white/[0.06]" />
+              </div>
             </div>
-            <div className="grid grid-cols-2 gap-4">
-              <div>
-                <label className="text-[10px] text-[#888] tracking-[2px] uppercase font-medium">Type</label>
-                <Select value={contentForm.contentType} onValueChange={(v) => setContentForm({ ...contentForm, contentType: v })}>
-                  <SelectTrigger className="mt-1 bg-white/[0.03] border-white/[0.06]"><SelectValue /></SelectTrigger>
-                  <SelectContent>
-                    {CONTENT_TYPES.map(t => <SelectItem key={t} value={t}>{CONTENT_TYPE_META[t]?.label || t}</SelectItem>)}
-                  </SelectContent>
-                </Select>
-              </div>
-              <div>
-                <label className="text-[10px] text-[#888] tracking-[2px] uppercase font-medium">Duur (sec)</label>
-                <Input type="number" value={contentForm.duration} onChange={(e) => setContentForm({ ...contentForm, duration: parseInt(e.target.value) || 15 })} className="mt-1 bg-white/[0.03] border-white/[0.06]" />
+
+            {/* Right: Live Preview */}
+            <div className="col-span-2">
+              <label className="text-[10px] text-[#888] tracking-[2px] uppercase font-medium">Preview</label>
+              <div className="mt-1 aspect-[9/16] rounded-xl overflow-hidden border border-white/[0.08] bg-black">
+                {(contentForm.contentType === "image" || contentForm.contentType === "pdf") && contentForm.mediaUrl ? (
+                  <img src={contentForm.mediaUrl} alt="Preview" className="w-full h-full object-contain" />
+                ) : contentForm.contentType === "video" && contentForm.mediaUrl ? (
+                  <video src={contentForm.mediaUrl} className="w-full h-full object-contain" muted autoPlay loop />
+                ) : contentForm.contentType === "url" && contentForm.externalUrl ? (
+                  <iframe src={contentForm.externalUrl} className="w-full h-full border-0" />
+                ) : contentForm.contentType === "html" && contentForm.htmlContent ? (
+                  <iframe srcDoc={contentForm.htmlContent} className="w-full h-full border-0" />
+                ) : contentForm.contentType === "announcement" ? (
+                  <div className="w-full h-full flex items-center justify-center bg-gradient-to-b from-[#627653]/20 to-[#1a2614] p-6">
+                    <div className="text-center">
+                      <Zap className="w-8 h-8 text-amber-400 mx-auto mb-3" />
+                      <p className="text-sm text-white/80">{(contentForm.templateData as any)?.message || "Aankondiging"}</p>
+                    </div>
+                  </div>
+                ) : (
+                  <div className="w-full h-full flex flex-col items-center justify-center gap-2">
+                    <FileImage className="w-8 h-8 text-white/10" />
+                    <span className="text-[9px] text-white/20">Preview verschijnt hier</span>
+                  </div>
+                )}
               </div>
             </div>
-            {["image", "video"].includes(contentForm.contentType) && (
-              <div>
-                <label className="text-[10px] text-[#888] tracking-[2px] uppercase font-medium">Media URL</label>
-                <Input value={contentForm.mediaUrl} onChange={(e) => setContentForm({ ...contentForm, mediaUrl: e.target.value })} placeholder="https://..." className="mt-1 bg-white/[0.03] border-white/[0.06]" />
-              </div>
-            )}
-            {contentForm.contentType === "url" && (
-              <div>
-                <label className="text-[10px] text-[#888] tracking-[2px] uppercase font-medium">Externe URL</label>
-                <Input value={contentForm.externalUrl} onChange={(e) => setContentForm({ ...contentForm, externalUrl: e.target.value })} placeholder="https://..." className="mt-1 bg-white/[0.03] border-white/[0.06]" />
-              </div>
-            )}
-            {contentForm.contentType === "html" && (
-              <div>
-                <label className="text-[10px] text-[#888] tracking-[2px] uppercase font-medium">HTML Content</label>
-                <textarea value={contentForm.htmlContent} onChange={(e) => setContentForm({ ...contentForm, htmlContent: e.target.value })} placeholder="<div>...</div>" className="mt-1 w-full h-32 bg-white/[0.03] border border-white/[0.06] rounded p-3 text-sm font-mono resize-none" />
-              </div>
-            )}
-            {contentForm.contentType === "announcement" && (
-              <div>
-                <label className="text-[10px] text-[#888] tracking-[2px] uppercase font-medium">Bericht</label>
-                <Input value={(contentForm.templateData as any)?.message || ""} onChange={(e) => setContentForm({ ...contentForm, templateData: { ...contentForm.templateData, message: e.target.value } })} placeholder="Belangrijke aankondiging..." className="mt-1 bg-white/[0.03] border-white/[0.06]" />
-              </div>
-            )}
           </div>
           <DialogFooter>
             <Button variant="outline" onClick={() => setShowCreateContent(false)} className="border-white/10 bg-transparent">Annuleren</Button>
@@ -1326,19 +1441,29 @@ export default function SigningPage() {
 
       {/* ═══ EDIT CONTENT DIALOG ═══ */}
       <Dialog open={!!editingContent} onOpenChange={(open) => { if (!open) setEditingContent(null); }}>
-        <DialogContent className="bg-[#111] border-white/[0.06] sm:max-w-lg">
+        <DialogContent className="bg-[#111] border-white/[0.06] sm:max-w-2xl">
           <DialogHeader><DialogTitle className="font-light text-lg">Content bewerken</DialogTitle></DialogHeader>
           {editingContent && (
-            <div className="space-y-4">
+            <div className="grid grid-cols-5 gap-6">
+              <div className="col-span-3 space-y-4">
               <div>
                 <label className="text-[10px] text-[#888] tracking-[2px] uppercase font-medium">Titel</label>
                 <Input value={editingContent.title} onChange={(e) => setEditingContent({ ...editingContent, title: e.target.value })} className="mt-1 bg-white/[0.03] border-white/[0.06]" />
               </div>
-              <div>
-                <label className="text-[10px] text-[#888] tracking-[2px] uppercase font-medium">Duur (sec)</label>
-                <Input type="number" value={editingContent.duration} onChange={(e) => setEditingContent({ ...editingContent, duration: parseInt(e.target.value) || 15 })} className="mt-1 bg-white/[0.03] border-white/[0.06]" />
+              <div className="grid grid-cols-2 gap-4">
+                <div>
+                  <label className="text-[10px] text-[#888] tracking-[2px] uppercase font-medium">Type</label>
+                  <div className="mt-1 flex items-center gap-2">
+                    {(() => { const m = CONTENT_TYPE_META[editingContent.contentType]; const I = m?.icon || FileImage; return <I className="w-3.5 h-3.5 text-[#627653]" />; })()}
+                    <span className="text-sm capitalize">{CONTENT_TYPE_META[editingContent.contentType]?.label || editingContent.contentType}</span>
+                  </div>
+                </div>
+                <div>
+                  <label className="text-[10px] text-[#888] tracking-[2px] uppercase font-medium">Duur (sec)</label>
+                  <Input type="number" value={editingContent.duration} onChange={(e) => setEditingContent({ ...editingContent, duration: parseInt(e.target.value) || 15 })} className="mt-1 bg-white/[0.03] border-white/[0.06]" />
+                </div>
               </div>
-              {["image", "video"].includes(editingContent.contentType) && (
+              {["image", "video", "pdf"].includes(editingContent.contentType) && (
                 <div>
                   <label className="text-[10px] text-[#888] tracking-[2px] uppercase font-medium">Media URL</label>
                   <Input value={editingContent.mediaUrl || ""} onChange={(e) => setEditingContent({ ...editingContent, mediaUrl: e.target.value })} className="mt-1 bg-white/[0.03] border-white/[0.06]" />
@@ -1359,6 +1484,27 @@ export default function SigningPage() {
               <div>
                 <label className="text-[10px] text-[#888] tracking-[2px] uppercase font-medium">Prioriteit</label>
                 <Input type="number" value={editingContent.priority || 0} onChange={(e) => setEditingContent({ ...editingContent, priority: parseInt(e.target.value) || 0 })} className="mt-1 bg-white/[0.03] border-white/[0.06]" />
+              </div>
+              </div>
+              {/* Right: Live Preview */}
+              <div className="col-span-2">
+                <label className="text-[10px] text-[#888] tracking-[2px] uppercase font-medium">Preview</label>
+                <div className="mt-1 aspect-[9/16] rounded-xl overflow-hidden border border-white/[0.08] bg-black">
+                  {(editingContent.contentType === "image" || editingContent.contentType === "pdf") && editingContent.mediaUrl ? (
+                    <img src={editingContent.mediaUrl} alt="Preview" className="w-full h-full object-contain" />
+                  ) : editingContent.contentType === "video" && editingContent.mediaUrl ? (
+                    <video src={editingContent.mediaUrl} className="w-full h-full object-contain" muted autoPlay loop />
+                  ) : editingContent.contentType === "url" && editingContent.externalUrl ? (
+                    <iframe src={editingContent.externalUrl} className="w-full h-full border-0" />
+                  ) : editingContent.contentType === "html" && editingContent.htmlContent ? (
+                    <iframe srcDoc={editingContent.htmlContent} className="w-full h-full border-0" />
+                  ) : (
+                    <div className="w-full h-full flex flex-col items-center justify-center gap-2">
+                      <FileImage className="w-8 h-8 text-white/10" />
+                      <span className="text-[9px] text-white/20">Geen preview</span>
+                    </div>
+                  )}
+                </div>
               </div>
             </div>
           )}

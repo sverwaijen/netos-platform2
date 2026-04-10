@@ -52,7 +52,7 @@ CREATE TABLE IF NOT EXISTS `signage_screen_group_members` (
 CREATE TABLE IF NOT EXISTS `signage_content` (
   `id` int AUTO_INCREMENT NOT NULL,
   `title` varchar(255) NOT NULL,
-  `contentType` enum('image','video','html','url','menu_card','wayfinding','gym_schedule','weather','clock','news_ticker','company_presence','welcome_screen','announcement') NOT NULL DEFAULT 'image',
+  `contentType` enum('image','video','pdf','html','url','menu_card','wayfinding','gym_schedule','weather','clock','news_ticker','company_presence','welcome_screen','announcement') NOT NULL DEFAULT 'image',
   `mediaUrl` text,
   `htmlContent` longtext,
   `externalUrl` text,

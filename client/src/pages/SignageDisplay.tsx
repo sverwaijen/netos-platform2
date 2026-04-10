@@ -79,6 +79,7 @@ export default function SignageDisplay() {
 
   // ═══ DEMO MODE ═══════════════════════════════════════════════════
   if (isDemoMode && type && paramLocationId) {
+    const paramOrientation = new URLSearchParams(window.location.search).get("orientation") || "portrait";
     const demoConfig = {
       screen: {
         id: 0,
@@ -86,7 +87,7 @@ export default function SignageDisplay() {
         screenType: type,
         locationId: paramLocationId,
         status: "online",
-        orientation: "portrait",
+        orientation: paramOrientation,
         brightness: 100,
         volume: 50,
       },
@@ -107,7 +108,7 @@ export default function SignageDisplay() {
       case "gym":
         return <SignageGymDisplay {...displayProps} />;
       case "kitchen":
-        return <SignageKitchenDisplay {...displayProps} />;
+        return <SignageKitchenDisplay {...displayProps} orientation={paramOrientation as any} />;
       case "wayfinding":
         return <SignageWayfindingDisplay {...displayProps} />;
       case "reception":
@@ -151,7 +152,7 @@ export default function SignageDisplay() {
     case "gym":
       return <SignageGymDisplay {...displayProps} />;
     case "kitchen":
-      return <SignageKitchenDisplay {...displayProps} />;
+      return <SignageKitchenDisplay {...displayProps} orientation={config.screen.orientation || "portrait"} />;
     case "menu":
       return <SignageMenuDisplay {...displayProps} />;
     case "wayfinding":

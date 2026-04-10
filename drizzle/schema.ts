@@ -1325,6 +1325,7 @@ export const signageContent = mysqlTable("signage_content", {
   contentType: mysqlEnum("contentType", [
     "image",
     "video",
+    "pdf",
     "html",
     "url",
     "menu_card",
