@@ -19,7 +19,7 @@ import {
 // ─── Constants ──────────────────────────────────────────────────────
 type TabKey = "screens" | "content" | "playlists" | "wayfinding" | "kitchen" | "gym" | "provisioning";
 const SCREEN_TYPES = ["reception", "gym", "kitchen", "wayfinding", "general", "meeting_room", "elevator", "parking"] as const;
-const CONTENT_TYPES = ["image", "video", "pdf", "html", "url", "announcement", "welcome_screen", "menu_card", "wayfinding", "gym_schedule", "weather", "clock", "news_ticker", "company_presence"] as const;
+const CONTENT_TYPES = ["image", "video", "pdf", "html", "url", "announcement", "welcome_screen", "menu_card", "wayfinding", "gym_schedule", "weather", "clock", "news_ticker", "company_presence", "template"] as const;
 const MENU_CATEGORIES = ["breakfast", "lunch", "dinner", "snack", "drink", "soup", "salad", "sandwich", "special"] as const;
 const GYM_CATEGORIES = ["cardio", "strength", "yoga", "pilates", "hiit", "cycling", "boxing", "stretching", "meditation", "egym"] as const;
 const DAYS = ["Zondag", "Maandag", "Dinsdag", "Woensdag", "Donderdag", "Vrijdag", "Zaterdag"];
@@ -58,7 +58,25 @@ const CONTENT_TYPE_META: Record<string, { icon: any; label: string }> = {
   clock: { icon: Clock, label: "Klok" },
   news_ticker: { icon: Type, label: "Nieuws" },
   company_presence: { icon: Building2, label: "Aanwezigheid" },
+  template: { icon: Layers, label: "Template (PDF-stijl)" },
 };
+
+const TEMPLATE_OPTIONS = [
+  { value: "hero_image", label: "Hero Image — Groen (origineel)" },
+  { value: "hero_image_green", label: "Hero — Groen Wave (Oma's Soup)" },
+  { value: "hero_image_brown", label: "Hero — Bruin/Blush Wave (Vitality)" },
+  { value: "card_overlay", label: "Foto + Kaart Overlay (Call Me Boss)" },
+  { value: "grid_cards", label: "Grid Kaarten — Groen (Boss Back-up)" },
+  { value: "grid_cards_brown", label: "Grid Kaarten — Bruin (Ergonomic)" },
+  { value: "geometric", label: "Geometrisch — Groen (Hosts/Bosses)" },
+  { value: "geometric_green", label: "Geometrisch — Groen Alt" },
+  { value: "geometric_brown", label: "Geometrisch — Bruin (Stay Hydrated)" },
+  { value: "photo_grid", label: "Foto Grid 2x2 (Lunch Items)" },
+  { value: "stats_vitality", label: "Stats / Vitality" },
+  { value: "welcome", label: "Welcome Screen" },
+  { value: "feedback", label: "Feedback + QR" },
+  { value: "quote", label: "Quote" },
+];
 
 // ─── Screen Preview Component ───────────────────────────────────────
 function ScreenPreview({ screenType, status }: { screenType: string; status: string }) {
@@ -1389,6 +1407,39 @@ export default function SigningPage() {
                 <div>
                   <label className="text-[10px] text-[#888] tracking-[2px] uppercase font-medium">Bericht</label>
                   <Input value={(contentForm.templateData as any)?.message || ""} onChange={(e) => setContentForm({ ...contentForm, templateData: { ...contentForm.templateData, message: e.target.value } })} placeholder="Belangrijke aankondiging..." className="mt-1 bg-white/[0.03] border-white/[0.06]" />
+                </div>
+              )}
+
+              {contentForm.contentType === "template" && (
+                <div className="space-y-3">
+                  <div>
+                    <label className="text-[10px] text-[#888] tracking-[2px] uppercase font-medium">Template Type</label>
+                    <Select value={(contentForm.templateData as any)?.template || ""} onValueChange={(v) => setContentForm({ ...contentForm, templateData: { ...contentForm.templateData, template: v } })}>
+                      <SelectTrigger className="mt-1 bg-white/[0.03] border-white/[0.06]"><SelectValue placeholder="Kies een template..." /></SelectTrigger>
+                      <SelectContent className="bg-[#1a1a1a] border-white/[0.08]">
+                        {TEMPLATE_OPTIONS.map(t => (
+                          <SelectItem key={t.value} value={t.value}>{t.label}</SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                  </div>
+                  <div>
+                    <label className="text-[10px] text-[#888] tracking-[2px] uppercase font-medium">Titel</label>
+                    <Input value={(contentForm.templateData as any)?.title || ""} onChange={(e) => setContentForm({ ...contentForm, templateData: { ...contentForm.templateData, title: e.target.value } })} placeholder="TEMPLATE\nTITEL" className="mt-1 bg-white/[0.03] border-white/[0.06]" />
+                  </div>
+                  <div>
+                    <label className="text-[10px] text-[#888] tracking-[2px] uppercase font-medium">Body tekst</label>
+                    <textarea value={(contentForm.templateData as any)?.body || ""} onChange={(e) => setContentForm({ ...contentForm, templateData: { ...contentForm.templateData, body: e.target.value } })} placeholder="Hoofdtekst van de slide..." className="mt-1 w-full h-20 bg-white/[0.03] border border-white/[0.06] rounded p-3 text-sm resize-none" />
+                  </div>
+                  <div>
+                    <label className="text-[10px] text-[#888] tracking-[2px] uppercase font-medium">Afbeelding URL</label>
+                    <Input value={(contentForm.templateData as any)?.heroImageUrl || ""} onChange={(e) => setContentForm({ ...contentForm, templateData: { ...contentForm.templateData, heroImageUrl: e.target.value } })} placeholder="https://..." className="mt-1 bg-white/[0.03] border-white/[0.06]" />
+                  </div>
+                  <div>
+                    <label className="text-[10px] text-[#888] tracking-[2px] uppercase font-medium">CTA Tekst</label>
+                    <Input value={(contentForm.templateData as any)?.ctaText || ""} onChange={(e) => setContentForm({ ...contentForm, templateData: { ...contentForm.templateData, ctaText: e.target.value } })} placeholder="Try it out!" className="mt-1 bg-white/[0.03] border-white/[0.06]" />
+                  </div>
+                  <p className="text-[9px] text-[#888]">Geavanceerde opties (cards, shapes, stats) via JSON templateData.</p>
                 </div>
               )}
 

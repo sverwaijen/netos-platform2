@@ -3,20 +3,57 @@
  * Each template is a React component with editable fields via templateData JSON.
  *
  * Templates:
- * 1. hero_image    — Full-bleed photo + text card with organic wave divider
- * 2. grid_cards    — 2x2 card grid (contact, help, photo, QR)
- * 3. geometric     — Abstract green shapes + centered text card
- * 4. stats_vitality — Numbers/stats display with accent colors
- * 5. welcome       — Mr Green branded welcome screen
- * 6. feedback      — "Give Us Your Feedback" style card
- * 7. quote         — Large quote with attribution
+ * 1. hero_image        — Full-bleed photo + text card with organic wave divider
+ * 2. grid_cards        — 2x2 card grid (contact, help, photo, QR)
+ * 3. geometric         — Abstract shapes + centered text card
+ * 4. stats_vitality    — Numbers/stats display with accent colors
+ * 5. welcome           — Mr Green branded welcome screen
+ * 6. feedback          — "Give Us Your Feedback" style card
+ * 7. quote             — Large quote with attribution
+ * 8. hero_image_brown  — Brown/blush wave theme (Vitality slides)
+ * 9. card_overlay      — Full photo + floating bottom-left card
+ * 10. grid_cards_brown — Brown themed 2x2 grid (Ergonomic, Exercises)
+ * 11. geometric_brown  — Brown shapes + central card (Posture, Hydration)
+ * 12. photo_grid       — 2x2 photo mosaic (Food photos, Breakfast)
  */
 import { BRAND } from "@/lib/brand";
 import { Phone, Mail, QrCode, MessageSquare, Heart, Droplets, Dumbbell, Leaf } from "lucide-react";
 
+// ─── Color Themes ────────────────────────────────────────────────────
+const THEMES = {
+  green: {
+    bg: "#3D4E32",
+    bgDark: "#1a2614",
+    accent: "#627653",
+    accentLight: "#8A9B7A",
+    text: "#E8E4D8",
+    cardBg: "rgba(61,78,50,0.85)",
+    wave: "#6B7D5C",
+  },
+  brown: {
+    bg: "#2D1F14",
+    bgDark: "#1a1209",
+    accent: "#C9A08E",
+    accentLight: "#D4B5A0",
+    text: "#F5E6D0",
+    cardBg: "rgba(45,31,20,0.88)",
+    wave: "#D4B5A0",
+  },
+  dark: {
+    bg: "#0D1A12",
+    bgDark: "#060e08",
+    accent: "#627653",
+    accentLight: "#8A9B7A",
+    text: "#8A9B7A",
+    cardBg: "rgba(30,50,35,0.85)",
+    wave: "#1a2614",
+  },
+};
+
 // ─── Types ───────────────────────────────────────────────────────────
 export interface TemplateData {
   template: string;
+  theme?: "green" | "brown" | "dark";
   // Hero Image
   heroImageUrl?: string;
   category?: string;
@@ -25,6 +62,7 @@ export interface TemplateData {
   body?: string;
   ctaText?: string;
   accent?: string;
+  waveColor?: string;
   // Grid Cards
   phone?: string;
   email?: string;
@@ -32,11 +70,16 @@ export interface TemplateData {
   qrCodeUrl?: string;
   portraitUrl?: string;
   bossName?: string;
+  cards?: { type: string; icon?: string; content?: string; photoUrl?: string }[];
   // Stats
   stats?: { label: string; value: string; icon?: string }[];
   // Quote
   quote?: string;
   author?: string;
+  // Photo Grid
+  photos?: string[];
+  // Geometric shapes
+  shapes?: { top?: string; left?: string; right?: string; bottom?: string; size: string; radius?: string }[];
 }
 
 // ─── Wave SVG ────────────────────────────────────────────────────────
@@ -335,6 +378,189 @@ export function TemplateQuote({ data }: { data: TemplateData }) {
 }
 
 // ═══════════════════════════════════════════════════════════════════════
+// TEMPLATE 8: Hero Image Brown/Blush (Vitality, Cardio, etc.)
+// ═══════════════════════════════════════════════════════════════════════
+export function TemplateHeroImageThemed({ data }: { data: TemplateData }) {
+  const t = THEMES[data.theme || "brown"];
+  const waveColor = data.waveColor || t.wave;
+  return (
+    <div className="w-full h-full flex flex-col relative overflow-hidden" style={{ background: t.bg }}>
+      {/* Hero photo top 52% */}
+      <div className="relative" style={{ flex: "0 0 52%" }}>
+        {data.heroImageUrl ? (
+          <img src={data.heroImageUrl} alt="" className="w-full h-full object-cover" />
+        ) : (
+          <div className="w-full h-full bg-gradient-to-br" style={{ background: `linear-gradient(135deg, ${t.accent}40, ${t.bgDark}60)` }} />
+        )}
+        {/* Organic S-curve wave */}
+        <svg viewBox="0 0 1080 120" className="absolute bottom-[-1px] left-0 w-full" style={{ height: "clamp(50px, 8vw, 100px)" }} preserveAspectRatio="none">
+          <path d="M0 40 C180 0, 350 100, 540 50 C730 0, 900 100, 1080 40 L1080 120 L0 120 Z" fill={t.bg} />
+        </svg>
+      </div>
+      {/* Text content bottom 48% */}
+      <div className="flex-1 flex flex-col justify-center px-[7%] pb-[5%] relative z-10">
+        <h2 className="text-[clamp(22px,6.5vw,44px)] font-black uppercase tracking-tight leading-[0.95] mb-4 whitespace-pre-line" style={{ color: t.accent }}>
+          {data.title || "Template"}
+        </h2>
+        <div className="w-10 h-0.5 rounded-full mb-4" style={{ background: t.accent }} />
+        {data.body && (
+          <p className="text-[clamp(10px,2.2vw,15px)] font-light leading-relaxed max-w-[90%]" style={{ color: `${t.text}99` }}>
+            {data.body}
+          </p>
+        )}
+        {data.ctaText && (
+          <div className="mt-auto pt-[5%] text-right">
+            <p className="text-[clamp(16px,4vw,28px)] italic" style={{ fontFamily: "'Caveat', 'Georgia', cursive", color: `${t.accentLight}99` }}>
+              {data.ctaText}
+            </p>
+            <div className="w-14 h-0.5 rounded-full ml-auto mt-1" style={{ background: `${t.accentLight}66` }} />
+          </div>
+        )}
+      </div>
+    </div>
+  );
+}
+
+// ═══════════════════════════════════════════════════════════════════════
+// TEMPLATE 9: Card Overlay (full photo + floating card)
+// ═══════════════════════════════════════════════════════════════════════
+export function TemplateCardOverlay({ data }: { data: TemplateData }) {
+  return (
+    <div className="w-full h-full relative overflow-hidden">
+      {/* Full background photo */}
+      {data.heroImageUrl ? (
+        <img src={data.heroImageUrl} alt="" className="absolute inset-0 w-full h-full object-cover" />
+      ) : (
+        <div className="absolute inset-0 bg-gradient-to-br from-[#3a4a34] to-[#1a2614]" />
+      )}
+      {/* Floating card bottom-left */}
+      <div className="absolute bottom-0 left-0 right-[25%] bg-[#f8f5ee]/95 rounded-tr-[32px] p-[7%] z-10">
+        {data.category && (
+          <span className="text-2xl mb-2 block">{data.category}</span>
+        )}
+        <h2 className="text-[clamp(20px,5.5vw,36px)] font-black uppercase tracking-tight leading-[1.05] text-[#3D4E32] mb-[4%] whitespace-pre-line">
+          {data.title || "Title"}
+        </h2>
+        {data.body && (
+          <div className="text-[clamp(10px,2vw,14px)] text-[#3c3c3c]/80 leading-relaxed" dangerouslySetInnerHTML={{
+            __html: data.body.replace(/\*\*(.*?)\*\*/g, '<strong class="text-[#3D4E32] font-bold">$1</strong>').replace(/\n/g, "<br/>")
+          }} />
+        )}
+      </div>
+    </div>
+  );
+}
+
+// ═══════════════════════════════════════════════════════════════════════
+// TEMPLATE 10: Grid Cards Themed (Brown / Dark variants)
+// ═══════════════════════════════════════════════════════════════════════
+export function TemplateGridCardsThemed({ data }: { data: TemplateData }) {
+  const t = THEMES[data.theme || "brown"];
+  const cards = data.cards || [];
+
+  return (
+    <div className="w-full h-full flex flex-col p-[6%]" style={{ background: t.bg }}>
+      <h2 className="text-[clamp(20px,5.5vw,38px)] font-black uppercase tracking-tight leading-[1.05] mb-[6%] whitespace-pre-line" style={{ color: t.accent }}>
+        {data.title || "Title"}
+      </h2>
+      <div className="flex-1 grid grid-cols-2 gap-3">
+        {cards.map((card, i) => {
+          if (card.type === "photo") {
+            return (
+              <div key={i} className="rounded-[20px] overflow-hidden">
+                {card.photoUrl ? (
+                  <img src={card.photoUrl} alt="" className="w-full h-full object-cover" />
+                ) : (
+                  <div className="w-full h-full" style={{ background: `${t.accent}20` }} />
+                )}
+              </div>
+            );
+          }
+          const bgMap: Record<string, string> = {
+            cream: data.theme === "brown" ? "#E8D0C0" : "#f5f2ea",
+            mid: data.theme === "brown" ? t.accent : `${t.accent}99`,
+            dark: t.cardBg,
+          };
+          return (
+            <div key={i} className="rounded-[20px] p-[6%] flex flex-col justify-center" style={{ background: bgMap[card.type] || bgMap.dark }}>
+              {card.icon && <span className="text-xl mb-2">{card.icon}</span>}
+              {card.content && (
+                <div className="text-[clamp(9px,1.8vw,13px)] leading-relaxed" dangerouslySetInnerHTML={{ __html: card.content }} />
+              )}
+            </div>
+          );
+        })}
+      </div>
+    </div>
+  );
+}
+
+// ═══════════════════════════════════════════════════════════════════════
+// TEMPLATE 11: Geometric Themed (Brown variant)
+// ═══════════════════════════════════════════════════════════════════════
+export function TemplateGeometricThemed({ data }: { data: TemplateData }) {
+  const t = THEMES[data.theme || "brown"];
+  const shapes = data.shapes || [
+    { top: "5%", left: "-10%", size: "45%", radius: "50%" },
+    { top: "55%", right: "-15%", size: "50%", radius: "30%" },
+    { top: "35%", left: "55%", size: "25%", radius: "50%" },
+    { top: "70%", left: "5%", size: "20%", radius: "40%" },
+  ];
+
+  return (
+    <div className="w-full h-full relative overflow-hidden" style={{ background: t.bg }}>
+      {/* Decorative shapes */}
+      {shapes.map((s, i) => (
+        <div key={i} className="absolute" style={{
+          width: s.size, aspectRatio: "1", borderRadius: s.radius || "50%",
+          background: `${t.accent}40`, top: s.top, left: s.left, right: s.right, bottom: s.bottom,
+        }} />
+      ))}
+      {/* Central card */}
+      <div className="absolute inset-[8%] top-[12%] bottom-[12%] rounded-[24px] p-[8%] flex flex-col justify-center z-10" style={{ background: t.cardBg, backdropFilter: "blur(10px)" }}>
+        {data.subtitle && (
+          <p className="text-[clamp(10px,2vw,14px)] font-light mb-3" style={{ color: `${t.text}80` }}>{data.subtitle}</p>
+        )}
+        <h2 className="text-[clamp(22px,6vw,42px)] font-black uppercase tracking-tight leading-[0.95] mb-[4%] whitespace-pre-line" style={{ color: t.accentLight }}>
+          {data.title || "Title"}
+        </h2>
+        <div className="w-10 h-0.5 rounded-full mb-[5%]" style={{ background: t.accent }} />
+        {data.body && (
+          <div className="text-[clamp(10px,2vw,14px)] font-light leading-relaxed space-y-3" style={{ color: `${t.text}AA` }}
+            dangerouslySetInnerHTML={{
+              __html: data.body.replace(/\*\*(.*?)\*\*/g, `<strong style="color:${t.text};font-weight:600">$1</strong>`)
+            }} />
+        )}
+      </div>
+    </div>
+  );
+}
+
+// ═══════════════════════════════════════════════════════════════════════
+// TEMPLATE 12: Photo Grid (2x2 mosaic)
+// ═══════════════════════════════════════════════════════════════════════
+export function TemplatePhotoGrid({ data }: { data: TemplateData }) {
+  const photos = data.photos || [];
+  const accent = data.accent || "#C4A68A";
+  return (
+    <div className="w-full h-full flex flex-col p-[3%] gap-[3%]" style={{ background: "#2D1F14" }}>
+      <div className="flex-1 grid grid-cols-2 grid-rows-2 gap-[3%]">
+        {photos.slice(0, 4).map((url, i) => (
+          <div key={i} className="rounded-[16px] overflow-hidden bg-[#5C4030]">
+            <img src={url} alt="" className="w-full h-full object-cover" loading="lazy" />
+          </div>
+        ))}
+      </div>
+      <div className="text-right px-[4%] py-[2%]">
+        <h2 className="text-[clamp(16px,4.5vw,28px)] font-black uppercase leading-[1.1] whitespace-pre-line" style={{ color: accent }}>
+          {data.title || "Photo Gallery"}
+        </h2>
+      </div>
+    </div>
+  );
+}
+
+// ═══════════════════════════════════════════════════════════════════════
 // Template Registry
 // ═══════════════════════════════════════════════════════════════════════
 export const TEMPLATE_REGISTRY: Record<string, {
@@ -426,6 +652,92 @@ export const TEMPLATE_REGISTRY: Record<string, {
       template: "quote",
       quote: "The best way to predict the future is to create it.",
       author: "Mr. Green",
+    },
+  },
+  hero_image_brown: {
+    component: TemplateHeroImageThemed,
+    label: "Hero — Bruin/Blush",
+    description: "Foto + organische wave in bruin/blush thema (Vitality, Cardio)",
+    defaultData: {
+      template: "hero_image_brown",
+      theme: "brown",
+      title: "VITALITY\nMADE EASY",
+      body: "Float through your workdays with ease if you feel good about yourself.\n\nThrough simple changes you can improve this significantly.",
+      ctaText: "Try it out!",
+    },
+  },
+  hero_image_green: {
+    component: TemplateHeroImageThemed,
+    label: "Hero — Groen",
+    description: "Foto + organische wave in groen thema (Oma's Soup, Neighbour)",
+    defaultData: {
+      template: "hero_image_green",
+      theme: "green",
+      title: "RECIPE\nAGAINST\nLONELINESS",
+      body: "For the next few months, we're piloting Oma's Soup. This ensures delicious, consistent quality.",
+      ctaText: "Give us your feedback",
+    },
+  },
+  card_overlay: {
+    component: TemplateCardOverlay,
+    label: "Foto + Kaart Overlay",
+    description: "Volledige foto met zwevende kaart linksonder (Call Me Boss)",
+    defaultData: {
+      template: "card_overlay",
+      category: "😎",
+      title: "YOU CAN\nCALL ME\nBOSS",
+      body: "We're celebrating a promotion that is long overdue.\nAs of today, we will no longer have hosts, but start working with **BOSSES**.",
+    },
+  },
+  grid_cards_brown: {
+    component: TemplateGridCardsThemed,
+    label: "Grid Kaarten — Bruin",
+    description: "2x2 kaarten in bruin thema (Ergonomic, Exercises)",
+    defaultData: {
+      template: "grid_cards_brown",
+      theme: "brown",
+      title: "ERGONOMIC\nDESK\nSET-UP",
+      cards: [
+        { type: "cream", icon: "↕️", content: "<div style='font-weight:700;color:#3B2316'>Kick off your workday with the right settings.</div>" },
+        { type: "mid", content: "<div style='font-size:11px;color:#2D1F14'><strong>1.</strong> Feet on ground<br><strong>2.</strong> Back supported<br><strong>3.</strong> Shoulders relaxed<br><strong>4.</strong> Screen at arm's length<br><strong>5.</strong> Screen at eye level<br><strong>6.</strong> Aligned posture</div>" },
+        { type: "cream", content: "" },
+        { type: "cream", content: "" },
+      ],
+    },
+  },
+  geometric_brown: {
+    component: TemplateGeometricThemed,
+    label: "Geometrisch — Bruin",
+    description: "Abstracte bruine vormen met centraal tekstblok (Posture, Hydration)",
+    defaultData: {
+      template: "geometric_brown",
+      theme: "brown",
+      subtitle: "Vitality",
+      title: "STAY\nHYDRATED",
+      body: "Drinking water contributes to **digestion** and prevents the main cause of **headaches**.\n\n**2 litres of water a day is what you're going for.** Our filtered water taps and larger glass bottles remove any excuse to reach that goal!",
+    },
+  },
+  geometric_green: {
+    component: TemplateGeometricThemed,
+    label: "Geometrisch — Groen",
+    description: "Abstracte groene vormen met centraal tekstblok (Hosts Became Bosses)",
+    defaultData: {
+      template: "geometric_green",
+      theme: "green",
+      subtitle: "Next level hospitality",
+      title: "HOW HOSTS\nBECAME\nBOSSES",
+      body: "**Why?** Because you don't want assistance, you want solutions.\n\n**What's changing?** One central point of contact: your local BOSS.\n\n**What's new?** Your first point of contact is always better face-to-face.",
+    },
+  },
+  photo_grid: {
+    component: TemplatePhotoGrid,
+    label: "Foto Grid",
+    description: "2x2 fotomozaïek met titel (Food Photos, Breakfast)",
+    defaultData: {
+      template: "photo_grid",
+      title: "DAILY FRESH\nHOMEMADE\nLUNCH ITEMS",
+      accent: "#C4A68A",
+      photos: [],
     },
   },
 };

@@ -1,0 +1,1294 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Mr. Green Signage — PDF to HTML Templates</title>
+<link href="https://fonts.googleapis.com/css2?family=Montserrat:ital,wght@0,200;0,300;0,400;0,600;0,700;0,800;0,900;1,300;1,400&family=Caveat:wght@400;500;600&display=swap" rel="stylesheet">
+<style>
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+  :root {
+    /* Menu / Cafe La55 */
+    --brown-dark: #2D1F14;
+    --brown-mid: #5C4030;
+    --brown-panel: #6B4C3A;
+    --cream: #F5E6D0;
+    --copper: #C4A68A;
+    --copper-dim: rgba(196,166,138,0.4);
+    /* Green theme */
+    --green-dark: #3D4E32;
+    --green-mid: #4A5B3C;
+    --green-light: #6B7D5C;
+    --green-pale: #8A9B7A;
+    --green-card: rgba(107,125,92,0.7);
+    --green-cream: #E8E4D8;
+    /* Brown / Vitality theme */
+    --blush: #C9A08E;
+    --blush-light: #D4B5A0;
+    --blush-pale: #E8D0C0;
+    /* Gym / Dark theme */
+    --dark-deep: #0D1A12;
+    --dark-card: rgba(30,50,35,0.85);
+    --teal: #00D4AA;
+  }
+  body {
+    font-family: 'Montserrat', 'Inter', sans-serif;
+    background: #111;
+    color: #fff;
+    overflow: hidden;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    height: 100vh;
+    width: 100vw;
+  }
+  .signage-frame {
+    width: min(100vw, 56.25vh); /* 9:16 portrait */
+    height: min(100vh, 177.78vw);
+    position: relative;
+    overflow: hidden;
+    border-radius: 4px;
+    box-shadow: 0 20px 80px rgba(0,0,0,0.6);
+  }
+  .page {
+    position: absolute;
+    inset: 0;
+    opacity: 0;
+    transition: opacity 0.8s ease, transform 0.8s ease;
+    transform: scale(0.98);
+    pointer-events: none;
+  }
+  .page.active {
+    opacity: 1;
+    transform: scale(1);
+    pointer-events: auto;
+  }
+
+  /* ═══ NAVIGATION ═══ */
+  .nav-dots {
+    position: fixed;
+    bottom: 20px;
+    left: 50%;
+    transform: translateX(-50%);
+    display: flex;
+    gap: 6px;
+    z-index: 100;
+    background: rgba(0,0,0,0.5);
+    backdrop-filter: blur(10px);
+    padding: 8px 16px;
+    border-radius: 20px;
+  }
+  .nav-dot {
+    width: 8px; height: 8px;
+    border-radius: 50%;
+    background: rgba(255,255,255,0.2);
+    cursor: pointer;
+    transition: all 0.3s;
+    border: none;
+  }
+  .nav-dot.active {
+    width: 24px;
+    border-radius: 4px;
+    background: var(--green-mid);
+  }
+  .nav-dot.menu { background: var(--copper); }
+
+  /* ═══ CONTROLS ═══ */
+  .controls {
+    position: fixed;
+    top: 16px;
+    right: 16px;
+    display: flex;
+    gap: 8px;
+    z-index: 100;
+  }
+  .ctrl-btn {
+    background: rgba(0,0,0,0.6);
+    backdrop-filter: blur(10px);
+    border: 1px solid rgba(255,255,255,0.1);
+    color: #fff;
+    padding: 6px 14px;
+    border-radius: 8px;
+    font-size: 11px;
+    cursor: pointer;
+    font-family: inherit;
+    transition: all 0.2s;
+  }
+  .ctrl-btn:hover { background: rgba(255,255,255,0.15); }
+  .ctrl-btn.active { background: var(--green-mid); border-color: var(--green-mid); }
+
+  /* ═══ JSON EDITOR ═══ */
+  .editor-panel {
+    position: fixed;
+    top: 0; right: -420px;
+    width: 420px; height: 100vh;
+    background: #1a1a1a;
+    border-left: 1px solid rgba(255,255,255,0.1);
+    z-index: 200;
+    transition: right 0.3s ease;
+    display: flex;
+    flex-direction: column;
+  }
+  .editor-panel.open { right: 0; }
+  .editor-header {
+    padding: 16px 20px;
+    border-bottom: 1px solid rgba(255,255,255,0.08);
+    display: flex; align-items: center; justify-content: space-between;
+  }
+  .editor-header h3 { font-size: 13px; font-weight: 600; color: #fff; }
+  .editor-close {
+    background: none; border: none; color: rgba(255,255,255,0.4);
+    font-size: 18px; cursor: pointer;
+  }
+  .editor-body { flex: 1; overflow: auto; padding: 16px 20px; }
+  .editor-body textarea {
+    width: 100%; height: 100%;
+    background: #111; color: #9AE89A;
+    border: 1px solid rgba(255,255,255,0.08);
+    border-radius: 8px;
+    padding: 12px;
+    font-family: 'JetBrains Mono', 'Fira Code', monospace;
+    font-size: 11px;
+    line-height: 1.6;
+    resize: none;
+  }
+  .editor-footer {
+    padding: 12px 20px;
+    border-top: 1px solid rgba(255,255,255,0.08);
+    display: flex; gap: 8px;
+  }
+  .editor-footer button {
+    flex: 1; padding: 8px; border: none; border-radius: 6px;
+    font-family: inherit; font-size: 12px; font-weight: 600; cursor: pointer;
+  }
+  .btn-apply { background: var(--green-mid); color: #fff; }
+  .btn-reset { background: rgba(255,255,255,0.08); color: rgba(255,255,255,0.6); }
+
+  /* ═══ MENU PAGE STYLES ═══ */
+  .menu-page {
+    width: 100%; height: 100%;
+    display: flex;
+    position: relative;
+    overflow: hidden;
+  }
+  .menu-page .left-panel {
+    width: 42%;
+    position: relative;
+    display: flex;
+    flex-direction: column;
+    padding: 6% 5%;
+    z-index: 2;
+  }
+  .menu-page .left-panel::after {
+    content: '';
+    position: absolute;
+    top: 0; right: -15%; bottom: 0;
+    width: 30%;
+    border-radius: 0 0 0 50%;
+    z-index: -1;
+  }
+  .menu-page.food .left-panel { background: var(--brown-panel); }
+  .menu-page.food .left-panel::after { background: var(--brown-panel); }
+  .menu-page.food .right-panel { background: var(--brown-dark); }
+  .menu-page.drinks .left-panel { background: var(--brown-dark); }
+  .menu-page.drinks .left-panel::after { background: var(--brown-dark); }
+  .menu-page.drinks .right-panel { background: var(--brown-panel); }
+  .menu-page .right-panel {
+    flex: 1;
+    padding: 6% 5% 6% 8%;
+    overflow: hidden;
+    z-index: 1;
+  }
+  .menu-icon {
+    width: 11%;
+    margin-bottom: 4%;
+    opacity: 0.85;
+  }
+  .menu-title {
+    font-size: clamp(18px, 5.5vw, 32px);
+    font-weight: 900;
+    color: var(--cream);
+    line-height: 1.05;
+    text-transform: uppercase;
+    letter-spacing: -0.02em;
+    margin-bottom: 6%;
+  }
+  .menu-cat-title {
+    font-size: clamp(9px, 2vw, 13px);
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 2px;
+    color: var(--cream);
+    margin-bottom: 3%;
+    margin-top: 5%;
+  }
+  .menu-cat-title:first-of-type { margin-top: 0; }
+  .menu-sizes {
+    display: flex;
+    justify-content: flex-end;
+    gap: 12%;
+    margin-bottom: 2%;
+    padding-right: 2%;
+  }
+  .menu-sizes span {
+    font-size: clamp(6px, 1.2vw, 8px);
+    color: var(--copper-dim);
+    text-transform: uppercase;
+    letter-spacing: 2px;
+  }
+  .menu-item {
+    display: flex;
+    justify-content: space-between;
+    align-items: baseline;
+    gap: 8px;
+    padding: 1.5% 0;
+  }
+  .menu-item-name {
+    font-size: clamp(9px, 2vw, 13px);
+    font-weight: 600;
+    color: var(--cream);
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+  }
+  .menu-item-price {
+    font-size: clamp(8px, 1.8vw, 12px);
+    color: var(--copper);
+    white-space: nowrap;
+    font-variant-numeric: tabular-nums;
+  }
+  .menu-item-prices {
+    display: flex;
+    gap: 12%;
+    white-space: nowrap;
+  }
+  .menu-item-desc {
+    font-size: clamp(6px, 1.1vw, 8px);
+    color: var(--copper-dim);
+    margin-top: 1px;
+    line-height: 1.3;
+  }
+
+  /* ═══ PHOTO GRID PAGE ═══ */
+  .photo-grid-page {
+    width: 100%; height: 100%;
+    background: var(--brown-dark);
+    display: flex;
+    flex-direction: column;
+    padding: 3%;
+    gap: 3%;
+  }
+  .photo-grid {
+    flex: 1;
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    grid-template-rows: 1fr 1fr;
+    gap: 3%;
+  }
+  .photo-grid-item {
+    border-radius: 16px;
+    overflow: hidden;
+    background: var(--brown-mid);
+  }
+  .photo-grid-item img {
+    width: 100%; height: 100%; object-fit: cover;
+  }
+  .photo-grid-item:nth-child(3) {
+    grid-row: 2;
+    grid-column: 1;
+  }
+  .photo-grid-item:nth-child(4) {
+    grid-row: 1 / 3;
+    grid-column: 2;
+  }
+  .photo-grid-title {
+    text-align: right;
+    padding: 2% 4%;
+    font-size: clamp(16px, 4.5vw, 28px);
+    font-weight: 900;
+    text-transform: uppercase;
+    color: var(--copper);
+    line-height: 1.1;
+  }
+
+  /* ═══ HERO IMAGE PAGE (wave divider) ═══ */
+  .hero-page {
+    width: 100%; height: 100%;
+    display: flex;
+    flex-direction: column;
+    position: relative;
+    overflow: hidden;
+  }
+  .hero-photo {
+    flex: 0 0 52%;
+    position: relative;
+    overflow: hidden;
+  }
+  .hero-photo img {
+    width: 100%; height: 100%; object-fit: cover;
+  }
+  .hero-photo .wave-svg {
+    position: absolute;
+    bottom: -1px;
+    left: 0;
+    width: 100%;
+    height: 22%;
+  }
+  .hero-content {
+    flex: 1;
+    padding: 8% 7% 6%;
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+  }
+  .hero-title {
+    font-size: clamp(22px, 6.5vw, 44px);
+    font-weight: 900;
+    text-transform: uppercase;
+    line-height: 1.0;
+    margin-bottom: 5%;
+    letter-spacing: -0.01em;
+  }
+  .hero-divider {
+    width: 40px;
+    height: 2px;
+    border-radius: 1px;
+    margin-bottom: 5%;
+  }
+  .hero-body {
+    font-size: clamp(10px, 2.2vw, 15px);
+    font-weight: 300;
+    line-height: 1.65;
+    opacity: 0.7;
+  }
+  .hero-cta {
+    font-family: 'Caveat', cursive;
+    font-size: clamp(16px, 4vw, 28px);
+    opacity: 0.6;
+    margin-top: auto;
+    text-align: right;
+    padding-top: 5%;
+  }
+  .hero-cta-line {
+    width: 60px;
+    height: 2px;
+    border-radius: 1px;
+    margin-left: auto;
+    margin-top: 4px;
+  }
+
+  /* Green hero theme */
+  .hero-page.green { background: var(--green-dark); }
+  .hero-page.green .hero-title { color: var(--green-cream); }
+  .hero-page.green .hero-divider { background: var(--green-pale); }
+  .hero-page.green .hero-body { color: var(--green-cream); }
+  .hero-page.green .hero-cta { color: var(--green-cream); }
+  .hero-page.green .hero-cta-line { background: var(--green-cream); opacity: 0.4; }
+
+  /* Brown hero theme */
+  .hero-page.brown { background: var(--brown-dark); }
+  .hero-page.brown .hero-title { color: var(--blush); }
+  .hero-page.brown .hero-divider { background: var(--blush); }
+  .hero-page.brown .hero-body { color: var(--cream); }
+  .hero-page.brown .hero-cta { color: var(--blush-light); }
+  .hero-page.brown .hero-cta-line { background: var(--blush-light); opacity: 0.4; }
+
+  /* Blush hero theme */
+  .hero-page.blush .hero-content { background: var(--brown-dark); }
+  .hero-page.blush .hero-title { color: #fff; text-align: center; }
+  .hero-page.blush .hero-body { color: var(--cream); text-align: center; }
+
+  /* ═══ CARD OVERLAY PAGE ═══ */
+  .card-overlay-page {
+    width: 100%; height: 100%;
+    position: relative;
+    overflow: hidden;
+  }
+  .card-overlay-page .bg-photo {
+    position: absolute;
+    inset: 0;
+  }
+  .card-overlay-page .bg-photo img {
+    width: 100%; height: 100%; object-fit: cover;
+  }
+  .card-overlay-card {
+    position: absolute;
+    bottom: 0; left: 0; right: 25%;
+    background: rgba(248,245,238,0.95);
+    border-radius: 0 32px 0 0;
+    padding: 7%;
+    z-index: 2;
+  }
+  .card-overlay-card .card-icon {
+    font-size: 28px;
+    margin-bottom: 3%;
+  }
+  .card-overlay-card .card-title {
+    font-size: clamp(20px, 5.5vw, 36px);
+    font-weight: 900;
+    text-transform: uppercase;
+    color: var(--green-dark);
+    line-height: 1.05;
+    margin-bottom: 4%;
+  }
+  .card-overlay-card .card-body {
+    font-size: clamp(10px, 2vw, 14px);
+    font-weight: 400;
+    color: rgba(60,60,60,0.8);
+    line-height: 1.6;
+  }
+  .card-overlay-card .card-body strong {
+    color: var(--green-dark);
+    font-weight: 700;
+  }
+
+  /* ═══ GRID CARDS PAGE ═══ */
+  .grid-cards-page {
+    width: 100%; height: 100%;
+    display: flex;
+    flex-direction: column;
+    padding: 6%;
+  }
+  .grid-cards-page .gc-title {
+    font-size: clamp(20px, 5.5vw, 38px);
+    font-weight: 900;
+    text-transform: uppercase;
+    line-height: 1.05;
+    margin-bottom: 6%;
+  }
+  .grid-cards-page .gc-grid {
+    flex: 1;
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    grid-template-rows: 1fr 1fr;
+    gap: 3%;
+  }
+  .gc-card {
+    border-radius: 20px;
+    padding: 6%;
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    overflow: hidden;
+  }
+  .gc-card.cream { background: rgba(248,245,238,0.95); }
+  .gc-card.mid { background: rgba(107,125,92,0.6); }
+  .gc-card.dark { background: rgba(61,78,50,0.7); }
+  .gc-card.photo { padding: 0; }
+  .gc-card.photo img { width: 100%; height: 100%; object-fit: cover; }
+  .gc-card .card-icon { font-size: 20px; margin-bottom: 8px; }
+  .gc-card .card-label {
+    font-size: clamp(9px, 1.6vw, 12px);
+    font-weight: 700;
+    margin-bottom: 4px;
+  }
+  .gc-card .card-value {
+    font-size: clamp(12px, 2.8vw, 20px);
+    font-weight: 700;
+  }
+  .gc-card .card-text {
+    font-size: clamp(9px, 1.8vw, 13px);
+    font-weight: 400;
+    line-height: 1.5;
+    opacity: 0.8;
+  }
+  .gc-card .card-text strong { font-weight: 700; }
+
+  /* Green grid theme */
+  .grid-cards-page.green { background: var(--green-dark); }
+  .grid-cards-page.green .gc-title { color: var(--green-cream); }
+
+  /* Brown grid theme */
+  .grid-cards-page.brown { background: var(--brown-dark); }
+  .grid-cards-page.brown .gc-title { color: var(--blush); }
+  .grid-cards-page.brown .gc-card.cream { background: var(--blush-pale); }
+  .grid-cards-page.brown .gc-card.mid { background: var(--blush); }
+  .grid-cards-page.brown .gc-card.dark { background: rgba(92,64,48,0.8); }
+  .grid-cards-page.brown .gc-card .card-text { color: var(--cream); }
+
+  /* Dark grid theme */
+  .grid-cards-page.dark { background: var(--dark-deep); }
+  .grid-cards-page.dark .gc-title { color: var(--green-pale); }
+  .grid-cards-page.dark .gc-card.cream { background: rgba(248,245,238,0.08); }
+  .grid-cards-page.dark .gc-card.mid { background: var(--dark-card); }
+  .grid-cards-page.dark .gc-card .card-text { color: var(--green-pale); }
+
+  /* ═══ GEOMETRIC PAGE ═══ */
+  .geometric-page {
+    width: 100%; height: 100%;
+    position: relative;
+    overflow: hidden;
+  }
+  .geo-shape {
+    position: absolute;
+    border-radius: 50%;
+  }
+  .geo-card {
+    position: absolute;
+    top: 12%; left: 8%; right: 8%; bottom: 12%;
+    border-radius: 24px;
+    padding: 8%;
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    z-index: 2;
+  }
+  .geo-subtitle {
+    font-size: clamp(10px, 2vw, 14px);
+    font-weight: 300;
+    opacity: 0.5;
+    margin-bottom: 3%;
+  }
+  .geo-title {
+    font-size: clamp(22px, 6vw, 42px);
+    font-weight: 900;
+    text-transform: uppercase;
+    line-height: 1.05;
+    margin-bottom: 4%;
+  }
+  .geo-divider {
+    width: 40px;
+    height: 2px;
+    border-radius: 1px;
+    margin-bottom: 5%;
+  }
+  .geo-body {
+    font-size: clamp(10px, 2vw, 14px);
+    font-weight: 400;
+    line-height: 1.65;
+    opacity: 0.65;
+  }
+  .geo-body strong { font-weight: 700; opacity: 1; }
+  .geo-body p { margin-bottom: 12px; }
+
+  /* Green geometric */
+  .geometric-page.green { background: var(--green-dark); }
+  .geometric-page.green .geo-shape { background: var(--green-mid); opacity: 0.4; }
+  .geometric-page.green .geo-card { background: rgba(61,78,50,0.85); backdrop-filter: blur(10px); }
+  .geometric-page.green .geo-title { color: var(--green-cream); }
+  .geometric-page.green .geo-divider { background: var(--green-pale); }
+  .geometric-page.green .geo-body { color: var(--green-cream); }
+
+  /* Brown geometric */
+  .geometric-page.brown { background: var(--brown-dark); }
+  .geometric-page.brown .geo-shape { background: var(--blush); opacity: 0.25; }
+  .geometric-page.brown .geo-card { background: rgba(45,31,20,0.88); backdrop-filter: blur(10px); }
+  .geometric-page.brown .geo-title { color: var(--blush-light); }
+  .geometric-page.brown .geo-divider { background: var(--blush); }
+  .geometric-page.brown .geo-body { color: var(--cream); }
+
+  /* ═══ NUMBERED LIST ═══ */
+  .numbered-list { list-style: none; counter-reset: steps; }
+  .numbered-list li {
+    counter-increment: steps;
+    padding: 3% 0;
+    display: flex;
+    gap: 10px;
+    align-items: flex-start;
+  }
+  .numbered-list li::before {
+    content: counter(steps) ".";
+    font-weight: 800;
+    font-size: clamp(12px, 2.5vw, 18px);
+    min-width: 22px;
+    opacity: 0.6;
+  }
+
+  /* ═══ PAGE LABEL ═══ */
+  .page-label {
+    position: absolute;
+    top: 10px;
+    left: 10px;
+    background: rgba(0,0,0,0.5);
+    backdrop-filter: blur(8px);
+    color: rgba(255,255,255,0.6);
+    font-size: 9px;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 1.5px;
+    padding: 4px 10px;
+    border-radius: 6px;
+    z-index: 10;
+  }
+
+  /* ═══ QR CODE PLACEHOLDER ═══ */
+  .qr-placeholder {
+    width: clamp(60px, 18%, 100px);
+    aspect-ratio: 1;
+    border: 2px solid currentColor;
+    border-radius: 8px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 8px;
+    opacity: 0.3;
+  }
+</style>
+</head>
+<body>
+
+<div class="signage-frame" id="signageFrame"></div>
+
+<div class="nav-dots" id="navDots"></div>
+
+<div class="controls">
+  <button class="ctrl-btn" id="btnPrev" onclick="prevPage()">&#9664;</button>
+  <button class="ctrl-btn" id="btnPlay" onclick="togglePlay()">&#10074;&#10074;</button>
+  <button class="ctrl-btn" id="btnNext" onclick="nextPage()">&#9654;</button>
+  <button class="ctrl-btn" id="btnEdit" onclick="toggleEditor()">Edit JSON</button>
+</div>
+
+<div class="editor-panel" id="editorPanel">
+  <div class="editor-header">
+    <h3>Page Data (JSON)</h3>
+    <button class="editor-close" onclick="toggleEditor()">&times;</button>
+  </div>
+  <div class="editor-body">
+    <textarea id="jsonEditor" spellcheck="false"></textarea>
+  </div>
+  <div class="editor-footer">
+    <button class="btn-reset" onclick="resetData()">Reset</button>
+    <button class="btn-apply" onclick="applyJson()">Apply Changes</button>
+  </div>
+</div>
+
+<script>
+// ═══════════════════════════════════════════════════════════════════════════
+// ALL PAGE DATA — Edit this JSON to customize every page automatically
+// ═══════════════════════════════════════════════════════════════════════════
+const DEFAULT_PAGES = [
+  // ─── PAGE 1: Food Menu ─────────────────────────────────────────────
+  {
+    type: "menu_food",
+    label: "Menu — Food",
+    duration: 15,
+    data: {
+      title: "MR.GREEN'S\nHOMEMADE\nMENU",
+      icon: "croissant",
+      leftCategories: [
+        {
+          name: "SANDWICHES",
+          items: [
+            { name: "Goat", price: "7,75" },
+            { name: "Smashed Avocado", price: "7,75" },
+            { name: "York", price: "6,95" },
+            { name: "Smoked Chicken", price: "7,50" },
+            { name: "Tuna", price: "6,95" },
+            { name: "Egg Salad", price: "5,95" },
+            { name: "Old Cheese", price: "7,50" },
+            { name: "Chorizo", price: "7,75" }
+          ]
+        },
+        {
+          name: "SALAD BOWLS",
+          hasSizes: true,
+          items: [
+            { name: "Dolce Vita", price: "7,50", priceL: "10,25" },
+            { name: "Smoked Beef", price: "7,50", priceL: "10,25" },
+            { name: "Beetroot & Goat Cheese", price: "7,50", priceL: "10,25" }
+          ]
+        }
+      ],
+      rightCategories: [
+        {
+          name: "SOUP",
+          items: [{ name: "Day Special", price: "3,95" }]
+        },
+        {
+          name: "WRAPS",
+          items: [
+            { name: "Avocado", price: "7,25" },
+            { name: "Tuna", price: "7,50" }
+          ]
+        },
+        {
+          name: "TOASTED",
+          items: [
+            { name: "Just Say Cheese", price: "6,25" },
+            { name: "Not So Cheezy", price: "6,25" },
+            { name: "Toasted Brie", price: "7,50" },
+            { name: "Tuna Melt", price: "6,95" }
+          ]
+        },
+        {
+          name: "BREAKFAST",
+          items: [
+            { name: "Croissant", price: "2,95" },
+            { name: "Yoghurt Fruit Farm", price: "4,24" },
+            { name: "Overnight Oats", price: "4,95" },
+            { name: "Cinnamon Swirl", price: "3,75" }
+          ]
+        },
+        {
+          name: "SWEETS",
+          items: [
+            { name: "Cake", price: "3,25" },
+            { name: "Cookies", price: "2,75" },
+            { name: "Brownie", price: "2,95" },
+            { name: "Bananabread", price: "3,75" },
+            { name: "Date-Mueslibar", price: "3,95" },
+            { name: "Bread Pudding", price: "2,75" },
+            { name: "Muffin", price: "3,75" }
+          ]
+        }
+      ]
+    }
+  },
+
+  // ─── PAGE 2: Drinks Menu ───────────────────────────────────────────
+  {
+    type: "menu_drinks",
+    label: "Menu — Drinks",
+    duration: 15,
+    data: {
+      title: "MR.GREEN'S\nDRINKS",
+      icon: "cup",
+      leftCategories: [
+        {
+          name: "SMOOTHIES",
+          items: [
+            { name: "Green Machine", price: "3,75", desc: "Cucumber | Avocado | Apple | Spinach" },
+            { name: "Yellow Star", price: "3,75", desc: "Mango | Orange | Mint" },
+            { name: "Red Devil", price: "3,75", desc: "Strawberry | Beet | Banana" },
+            { name: "Tropical Carrot", price: "3,75", desc: "Carrot | Mango | Ginger" },
+            { name: "Blue Glow", price: "3,75", desc: "Blueberry | Ginger | Beet | Almond Milk" }
+          ]
+        }
+      ],
+      rightCategories: [
+        {
+          name: "WARM DRINKS",
+          items: [
+            { name: "Americano", price: "2,95" },
+            { name: "Espresso", price: "2,75" },
+            { name: "Cappuccino", price: "3,25" },
+            { name: "Latte", price: "3,35" },
+            { name: "Latte Macchiato", price: "3,35" },
+            { name: "Tea", price: "2,95" },
+            { name: "Chocolate Milk", price: "3,25" }
+          ]
+        },
+        {
+          name: "COLD DRINKS",
+          items: [
+            { name: "Fritz Kola | Sinas", price: "2,95" },
+            { name: "Bos Ice Tea", price: "2,95" },
+            { name: "Fever Tree Tonic", price: "2,95" },
+            { name: "Orange/ Apple Juice", price: "2,95" },
+            { name: "Bundaberg Gingerbeer", price: "4,25" },
+            { name: "Soof", price: "2,95" },
+            { name: "Kombucha", price: "4,25" }
+          ]
+        }
+      ]
+    }
+  },
+
+  // ─── PAGE 3: Photo Grid ────────────────────────────────────────────
+  {
+    type: "photo_grid",
+    label: "Food Photos",
+    duration: 10,
+    data: {
+      title: "DAILY FRESH\nHOMEMADE\nLUNCH ITEMS",
+      photos: [
+        "https://images.unsplash.com/photo-1512621776951-a57141f2eefd?w=400&h=400&fit=crop",
+        "https://images.unsplash.com/photo-1484723091739-30a097e8f929?w=400&h=300&fit=crop",
+        "https://images.unsplash.com/photo-1547592166-23ac45744acd?w=400&h=400&fit=crop",
+        "https://images.unsplash.com/photo-1504674900247-0877df9cc836?w=400&h=600&fit=crop"
+      ]
+    }
+  },
+
+  // ─── PAGE 4: Hero Green — Oma's Soup ───────────────────────────────
+  {
+    type: "hero_image",
+    label: "Oma's Soup",
+    theme: "green",
+    duration: 12,
+    data: {
+      photoUrl: "https://images.unsplash.com/photo-1556909114-f6e7ad7d3136?w=800&h=600&fit=crop",
+      waveColor: "#6B7D5C",
+      title: "RECIPE\nAGAINST\nLONELINESS",
+      body: "For the next few months, we're piloting Oma's Soup. This ensures delicious, consistent quality. We'd love your feedback, so let the Boss know if it hits the spot!",
+      cta: "Give us your feedback"
+    }
+  },
+
+  // ─── PAGE 5: Card Overlay — Call Me Boss ───────────────────────────
+  {
+    type: "card_overlay",
+    label: "Call Me Boss",
+    duration: 12,
+    data: {
+      photoUrl: "https://images.unsplash.com/photo-1573496359142-b8d87734a5a2?w=800&h=1200&fit=crop",
+      icon: "😎",
+      title: "YOU CAN\nCALL ME\nBOSS",
+      body: "We're celebrating a promotion that is long overdue.\nAs of today, we will no longer have hosts, but start working with <strong>BOSSES</strong>."
+    }
+  },
+
+  // ─── PAGE 6: Grid Cards Green — Boss Back-up ───────────────────────
+  {
+    type: "grid_cards",
+    label: "Boss Back-up",
+    theme: "green",
+    duration: 12,
+    data: {
+      title: "YOUR BOSS\nHAS BACK-UP",
+      cards: [
+        {
+          type: "cream",
+          icon: "📞",
+          content: "<div style='margin-bottom:12px'><div style='font-size:10px;color:#666;margin-bottom:2px'>Call or WhatsApp</div><div style='font-size:16px;font-weight:700;color:#3D4E32'>055-799 87 65</div></div><div><div style='font-size:10px;color:#666;margin-bottom:2px'>Email</div><div style='font-size:11px;font-weight:600;color:#3D4E32'>support@mrgreenoffices.nl</div></div>"
+        },
+        {
+          type: "mid",
+          content: "<div style='font-weight:700;margin-bottom:8px;color:#fff'>Need help?</div><div style='font-size:11px;line-height:1.5;color:rgba(255,255,255,0.8)'>Your local BOSS is fully equipped to solve any workday holdup.<br><br>Can't find the BOSS at your location? Let's call for backup!</div>"
+        },
+        {
+          type: "photo",
+          photoUrl: "https://images.unsplash.com/photo-1573497019940-1c28c88b4f3e?w=400&h=500&fit=crop"
+        },
+        {
+          type: "mid",
+          content: "<div style='font-weight:700;margin-bottom:8px;color:#fff'>Scan the QR code</div><div style='font-size:10px;color:rgba(255,255,255,0.6)'>for direct assistance</div><div class='qr-placeholder' style='margin-top:12px;color:#fff'>QR</div>"
+        }
+      ]
+    }
+  },
+
+  // ─── PAGE 7: Geometric Green — How Hosts Became Bosses ─────────────
+  {
+    type: "geometric",
+    label: "Hosts → Bosses",
+    theme: "green",
+    duration: 14,
+    data: {
+      subtitle: "Next level hospitality",
+      title: "HOW HOSTS\nBECAME\nBOSSES",
+      body: "<p><strong>Why?</strong> Because you don't want assistance, you want solutions.</p><p><strong>What's changing?</strong> One central point of contact: your local BOSS. Equipped and ready to solve any housing related issue for your company and smoothen workdays.</p><p><strong>What's new?</strong> Your first point of contact is always better face-to-face, so feel free to discuss any questions or concerns first with the boss.</p>",
+      shapes: [
+        { top: "5%", left: "-10%", size: "45%", radius: "50%" },
+        { top: "55%", right: "-15%", size: "50%", radius: "30%" },
+        { top: "35%", left: "55%", size: "25%", radius: "50%" },
+        { top: "70%", left: "5%", size: "20%", radius: "40%" }
+      ]
+    }
+  },
+
+  // ─── PAGE 8: Hero Brown — Vitality Made Easy ───────────────────────
+  {
+    type: "hero_image",
+    label: "Vitality",
+    theme: "brown",
+    duration: 12,
+    data: {
+      photoUrl: "https://images.unsplash.com/photo-1522202176988-66273c2fd55f?w=800&h=600&fit=crop",
+      waveColor: "#D4B5A0",
+      title: "VITALITY\nMADE EASY",
+      body: "Float through your workdays with ease if you feel good about yourself.\n\nThrough simple changes you can improve this significantly. That's why we've gathered some practical tips with proven effect!",
+      cta: "Try it out!"
+    }
+  },
+
+  // ─── PAGE 9: Grid Cards Brown — Ergonomic Desk ─────────────────────
+  {
+    type: "grid_cards",
+    label: "Ergonomic Setup",
+    theme: "brown",
+    duration: 14,
+    data: {
+      title: "ERGONOMIC\nDESK\nSET-UP",
+      cards: [
+        {
+          type: "cream",
+          icon: "↕️",
+          content: "<div style='font-weight:700;color:#3B2316;font-size:11px'>Kick off your workday with the right settings.</div>"
+        },
+        {
+          type: "mid",
+          content: "<ol style='list-style:none;counter-reset:s;padding:0'><li style='counter-increment:s;display:flex;gap:6px;margin-bottom:6px;font-size:10px;line-height:1.4;color:rgba(45,31,20,0.9)'><span style='font-weight:800;opacity:0.6'>1.</span>Feet on the ground, knees slightly bent</li><li style='counter-increment:s;display:flex;gap:6px;margin-bottom:6px;font-size:10px;line-height:1.4;color:rgba(45,31,20,0.9)'><span style='font-weight:800;opacity:0.6'>2.</span>Back against the backrest</li><li style='counter-increment:s;display:flex;gap:6px;margin-bottom:6px;font-size:10px;line-height:1.4;color:rgba(45,31,20,0.9)'><span style='font-weight:800;opacity:0.6'>3.</span>Shoulders relaxed, desk or armrests supporting your elbows</li><li style='counter-increment:s;display:flex;gap:6px;margin-bottom:6px;font-size:10px;line-height:1.4;color:rgba(45,31,20,0.9)'><span style='font-weight:800;opacity:0.6'>4.</span>Screen at an arm's length distance</li><li style='counter-increment:s;display:flex;gap:6px;margin-bottom:6px;font-size:10px;line-height:1.4;color:rgba(45,31,20,0.9)'><span style='font-weight:800;opacity:0.6'>5.</span>Top of your screen at eye level</li><li style='counter-increment:s;display:flex;gap:6px;font-size:10px;line-height:1.4;color:rgba(45,31,20,0.9)'><span style='font-weight:800;opacity:0.6'>6.</span>Head, neck and back in a straight line</li></ol>"
+        },
+        {
+          type: "cream",
+          content: "<div style='width:100%;height:100%;display:flex;align-items:center;justify-content:center;opacity:0.2;font-size:60px'>🪑</div>"
+        },
+        {
+          type: "cream",
+          content: ""
+        }
+      ]
+    }
+  },
+
+  // ─── PAGE 10: Geometric Brown — Posture Variety ────────────────────
+  {
+    type: "geometric",
+    label: "Posture Variety",
+    theme: "brown",
+    duration: 14,
+    data: {
+      subtitle: "Change it up",
+      title: "POSTURE\nVARIETY",
+      body: "<p><strong>Strengthen your mobility by alternating your posture throughout the day.</strong></p><p><strong>TIPS!</strong></p><p><strong>1.</strong> Stand behind your desk often, for example by doing calls in a stand-up position.</p><p><strong>2.</strong> Get your coffee at the other side of the office.</p><p><strong>3.</strong> Do 2 quick sets at the EGYM (+- 5 mins)</p><p><strong>4.</strong> Meet in different spots, like the cafe or meetingrooms, to change posture.</p>",
+      shapes: [
+        { top: "-5%", left: "-5%", size: "35%", radius: "50%" },
+        { top: "60%", right: "-10%", size: "45%", radius: "40%" },
+        { top: "20%", right: "5%", size: "30%", radius: "50%" },
+        { top: "75%", left: "-5%", size: "25%", radius: "50%" }
+      ]
+    }
+  },
+
+  // ─── PAGE 11: Photo Grid Brown — Breakfast ─────────────────────────
+  {
+    type: "photo_grid",
+    label: "Breakfast",
+    duration: 10,
+    data: {
+      title: "SKIPPED\nBREAKFAST?\nNO\nPROBLEM!",
+      titleColor: "#C4A68A",
+      photos: [
+        "https://images.unsplash.com/photo-1555507036-ab1f4038024a?w=400&h=400&fit=crop",
+        "https://images.unsplash.com/photo-1488477181946-6428a0291777?w=400&h=500&fit=crop",
+        "https://images.unsplash.com/photo-1495214783159-3503fd1b572d?w=400&h=400&fit=crop",
+        "https://images.unsplash.com/photo-1509042239860-f550ce710b93?w=400&h=400&fit=crop"
+      ]
+    }
+  },
+
+  // ─── PAGE 12: Hero Brown — Boost Your Focus ────────────────────────
+  {
+    type: "hero_image",
+    label: "Boost Focus",
+    theme: "blush",
+    duration: 12,
+    data: {
+      photoUrl: "https://images.unsplash.com/photo-1476480862126-209bfaa8edc8?w=800&h=600&fit=crop",
+      waveColor: "#E8D0C0",
+      bgColor: "#3B2316",
+      title: "BOOST YOUR\nFOCUS",
+      body: "Variety in your day is crucial for concentration. Taking short breaks can be important to keep focus.\n\nGoing outside for a quick walk, can do wonders. You can already notice a positive effect after 5 minutes.",
+      cta: ""
+    }
+  },
+
+  // ─── PAGE 13: Geometric Brown — Stay Hydrated ─────────────────────
+  {
+    type: "geometric",
+    label: "Stay Hydrated",
+    theme: "brown",
+    duration: 12,
+    data: {
+      subtitle: "Vitality",
+      title: "STAY\nHYDRATED",
+      body: "<p>Drinking water contributes to <strong>digestion</strong> and prevents the main cause of <strong>headaches</strong>.</p><p><strong>2 litres of water a day is what you're going for.</strong> Our filtered water taps and larger glass bottles remove any excuse to reach that goal!</p><p><strong>TIP!</strong><br>At the coffee bar you can find empty bottles to fill with filtered water.</p>",
+      shapes: [
+        { top: "0%", left: "0%", size: "30%", radius: "50%" },
+        { top: "55%", right: "-8%", size: "40%", radius: "40%" },
+        { top: "25%", right: "10%", size: "28%", radius: "50%" },
+        { top: "70%", left: "0%", size: "22%", radius: "50%" }
+      ]
+    }
+  },
+
+  // ─── PAGE 14: Hero Green — Choose Your Neighbour ───────────────────
+  {
+    type: "hero_image",
+    label: "Choose Neighbour",
+    theme: "green",
+    duration: 12,
+    data: {
+      photoUrl: "https://images.unsplash.com/photo-1521737711867-e3b97375f902?w=800&h=600&fit=crop",
+      waveColor: "#8A9B7A",
+      title: "CHOOSE\nYOUR\nNEIGHBOUR!",
+      body: "Know someone looking for office space? Help us to get into contact with them and earn your reward!\n\nSubmit a candidate and earn a discount on your office costs or a voucher worth €500,-",
+      cta: "Scan the QR-code"
+    }
+  },
+
+  // ─── PAGE 15: Hero Green — Brand New Improving ─────────────────────
+  {
+    type: "hero_image",
+    label: "Improving",
+    theme: "green",
+    duration: 12,
+    data: {
+      photoUrl: "https://images.unsplash.com/photo-1616486338812-3dadae4b4ace?w=800&h=600&fit=crop",
+      waveColor: "#6B7D5C",
+      title: "BRAND NEW\nBUT ALREADY\nIMPROVING",
+      body: "Improving new Mr.Green venues right after launch is part of our standard process. This is where you come in!\n\nIf you have any suggestions or ideas for improvements while using our services, please let your BOSS or REMOTE BOSS know.",
+      cta: "Drop a note!"
+    }
+  }
+];
+
+// ═══════════════════════════════════════════════════════════════════════════
+// RENDERING ENGINE
+// ═══════════════════════════════════════════════════════════════════════════
+let pagesData = JSON.parse(JSON.stringify(DEFAULT_PAGES));
+let currentPage = 0;
+let isPlaying = true;
+let timer = null;
+
+// SVG icons
+const ICONS = {
+  croissant: `<svg viewBox="0 0 60 50" class="menu-icon"><path d="M30 5 C20 5 10 12 8 22 C6 32 10 40 18 44 L22 36 C18 34 15 28 16 22 C17 16 22 12 30 12 C38 12 43 16 44 22 C45 28 42 34 38 36 L42 44 C50 40 54 32 52 22 C50 12 40 5 30 5Z" fill="var(--cream)" opacity="0.85"/><path d="M22 36 L18 44 C22 46 26 47 30 47 C34 47 38 46 42 44 L38 36 C35 38 32 39 30 39 C28 39 25 38 22 36Z" fill="var(--cream)" opacity="0.6"/></svg>`,
+  cup: `<svg viewBox="0 0 50 50" class="menu-icon"><path d="M10 15 L10 38 C10 42 15 45 25 45 C35 45 40 42 40 38 L40 15Z" fill="none" stroke="var(--cream)" stroke-width="2.5" opacity="0.85"/><path d="M15 8 C15 4 18 4 18 8" fill="none" stroke="var(--cream)" stroke-width="1.5" opacity="0.4"/><path d="M23 6 C23 2 26 2 26 6" fill="none" stroke="var(--cream)" stroke-width="1.5" opacity="0.4"/><path d="M31 8 C31 4 34 4 34 8" fill="none" stroke="var(--cream)" stroke-width="1.5" opacity="0.4"/></svg>`
+};
+
+function waveSvg(color, flip = false) {
+  const transform = flip ? 'transform="rotate(180 540 60)"' : '';
+  return `<svg viewBox="0 0 1080 120" class="wave-svg" preserveAspectRatio="none">
+    <path d="M0 40 C180 0, 350 100, 540 50 C730 0, 900 100, 1080 40 L1080 120 L0 120 Z" fill="${color}" ${transform}/>
+  </svg>`;
+}
+
+// ─── Menu Page Renderer ──────────────────────────────────────────────
+function renderMenuPage(page) {
+  const d = page.data;
+  const isFood = page.type === "menu_food";
+  const icon = ICONS[d.icon] || "";
+
+  function renderCategory(cat) {
+    let html = `<div class="menu-cat-title">${cat.name}</div>`;
+    if (cat.hasSizes) {
+      html += `<div class="menu-sizes"><span>klein</span><span>groot</span></div>`;
+    }
+    cat.items.forEach(item => {
+      html += `<div class="menu-item">
+        <span class="menu-item-name">${item.name}</span>`;
+      if (cat.hasSizes && item.priceL) {
+        html += `<div class="menu-item-prices">
+          <span class="menu-item-price">€ ${item.price}</span>
+          <span class="menu-item-price">€ ${item.priceL}</span>
+        </div>`;
+      } else {
+        html += `<span class="menu-item-price">€ ${item.price}</span>`;
+      }
+      html += `</div>`;
+      if (item.desc) {
+        html += `<div class="menu-item-desc">${item.desc}</div>`;
+      }
+    });
+    return html;
+  }
+
+  return `<div class="menu-page ${isFood ? 'food' : 'drinks'}">
+    <div class="left-panel">
+      ${icon}
+      <div class="menu-title">${d.title.replace(/\n/g, '<br>')}</div>
+      ${(d.leftCategories || []).map(renderCategory).join('')}
+    </div>
+    <div class="right-panel">
+      ${(d.rightCategories || []).map(renderCategory).join('')}
+    </div>
+  </div>`;
+}
+
+// ─── Photo Grid Renderer ────────────────────────────────────────────
+function renderPhotoGrid(page) {
+  const d = page.data;
+  const titleColor = d.titleColor || "var(--copper)";
+  return `<div class="photo-grid-page">
+    <div class="photo-grid">
+      ${d.photos.map(url => `<div class="photo-grid-item"><img src="${url}" alt="" loading="lazy"></div>`).join('')}
+    </div>
+    <div class="photo-grid-title" style="color:${titleColor}">${d.title.replace(/\n/g, '<br>')}</div>
+  </div>`;
+}
+
+// ─── Hero Image Renderer ────────────────────────────────────────────
+function renderHeroImage(page) {
+  const d = page.data;
+  const theme = page.theme || "green";
+  const bgColor = d.bgColor || (theme === "green" ? "var(--green-dark)" : theme === "brown" ? "var(--brown-dark)" : "var(--brown-dark)");
+  const waveColor = d.waveColor || (theme === "green" ? "#6B7D5C" : "#D4B5A0");
+
+  return `<div class="hero-page ${theme}" style="background:${bgColor}">
+    <div class="hero-photo">
+      <img src="${d.photoUrl}" alt="" loading="lazy">
+      ${waveSvg(bgColor)}
+    </div>
+    <div class="hero-content">
+      <div class="hero-title">${d.title.replace(/\n/g, '<br>')}</div>
+      <div class="hero-divider"></div>
+      <div class="hero-body">${(d.body || '').replace(/\n\n/g, '<br><br>')}</div>
+      ${d.cta ? `<div class="hero-cta">${d.cta}<div class="hero-cta-line"></div></div>` : ''}
+    </div>
+  </div>`;
+}
+
+// ─── Card Overlay Renderer ──────────────────────────────────────────
+function renderCardOverlay(page) {
+  const d = page.data;
+  return `<div class="card-overlay-page">
+    <div class="bg-photo"><img src="${d.photoUrl}" alt="" loading="lazy"></div>
+    <div class="card-overlay-card">
+      ${d.icon ? `<div class="card-icon">${d.icon}</div>` : ''}
+      <div class="card-title">${d.title.replace(/\n/g, '<br>')}</div>
+      <div class="card-body">${(d.body || '').replace(/\n/g, '<br>')}</div>
+    </div>
+  </div>`;
+}
+
+// ─── Grid Cards Renderer ────────────────────────────────────────────
+function renderGridCards(page) {
+  const d = page.data;
+  const theme = page.theme || "green";
+
+  function renderCard(card) {
+    if (card.type === "photo") {
+      return `<div class="gc-card photo"><img src="${card.photoUrl}" alt="" loading="lazy"></div>`;
+    }
+    return `<div class="gc-card ${card.type}">
+      ${card.icon ? `<div class="card-icon">${card.icon}</div>` : ''}
+      ${card.content || ''}
+    </div>`;
+  }
+
+  return `<div class="grid-cards-page ${theme}">
+    <div class="gc-title">${d.title.replace(/\n/g, '<br>')}</div>
+    <div class="gc-grid">
+      ${(d.cards || []).map(renderCard).join('')}
+    </div>
+  </div>`;
+}
+
+// ─── Geometric Renderer ─────────────────────────────────────────────
+function renderGeometric(page) {
+  const d = page.data;
+  const theme = page.theme || "green";
+
+  const shapes = (d.shapes || []).map(s => {
+    let style = `width:${s.size};aspect-ratio:1;border-radius:${s.radius || '50%'};`;
+    if (s.top) style += `top:${s.top};`;
+    if (s.left) style += `left:${s.left};`;
+    if (s.right) style += `right:${s.right};`;
+    if (s.bottom) style += `bottom:${s.bottom};`;
+    return `<div class="geo-shape" style="${style}"></div>`;
+  }).join('');
+
+  return `<div class="geometric-page ${theme}">
+    ${shapes}
+    <div class="geo-card">
+      ${d.subtitle ? `<div class="geo-subtitle">${d.subtitle}</div>` : ''}
+      <div class="geo-title">${d.title.replace(/\n/g, '<br>')}</div>
+      <div class="geo-divider"></div>
+      <div class="geo-body">${d.body || ''}</div>
+    </div>
+  </div>`;
+}
+
+// ─── Master Renderer ────────────────────────────────────────────────
+const RENDERERS = {
+  menu_food: renderMenuPage,
+  menu_drinks: renderMenuPage,
+  photo_grid: renderPhotoGrid,
+  hero_image: renderHeroImage,
+  card_overlay: renderCardOverlay,
+  grid_cards: renderGridCards,
+  geometric: renderGeometric,
+};
+
+function renderAllPages() {
+  const frame = document.getElementById('signageFrame');
+  const dotsContainer = document.getElementById('navDots');
+
+  frame.innerHTML = pagesData.map((page, i) => {
+    const renderer = RENDERERS[page.type];
+    const content = renderer ? renderer(page) : `<div style="padding:20px;color:red">Unknown type: ${page.type}</div>`;
+    return `<div class="page ${i === currentPage ? 'active' : ''}" data-index="${i}">
+      <div class="page-label">${page.label || page.type}</div>
+      ${content}
+    </div>`;
+  }).join('');
+
+  dotsContainer.innerHTML = pagesData.map((page, i) => {
+    const isMenu = page.type.startsWith('menu_');
+    return `<button class="nav-dot ${i === currentPage ? 'active' : ''} ${isMenu ? 'menu' : ''}" data-index="${i}" onclick="goToPage(${i})"></button>`;
+  }).join('');
+}
+
+function showPage(index) {
+  document.querySelectorAll('.page').forEach((el, i) => {
+    el.classList.toggle('active', i === index);
+  });
+  document.querySelectorAll('.nav-dot').forEach((el, i) => {
+    el.classList.toggle('active', i === index);
+  });
+  currentPage = index;
+}
+
+function nextPage() {
+  showPage((currentPage + 1) % pagesData.length);
+  restartTimer();
+}
+function prevPage() {
+  showPage((currentPage - 1 + pagesData.length) % pagesData.length);
+  restartTimer();
+}
+function goToPage(i) {
+  showPage(i);
+  restartTimer();
+}
+
+function restartTimer() {
+  clearTimeout(timer);
+  if (isPlaying) {
+    const dur = (pagesData[currentPage]?.duration || 12) * 1000;
+    timer = setTimeout(nextPage, dur);
+  }
+}
+
+function togglePlay() {
+  isPlaying = !isPlaying;
+  document.getElementById('btnPlay').textContent = isPlaying ? '⏸' : '▶';
+  if (isPlaying) restartTimer();
+  else clearTimeout(timer);
+}
+
+// ─── Editor ──────────────────────────────────────────────────────────
+function toggleEditor() {
+  const panel = document.getElementById('editorPanel');
+  panel.classList.toggle('open');
+  if (panel.classList.contains('open')) {
+    document.getElementById('jsonEditor').value = JSON.stringify(pagesData[currentPage], null, 2);
+  }
+}
+
+function applyJson() {
+  try {
+    const data = JSON.parse(document.getElementById('jsonEditor').value);
+    pagesData[currentPage] = data;
+    renderAllPages();
+    showPage(currentPage);
+    restartTimer();
+  } catch (e) {
+    alert('Invalid JSON: ' + e.message);
+  }
+}
+
+function resetData() {
+  pagesData = JSON.parse(JSON.stringify(DEFAULT_PAGES));
+  renderAllPages();
+  showPage(currentPage);
+  restartTimer();
+}
+
+// ─── Keyboard nav ────────────────────────────────────────────────────
+document.addEventListener('keydown', (e) => {
+  if (e.target.tagName === 'TEXTAREA') return;
+  if (e.key === 'ArrowRight' || e.key === ' ') nextPage();
+  if (e.key === 'ArrowLeft') prevPage();
+  if (e.key === 'p') togglePlay();
+  if (e.key === 'e') toggleEditor();
+});
+
+// ─── Initialize ──────────────────────────────────────────────────────
+renderAllPages();
+restartTimer();
+</script>
+</body>
+</html>

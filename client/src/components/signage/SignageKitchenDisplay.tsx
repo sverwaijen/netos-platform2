@@ -215,112 +215,178 @@ export default function SignageKitchenDisplay({ config, time, locationId, onRefr
   const isLandscape = orientation === "landscape";
   const compact = !isLandscape; // portrait needs smaller text
 
-  return (
-    <div className="fixed inset-0 overflow-hidden flex flex-col" style={{
-      background: "linear-gradient(180deg, #2d1f14 0%, #1a1209 100%)",
-      fontFamily: "'Montserrat', 'Inter', sans-serif",
-    }}>
-      {/* ═══ HEADER ═══ */}
-      <div className={`flex items-center justify-between shrink-0 ${isLandscape ? "px-12 py-5" : "px-6 py-4"}`}>
-        <div className="flex items-center gap-3">
-          <UtensilsCrossed className={`text-[#c4a68a]/60 ${isLandscape ? "w-6 h-6" : "w-5 h-5"}`} />
-          <div>
-            <h1 className={`font-black uppercase tracking-[4px] text-[#f5e6d0] ${isLandscape ? "text-lg" : "text-sm"}`}>
-              Mr.Green's Homemade Menu
-            </h1>
+  // Exact PDF split: left categories (sandwiches, salad bowls) vs right categories (rest)
+  const leftFoodCats = ["sandwiches", "salad bowls"];
+  const rightFoodCats = ["soup", "wraps", "toasted", "breakfast", "sweets"];
+  const leftDrinkCats = ["smoothies"];
+  const rightDrinkCats = ["warm drinks", "cold drinks"];
+
+  const leftFoodEntries = Object.entries(foodData).filter(([cat]) => leftFoodCats.includes(cat));
+  const rightFoodEntries = Object.entries(foodData).filter(([cat]) => rightFoodCats.includes(cat));
+  const leftDrinkEntries = Object.entries(drinksData).filter(([cat]) => leftDrinkCats.includes(cat));
+  const rightDrinkEntries = Object.entries(drinksData).filter(([cat]) => rightDrinkCats.includes(cat));
+
+  if (isLandscape) {
+    // ═══ LANDSCAPE: keep existing horizontal layout ═══
+    return (
+      <div className="fixed inset-0 overflow-hidden flex flex-col" style={{
+        background: "linear-gradient(180deg, #2d1f14 0%, #1a1209 100%)",
+        fontFamily: "'Montserrat', 'Inter', sans-serif",
+      }}>
+        <div className="flex items-center justify-between shrink-0 px-12 py-5">
+          <div className="flex items-center gap-3">
+            <UtensilsCrossed className="w-6 h-6 text-[#c4a68a]/60" />
+            <h1 className="font-black uppercase tracking-[4px] text-[#f5e6d0] text-lg">Mr.Green's Homemade Menu</h1>
+          </div>
+          <div className="flex items-center gap-4">
+            <div className="flex gap-1">
+              <div className={`w-2 h-2 rounded-full transition-all ${section === "food" ? "bg-[#c4a68a]" : "bg-[#c4a68a]/20"}`} />
+              <div className={`w-2 h-2 rounded-full transition-all ${section === "drinks" ? "bg-[#c4a68a]" : "bg-[#c4a68a]/20"}`} />
+            </div>
+            <span className="font-extralight text-[#f5e6d0]/60 tabular-nums text-2xl">{timeStr}</span>
           </div>
         </div>
-        <div className="flex items-center gap-4">
-          {/* Section toggle indicator */}
-          <div className="flex gap-1">
-            <div className={`w-2 h-2 rounded-full transition-all ${section === "food" ? "bg-[#c4a68a]" : "bg-[#c4a68a]/20"}`} />
-            <div className={`w-2 h-2 rounded-full transition-all ${section === "drinks" ? "bg-[#c4a68a]" : "bg-[#c4a68a]/20"}`} />
-          </div>
-          <span className={`font-extralight text-[#f5e6d0]/60 tabular-nums ${isLandscape ? "text-2xl" : "text-lg"}`}>{timeStr}</span>
-        </div>
-      </div>
-
-      <WaveDivider />
-
-      {/* ═══ MAIN CONTENT ═══ */}
-      <div className={`flex-1 min-h-0 overflow-hidden ${isLandscape ? "px-12 py-4" : "px-5 py-3"}`}>
-        {section === "food" ? (
-          /* ─── FOOD SECTION ─── */
-          <div className={`h-full flex ${isLandscape ? "gap-6" : "gap-3"}`}>
-            {/* Left column */}
-            <div className="flex-1 overflow-hidden">
-              {Object.entries(foodData).slice(0, isLandscape ? 4 : 3).map(([cat, items]) => (
-                <MenuSection
-                  key={cat}
-                  title={cat}
-                  items={items}
-                  showSizes={cat === "salad bowls"}
-                  compact={compact}
-                />
-              ))}
-            </div>
-
-            <WaveDivider vertical />
-
-            {/* Right column */}
-            <div className="flex-1 overflow-hidden">
-              {Object.entries(foodData).slice(isLandscape ? 4 : 3).map(([cat, items]) => (
-                <MenuSection
-                  key={cat}
-                  title={cat}
-                  items={items}
-                  compact={compact}
-                />
-              ))}
-            </div>
-          </div>
-        ) : (
-          /* ─── DRINKS SECTION ─── */
-          <div className={`h-full flex ${isLandscape ? "gap-6" : "gap-3"}`}>
-            {/* Left column - Smoothies */}
-            <div className="flex-1 overflow-hidden">
-              <div className="flex items-center gap-2 mb-4">
-                <Coffee className="w-4 h-4 text-[#c4a68a]/60" />
-                <h2 className={`font-black uppercase tracking-[4px] text-[#f5e6d0] ${isLandscape ? "text-base" : "text-xs"}`}>
-                  Mr.Green's Drinks
-                </h2>
+        <WaveDivider />
+        <div className="flex-1 min-h-0 overflow-hidden px-12 py-4">
+          {section === "food" ? (
+            <div className="h-full flex gap-6">
+              <div className="flex-1 overflow-hidden">
+                {Object.entries(foodData).slice(0, 4).map(([cat, items]) => (
+                  <MenuSection key={cat} title={cat} items={items} showSizes={cat === "salad bowls"} compact={false} />
+                ))}
               </div>
-              {Object.entries(drinksData).slice(0, isLandscape ? 2 : 1).map(([cat, items]) => (
-                <MenuSection key={cat} title={cat} items={items as any[]} compact={compact} />
-              ))}
+              <WaveDivider vertical />
+              <div className="flex-1 overflow-hidden">
+                {Object.entries(foodData).slice(4).map(([cat, items]) => (
+                  <MenuSection key={cat} title={cat} items={items} compact={false} />
+                ))}
+              </div>
             </div>
-
-            <WaveDivider vertical />
-
-            {/* Right column - Hot & Cold */}
-            <div className="flex-1 overflow-hidden">
-              {Object.entries(drinksData).slice(isLandscape ? 2 : 1).map(([cat, items]) => (
-                <MenuSection key={cat} title={cat} items={items as any[]} compact={compact} />
-              ))}
+          ) : (
+            <div className="h-full flex gap-6">
+              <div className="flex-1 overflow-hidden">
+                <div className="flex items-center gap-2 mb-4">
+                  <Coffee className="w-4 h-4 text-[#c4a68a]/60" />
+                  <h2 className="font-black uppercase tracking-[4px] text-[#f5e6d0] text-base">Mr.Green's Drinks</h2>
+                </div>
+                {Object.entries(drinksData).slice(0, 2).map(([cat, items]) => (
+                  <MenuSection key={cat} title={cat} items={items as any[]} compact={false} />
+                ))}
+              </div>
+              <WaveDivider vertical />
+              <div className="flex-1 overflow-hidden">
+                {Object.entries(drinksData).slice(2).map(([cat, items]) => (
+                  <MenuSection key={cat} title={cat} items={items as any[]} compact={false} />
+                ))}
+              </div>
+            </div>
+          )}
+        </div>
+        <div className="shrink-0 border-t border-[#c4a68a]/10 px-12 py-4">
+          <div className="flex items-center justify-between">
+            <div className="flex items-center gap-4 text-[10px] text-[#f5e6d0]/25">
+              <span className="flex items-center gap-1"><Leaf className="w-2.5 h-2.5 text-green-500" /> Vegan</span>
+              <span className="flex items-center gap-1"><Leaf className="w-2.5 h-2.5 text-green-400/60" /> Vegetarisch</span>
+              <span className="flex items-center gap-1"><Wheat className="w-2.5 h-2.5 text-amber-400" /> Glutenvrij</span>
+            </div>
+            <div className="flex items-center gap-3">
+              <span className="text-[9px] text-[#c4a68a]/30">Allergenen? Vraag de BOSS</span>
+              <span className="text-[9px] text-[#c4a68a]/20">·</span>
+              <span className="text-[9px] text-[#c4a68a]/30">Prijzen incl. BTW</span>
             </div>
           </div>
+        </div>
+        {isDemo && (
+          <div className="absolute top-3 right-3 bg-amber-500/20 text-amber-300 text-[8px] px-2 py-0.5 rounded-full border border-amber-500/20">Demo modus</div>
         )}
       </div>
+    );
+  }
 
-      {/* ═══ FOOTER ═══ */}
-      <div className={`shrink-0 border-t border-[#c4a68a]/10 ${isLandscape ? "px-12 py-4" : "px-5 py-3"}`}>
-        <div className="flex items-center justify-between">
-          <div className="flex items-center gap-4 text-[10px] text-[#f5e6d0]/25">
-            <span className="flex items-center gap-1"><Leaf className="w-2.5 h-2.5 text-green-500" /> Vegan</span>
-            <span className="flex items-center gap-1"><Leaf className="w-2.5 h-2.5 text-green-400/60" /> Vegetarisch</span>
-            <span className="flex items-center gap-1"><Wheat className="w-2.5 h-2.5 text-amber-400" /> Glutenvrij</span>
+  // ═══ PORTRAIT: Exact PDF split-panel layout with curved corners ═══
+  return (
+    <div className="fixed inset-0 overflow-hidden flex" style={{
+      fontFamily: "'Montserrat', 'Inter', sans-serif",
+    }}>
+      {section === "food" ? (
+        <>
+          {/* ─── LEFT PANEL (food: lighter brown with curved corner) ─── */}
+          <div className="relative flex flex-col overflow-hidden" style={{ width: "42%", background: "#6B4C3A" }}>
+            {/* Curved bottom-right overlay */}
+            <div className="absolute top-0 right-0 bottom-0 w-[30%]" style={{
+              background: "#6B4C3A",
+              borderRadius: "0 0 0 50%",
+              transform: "translateX(50%)",
+              zIndex: 1,
+            }} />
+            <div className="relative z-10 flex flex-col h-full p-[12%] pt-[8%]">
+              {/* Croissant icon */}
+              <svg viewBox="0 0 60 50" className="w-[16%] mb-[4%] opacity-85">
+                <path d="M30 5 C20 5 10 12 8 22 C6 32 10 40 18 44 L22 36 C18 34 15 28 16 22 C17 16 22 12 30 12 C38 12 43 16 44 22 C45 28 42 34 38 36 L42 44 C50 40 54 32 52 22 C50 12 40 5 30 5Z" fill="#f5e6d0" opacity="0.85"/>
+                <path d="M22 36 L18 44 C22 46 26 47 30 47 C34 47 38 46 42 44 L38 36 C35 38 32 39 30 39 C28 39 25 38 22 36Z" fill="#f5e6d0" opacity="0.6"/>
+              </svg>
+              <h1 className="text-[clamp(16px,4.8vw,28px)] font-black uppercase text-[#f5e6d0] leading-[1.05] tracking-tight mb-[6%]">
+                Mr.Green's<br/>Homemade<br/>Menu
+              </h1>
+              {leftFoodEntries.map(([cat, items]) => (
+                <MenuSection key={cat} title={cat} items={items} showSizes={cat === "salad bowls"} compact />
+              ))}
+            </div>
           </div>
-          <div className="flex items-center gap-3">
-            <span className="text-[9px] text-[#c4a68a]/30">Allergenen? Vraag de BOSS</span>
-            <span className="text-[9px] text-[#c4a68a]/20">•</span>
-            <span className="text-[9px] text-[#c4a68a]/30">Prijzen incl. BTW</span>
+          {/* ─── RIGHT PANEL (food: dark brown) ─── */}
+          <div className="flex-1 overflow-auto p-[6%] pl-[8%]" style={{ background: "#2D1F14" }}>
+            {rightFoodEntries.map(([cat, items]) => (
+              <MenuSection key={cat} title={cat} items={items} compact />
+            ))}
           </div>
+        </>
+      ) : (
+        <>
+          {/* ─── LEFT PANEL (drinks: dark brown) ─── */}
+          <div className="relative flex flex-col overflow-hidden" style={{ width: "42%", background: "#2D1F14" }}>
+            <div className="absolute top-0 right-0 bottom-0 w-[30%]" style={{
+              background: "#2D1F14",
+              borderRadius: "0 0 0 50%",
+              transform: "translateX(50%)",
+              zIndex: 1,
+            }} />
+            <div className="relative z-10 flex flex-col h-full p-[12%] pt-[8%]">
+              {/* Cup icon */}
+              <svg viewBox="0 0 50 50" className="w-[14%] mb-[4%]">
+                <path d="M10 15 L10 38 C10 42 15 45 25 45 C35 45 40 42 40 38 L40 15Z" fill="none" stroke="#f5e6d0" strokeWidth="2.5" opacity="0.85"/>
+                <path d="M15 8 C15 4 18 4 18 8" fill="none" stroke="#f5e6d0" strokeWidth="1.5" opacity="0.4"/>
+                <path d="M23 6 C23 2 26 2 26 6" fill="none" stroke="#f5e6d0" strokeWidth="1.5" opacity="0.4"/>
+                <path d="M31 8 C31 4 34 4 34 8" fill="none" stroke="#f5e6d0" strokeWidth="1.5" opacity="0.4"/>
+              </svg>
+              <h1 className="text-[clamp(16px,4.8vw,28px)] font-black uppercase text-[#f5e6d0] leading-[1.05] tracking-tight mb-[6%]">
+                Mr.Green's<br/>Drinks
+              </h1>
+              <div className="w-8 h-px bg-[#c4a68a]/30 mb-[6%]" />
+              {leftDrinkEntries.map(([cat, items]) => (
+                <MenuSection key={cat} title={cat} items={items as any[]} compact />
+              ))}
+            </div>
+          </div>
+          {/* ─── RIGHT PANEL (drinks: lighter brown) ─── */}
+          <div className="flex-1 overflow-auto p-[6%] pl-[8%]" style={{ background: "#6B4C3A" }}>
+            {rightDrinkEntries.map(([cat, items]) => (
+              <MenuSection key={cat} title={cat} items={items as any[]} compact />
+            ))}
+          </div>
+        </>
+      )}
+
+      {/* Overlay: clock + section dots */}
+      <div className="absolute top-3 right-3 flex items-center gap-3 z-20">
+        <div className="flex gap-1">
+          <div className={`w-2 h-2 rounded-full transition-all ${section === "food" ? "bg-[#c4a68a]" : "bg-[#c4a68a]/20"}`} />
+          <div className={`w-2 h-2 rounded-full transition-all ${section === "drinks" ? "bg-[#c4a68a]" : "bg-[#c4a68a]/20"}`} />
         </div>
       </div>
 
       {/* Demo badge */}
       {isDemo && (
-        <div className="absolute top-3 right-3 bg-amber-500/20 text-amber-300 text-[8px] px-2 py-0.5 rounded-full border border-amber-500/20">
+        <div className="absolute top-3 left-3 bg-amber-500/20 text-amber-300 text-[8px] px-2 py-0.5 rounded-full border border-amber-500/20 z-20">
           Demo modus
         </div>
       )}
