@@ -14,11 +14,14 @@ export default function WalletPage() {
   const { isAuthenticated } = useAuth();
   const { data: wallets, isLoading } = trpc.wallets.mine.useQuery(undefined, { enabled: isAuthenticated });
   const { data: ledger } = trpc.wallets.ledger.useQuery({ walletId: 0 }, { enabled: isAuthenticated });
+  const { data: bundles = [] } = trpc.walletPayment.getBundles.useQuery();
   const [topUpOpen, setTopUpOpen] = useState(false);
   const [topUpAmount, setTopUpAmount] = useState("50");
   const [autoTopUpOpen, setAutoTopUpOpen] = useState(false);
   const [autoTopUpThreshold, setAutoTopUpThreshold] = useState("10");
   const [autoTopUpAmount, setAutoTopUpAmount] = useState("50");
+  const [bundleDialogOpen, setBundleDialogOpen] = useState(false);
+  const [selectedBundle, setSelectedBundle] = useState<any>(null);
 
   const utils = trpc.useUtils();
   const topUpMutation = trpc.wallets.topup.useMutation({
@@ -27,6 +30,14 @@ export default function WalletPage() {
   });
   const autoTopUpMutation = trpc.wallets.setAutoTopUp.useMutation({
     onSuccess: () => { toast.success("Auto top-up settings saved."); setAutoTopUpOpen(false); utils.wallets.mine.invalidate(); },
+    onError: (err: any) => toast.error(err.message),
+  });
+  const checkoutMutation = trpc.walletPayment.createCheckoutSession.useMutation({
+    onSuccess: (data) => {
+      if (data.checkoutUrl) {
+        window.location.href = data.checkoutUrl;
+      }
+    },
     onError: (err: any) => toast.error(err.message),
   });
 
@@ -79,8 +90,8 @@ export default function WalletPage() {
           <button onClick={() => setAutoTopUpOpen(true)} className="flex items-center gap-2 px-4 py-2.5 border border-white/10 text-white text-[10px] font-semibold tracking-[3px] uppercase hover:bg-white/5 transition-all">
             <Settings className="w-3.5 h-3.5" />Auto Top-Up
           </button>
-          <button onClick={() => setTopUpOpen(true)} className="flex items-center gap-2 px-4 py-2.5 sm:px-5 sm:py-3 bg-[#627653] text-white text-[10px] font-semibold tracking-[3px] uppercase hover:bg-[#4a5a3f] transition-all">
-            <CreditCard className="w-3.5 h-3.5" />Top up
+          <button onClick={() => setBundleDialogOpen(true)} className="flex items-center gap-2 px-4 py-2.5 sm:px-5 sm:py-3 bg-[#627653] text-white text-[10px] font-semibold tracking-[3px] uppercase hover:bg-[#4a5a3f] transition-all">
+            <CreditCard className="w-3.5 h-3.5" />Opwaarderen
           </button>
         </div>
       </div>
@@ -302,6 +313,58 @@ export default function WalletPage() {
               className="bg-[#627653] text-white hover:bg-[#4a5a3f]"
             >
               {autoTopUpMutation.isPending ? "Saving..." : "Enable Auto Top-Up"}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      {/* Bundle selection dialog */}
+      <Dialog open={bundleDialogOpen} onOpenChange={setBundleDialogOpen}>
+        <DialogContent className="bg-[#111] border-white/[0.06] sm:max-w-md">
+          <DialogHeader>
+            <DialogTitle className="font-light text-lg">Choose credit bundle</DialogTitle>
+          </DialogHeader>
+          <p className="text-[13px] text-[#888] font-light">Select a bundle and pay securely with Stripe.</p>
+          {bundles.length === 0 ? (
+            <div className="text-center py-8 text-[#888]">No bundles available</div>
+          ) : (
+            <div className="space-y-2">
+              {bundles.map((bundle: any) => (
+                <button
+                  key={bundle.id}
+                  onClick={() => setSelectedBundle(bundle)}
+                  className={`w-full p-4 text-left border transition-all ${
+                    selectedBundle?.id === bundle.id
+                      ? "border-[#627653] bg-[#627653]/10"
+                      : "border-white/[0.06] hover:border-white/20"
+                  }`}
+                >
+                  <div className="flex justify-between items-start">
+                    <div>
+                      <p className="font-medium text-sm">{bundle.name}</p>
+                      <p className="text-[11px] text-[#888] mt-1">{bundle.creditsPerMonth} credits</p>
+                      {bundle.description && (
+                        <p className="text-[10px] text-[#888] mt-2">{bundle.description}</p>
+                      )}
+                    </div>
+                    <p className="font-semibold text-[#627653]">€{bundle.priceEur}</p>
+                  </div>
+                </button>
+              ))}
+            </div>
+          )}
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setBundleDialogOpen(false)} className="border-white/10 bg-transparent">Cancel</Button>
+            <Button
+              disabled={!selectedBundle || checkoutMutation.isPending}
+              onClick={() => {
+                if (selectedBundle) {
+                  checkoutMutation.mutate({ bundleId: selectedBundle.id });
+                }
+              }}
+              className="bg-[#627653] text-white hover:bg-[#4a5a3f]"
+            >
+              {checkoutMutation.isPending ? "Processing..." : "Proceed to payment"}
             </Button>
           </DialogFooter>
         </DialogContent>

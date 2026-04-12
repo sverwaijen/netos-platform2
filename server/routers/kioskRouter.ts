@@ -302,6 +302,84 @@ export const kioskOrderRouter = router({
       todayRevenue: today?.revenue || "0",
     };
   }),
+
+  updateKitchenStatus: protectedProcedure
+    .input(z.object({
+      orderId: z.number(),
+      kitchenStatus: z.enum(["new", "preparing", "ready", "picked_up"]),
+    }))
+    .mutation(async ({ input }) => {
+      const db = await getDb();
+      if (!db) throw new Error("DB unavailable");
+      const updateData: Record<string, any> = { kitchenStatus: input.kitchenStatus };
+
+      if (input.kitchenStatus === "preparing") {
+        updateData.kitchenStartedAt = new Date();
+      } else if (input.kitchenStatus === "ready") {
+        updateData.kitchenReadyAt = new Date();
+      } else if (input.kitchenStatus === "picked_up") {
+        updateData.kitchenPickedUpAt = new Date();
+      }
+
+      await db.update(kioskOrders).set(updateData).where(eq(kioskOrders.id, input.orderId));
+      return { success: true };
+    }),
+
+  getActiveOrders: protectedProcedure
+    .input(z.object({ locationId: z.number() }))
+    .query(async ({ input }) => {
+      const db = await getDb();
+      if (!db) return [];
+      const orders = await db.select().from(kioskOrders)
+        .where(and(
+          eq(kioskOrders.locationId, input.locationId),
+          ne(kioskOrders.kitchenStatus, "picked_up"),
+        ))
+        .orderBy(kioskOrders.createdAt);
+
+      // Get items for each order
+      const enriched = await Promise.all(orders.map(async (order) => {
+        const items = await db.select().from(kioskOrderItems).where(eq(kioskOrderItems.orderId, order.id));
+        return { ...order, items };
+      }));
+
+      return enriched;
+    }),
+
+  getOrderStats: protectedProcedure
+    .input(z.object({ locationId: z.number().optional() }))
+    .query(async ({ input }) => {
+      const db = await getDb();
+      if (!db) return { avgPrepTimeSeconds: 0, totalOrdersToday: 0, readyCount: 0 };
+
+      const conditions = [sql`DATE(${kioskOrders.createdAt}) = CURDATE()`];
+      if (input?.locationId) conditions.push(eq(kioskOrders.locationId, input.locationId));
+
+      // Get all orders with both started and ready times
+      const orders = await db.select().from(kioskOrders)
+        .where(and(...conditions))
+        .orderBy(kioskOrders.createdAt);
+
+      let totalPrepTime = 0;
+      let countWithPrepTime = 0;
+
+      for (const order of orders) {
+        if (order.kitchenStartedAt && order.kitchenReadyAt) {
+          const prepTime = new Date(order.kitchenReadyAt).getTime() - new Date(order.kitchenStartedAt).getTime();
+          totalPrepTime += prepTime;
+          countWithPrepTime++;
+        }
+      }
+
+      const avgPrepTimeSeconds = countWithPrepTime > 0 ? Math.round(totalPrepTime / countWithPrepTime / 1000) : 0;
+      const readyCount = orders.filter(o => o.kitchenStatus === "ready").length;
+
+      return {
+        avgPrepTimeSeconds,
+        totalOrdersToday: orders.length,
+        readyCount,
+      };
+    }),
 });
 
 // ─── Signing / Branding Scraper Router ──────────────────────────────

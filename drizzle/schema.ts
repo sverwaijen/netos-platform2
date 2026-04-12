@@ -793,6 +793,7 @@ export const kioskOrders = mysqlTable("kiosk_orders", {
   companyId: int("companyId"), // for "on company tab" payments
   bookingId: int("bookingId"), // linked booking (if add-on order)
   status: mysqlEnum("status", ["pending", "processing", "completed", "cancelled", "refunded"]).default("pending"),
+  kitchenStatus: mysqlEnum("kitchenStatus", ["new", "preparing", "ready", "picked_up"]).default("new"),
   paymentMethod: mysqlEnum("paymentMethod", [
     "personal_credits",
     "company_credits",
@@ -807,6 +808,9 @@ export const kioskOrders = mysqlTable("kiosk_orders", {
   totalEur: decimal("totalEur", { precision: 10, scale: 2 }).default("0"),
   stripePaymentIntentId: varchar("stripePaymentIntentId", { length: 256 }),
   notes: text("notes"),
+  kitchenStartedAt: timestamp("kitchenStartedAt"),
+  kitchenReadyAt: timestamp("kitchenReadyAt"),
+  kitchenPickedUpAt: timestamp("kitchenPickedUpAt"),
   createdAt: timestamp("createdAt").defaultNow().notNull(),
   updatedAt: timestamp("updatedAt").defaultNow().onUpdateNow().notNull(),
 });
@@ -2022,4 +2026,24 @@ export const creditBonuses = mysqlTable("credit_bonuses", {
 
 export type CreditBonus = typeof creditBonuses.$inferSelect;
 export type InsertCreditBonus = typeof creditBonuses.$inferInsert;
+
+// ─── Wallet Payment Transactions (Stripe Checkout) ───────────────────
+export const walletTransactions = mysqlTable("wallet_transactions", {
+  id: int("id").autoincrement().primaryKey(),
+  userId: int("userId").notNull(),
+  walletId: int("walletId").notNull(),
+  bundleId: int("bundleId"),
+  amount: decimal("amount", { precision: 12, scale: 2 }).notNull(),
+  creditsAdded: decimal("creditsAdded", { precision: 12, scale: 2 }).notNull(),
+  type: mysqlEnum("transactionType", ["topup", "spend", "refund"]).notNull(),
+  stripeSessionId: varchar("stripeSessionId", { length: 128 }),
+  stripePaymentIntentId: varchar("stripePaymentIntentId", { length: 128 }),
+  description: text("description"),
+  status: mysqlEnum("transactionStatus", ["pending", "completed", "failed", "refunded"]).default("pending").notNull(),
+  createdAt: timestamp("createdAt").defaultNow().notNull(),
+  updatedAt: timestamp("updatedAt").defaultNow().onUpdateNow().notNull(),
+});
+
+export type WalletTransaction = typeof walletTransactions.$inferSelect;
+export type InsertWalletTransaction = typeof walletTransactions.$inferInsert;
 export type InsertRozInvoice = typeof rozInvoices.$inferInsert;
