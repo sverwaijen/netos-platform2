@@ -2022,4 +2022,53 @@ export const creditBonuses = mysqlTable("credit_bonuses", {
 
 export type CreditBonus = typeof creditBonuses.$inferSelect;
 export type InsertCreditBonus = typeof creditBonuses.$inferInsert;
+
+// ─── Wallet Payment Transactions (Stripe Checkout) ───────────────────
+export const walletTransactions = mysqlTable("wallet_transactions", {
+  id: int("id").autoincrement().primaryKey(),
+  userId: int("userId").notNull(),
+  walletId: int("walletId").notNull(),
+  bundleId: int("bundleId"),
+  amount: decimal("amount", { precision: 12, scale: 2 }).notNull(),
+  creditsAdded: decimal("creditsAdded", { precision: 12, scale: 2 }).notNull(),
+  type: mysqlEnum("transactionType", ["topup", "spend", "refund"]).notNull(),
+  stripeSessionId: varchar("stripeSessionId", { length: 128 }),
+  stripePaymentIntentId: varchar("stripePaymentIntentId", { length: 128 }),
+  description: text("description"),
+  status: mysqlEnum("transactionStatus", ["pending", "completed", "failed", "refunded"]).default("pending").notNull(),
+  createdAt: timestamp("createdAt").defaultNow().notNull(),
+  updatedAt: timestamp("updatedAt").defaultNow().onUpdateNow().notNull(),
+});
+
+export type WalletTransaction = typeof walletTransactions.$inferSelect;
+export type InsertWalletTransaction = typeof walletTransactions.$inferInsert;
 export type InsertRozInvoice = typeof rozInvoices.$inferInsert;
+
+// ─── Email Campaign Sends (CRM Email Campaigns) ─────────────────────────
+export const emailCampaignSends = mysqlTable("email_campaign_sends", {
+  id: int("id").autoincrement().primaryKey(),
+  campaignId: int("campaignId").notNull(),
+  leadId: int("leadId").notNull(),
+  email: varchar("email", { length: 256 }).notNull(),
+  status: mysqlEnum("sendStatus", [
+    "queued",
+    "sent",
+    "opened",
+    "clicked",
+    "bounced",
+    "unsubscribed",
+  ]).default("queued").notNull(),
+  sentAt: timestamp("sentAt"),
+  openedAt: timestamp("openedAt"),
+  clickedAt: timestamp("clickedAt"),
+  bouncedAt: timestamp("bouncedAt"),
+  bounceReason: varchar("bounceReason", { length: 512 }),
+  resendMessageId: varchar("resendMessageId", { length: 256 }),
+  clickCount: int("clickCount").default(0),
+  notes: text("notes"),
+  createdAt: timestamp("createdAt").defaultNow().notNull(),
+  updatedAt: timestamp("updatedAt").defaultNow().onUpdateNow().notNull(),
+});
+
+export type EmailCampaignSend = typeof emailCampaignSends.$inferSelect;
+export type InsertEmailCampaignSend = typeof emailCampaignSends.$inferInsert;
