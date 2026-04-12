@@ -208,9 +208,21 @@ export default function RoomControl() {
 function ZoneDetail({ zoneId, onBack }: { zoneId: number; onBack: () => void }) {
   const zone = trpc.roomControlZones.getById.useQuery({ id: zoneId });
   const readings = trpc.sensorReadings.latest.useQuery({ zoneId });
+  const liveReadings = trpc.sensorReadings.getLiveReadings.useQuery({ zoneId }, { refetchInterval: 5000 });
+  const alerts = trpc.sensorReadings.getAlerts.useQuery({ zoneId }, { refetchInterval: 5000 });
   const controlPoints = trpc.roomControlPoints.list.useQuery({ zoneId });
+  const controls = trpc.roomControlPoints.getControls.useQuery({ zoneId });
   const setTarget = trpc.roomControlPoints.setTarget.useMutation({
     onSuccess: () => { controlPoints.refetch(); toast.success("Instelling bijgewerkt"); },
+  });
+  const setTemperatureTarget = trpc.roomControlPoints.setTemperatureTarget.useMutation({
+    onSuccess: () => { controls.refetch(); toast.success("Temperatuur ingesteld"); },
+  });
+  const toggleLight = trpc.roomControlPoints.toggleLight.useMutation({
+    onSuccess: () => { controls.refetch(); toast.success("Verlichting aangepast"); },
+  });
+  const setDimmerLevel = trpc.roomControlPoints.setDimmerLevel.useMutation({
+    onSuccess: () => { controls.refetch(); toast.success("Dimmer ingesteld"); },
   });
 
   if (!zone.data) return null;
@@ -226,25 +238,54 @@ function ZoneDetail({ zoneId, onBack }: { zoneId: number; onBack: () => void }) 
         </CardContent>
       </Card>
 
-      {/* Sensor readings */}
+      {/* Alert banner */}
+      {alerts.data && alerts.data.length > 0 && (
+        <Card className="bg-red-950/20 border-red-900/30">
+          <CardContent className="p-4">
+            <div className="flex items-start gap-3">
+              <AlertTriangle className="w-5 h-5 text-red-400 mt-0.5 flex-shrink-0" />
+              <div className="flex-1">
+                <p className="font-medium text-sm text-red-300 mb-2">Waarschuwingen</p>
+                <div className="space-y-1">
+                  {alerts.data.map((alert, i) => (
+                    <p key={i} className="text-xs text-red-200">
+                      {sensorLabels[alert.type]}: {alert.value.toFixed(1)} (drempel: {alert.threshold})
+                    </p>
+                  ))}
+                </div>
+              </div>
+            </div>
+          </CardContent>
+        </Card>
+      )}
+
+      {/* Sensor readings - Live */}
       <Card className="bg-card/50 border-border/30">
-        <CardHeader><CardTitle className="text-base font-medium">Sensordata</CardTitle></CardHeader>
+        <CardHeader>
+          <div className="flex items-center justify-between">
+            <CardTitle className="text-base font-medium">Sensordata (Live)</CardTitle>
+            <div className="flex items-center gap-1">
+              <div className="w-2 h-2 bg-green-400 rounded-full animate-pulse"></div>
+              <span className="text-xs text-muted-foreground">Bijgewerkt elke 5s</span>
+            </div>
+          </div>
+        </CardHeader>
         <CardContent>
-          {readings.data?.length === 0 ? (
+          {liveReadings.data?.length === 0 ? (
             <p className="text-sm text-muted-foreground text-center py-4">Geen sensordata beschikbaar</p>
           ) : (
             <div className="grid gap-3 md:grid-cols-2 lg:grid-cols-4">
-              {readings.data?.map(r => {
-                const Icon = sensorIcons[r.sensorType] || Gauge;
-                const val = parseFloat(String(r.value));
-                const { status, color } = getSensorStatus(r.sensorType, val);
+              {liveReadings.data?.map(r => {
+                const Icon = sensorIcons[r.type] || Gauge;
+                const val = r.value;
+                const { status, color } = getSensorStatus(r.type, val);
                 return (
-                  <div key={r.id} className="p-3 rounded-lg bg-muted/20 border border-border/20">
+                  <div key={r.type} className="p-3 rounded-lg bg-muted/20 border border-border/20">
                     <div className="flex items-center gap-2 mb-2">
                       <Icon className={`w-5 h-5 ${color}`} />
-                      <span className="text-xs text-muted-foreground">{sensorLabels[r.sensorType]}</span>
+                      <span className="text-xs text-muted-foreground">{sensorLabels[r.type]}</span>
                     </div>
-                    <p className="text-2xl font-semibold">{val}<span className="text-sm text-muted-foreground ml-1">{sensorUnits[r.sensorType]}</span></p>
+                    <p className="text-2xl font-semibold">{val.toFixed(r.type === "temperature" || r.type === "noise" ? 1 : 0)}<span className="text-sm text-muted-foreground ml-1">{sensorUnits[r.type]}</span></p>
                     <Badge className={`mt-1 text-[10px] ${color.replace("text-", "bg-").replace("-400", "-500/10")} ${color}`}>{status}</Badge>
                   </div>
                 );
