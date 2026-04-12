@@ -45,6 +45,7 @@ import {
   creditPackagesRouter, budgetControlsRouter,
   commitContractsRouter, creditBonusesRouter, creditAdminRouter,
 } from "./routers/creditRouter";
+import { walletPaymentRouter } from "./routers/walletPaymentRouter";
 
 const adminProcedure = protectedProcedure.use(({ ctx, next }) => {
   if (ctx.user.role !== "administrator" && ctx.user.role !== "host") {
@@ -974,6 +975,8 @@ Return JSON with "subject" and "body" fields. The body should be HTML formatted.
   commitContracts: commitContractsRouter,
   creditBonuses: creditBonusesRouter,
   creditAdmin: creditAdminRouter,
+  // ─── Wallet Payments ───
+  walletPayment: walletPaymentRouter,
 });
 
 export type AppRouter = typeof appRouter;
