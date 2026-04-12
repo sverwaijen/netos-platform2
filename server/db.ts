@@ -11,6 +11,10 @@ import {
   crmWebsiteVisitors, InsertCrmWebsiteVisitor,
   memberProfiles, InsertMemberProfile,
   reengagementFunnel, InsertReengagementEntry,
+  creditPackages, InsertCreditPackage,
+  budgetControls, InsertBudgetControl,
+  commitContracts, InsertCommitContract,
+  creditBonuses, InsertCreditBonus,
 } from "../drizzle/schema";
 import { ENV } from './_core/env';
 
@@ -1356,5 +1360,685 @@ export async function getRozStats() {
     activeContracts: active.length,
     totalMonthlyRevenue: Math.round(monthlyRevenue * 100) / 100,
     rozEligibleResources: rozResources.length,
+  };
+}
+
+// ═══════════════════════════════════════════════════════════════════════
+// CREDIT SYSTEM UPGRADE
+// ═══════════════════════════════════════════════════════════════════════
+
+// ─── Credit Packages CRUD ───────────────────────────────────────────
+export async function getCreditPackages() {
+  const db = await getDb();
+  if (!db) return [];
+  return db.select().from(creditPackages).where(eq(creditPackages.isActive, true)).orderBy(asc(creditPackages.sortOrder));
+}
+
+export async function getCreditPackageById(id: number) {
+  const db = await getDb();
+  if (!db) return undefined;
+  const result = await db.select().from(creditPackages).where(eq(creditPackages.id, id)).limit(1);
+  return result[0];
+}
+
+export async function getCreditPackageBySlug(slug: string) {
+  const db = await getDb();
+  if (!db) return undefined;
+  const result = await db.select().from(creditPackages).where(eq(creditPackages.slug, slug)).limit(1);
+  return result[0];
+}
+
+export async function createCreditPackage(data: InsertCreditPackage) {
+  const db = await getDb();
+  if (!db) return;
+  await db.insert(creditPackages).values(data);
+}
+
+export async function updateCreditPackage(id: number, data: Partial<InsertCreditPackage>) {
+  const db = await getDb();
+  if (!db) return;
+  const updateSet: Record<string, unknown> = {};
+  if (data.name !== undefined) updateSet.name = data.name;
+  if (data.slug !== undefined) updateSet.slug = data.slug;
+  if (data.credits !== undefined) updateSet.credits = data.credits;
+  if (data.priceEur !== undefined) updateSet.priceEur = data.priceEur;
+  if (data.pricePerCredit !== undefined) updateSet.pricePerCredit = data.pricePerCredit;
+  if (data.discountPercent !== undefined) updateSet.discountPercent = data.discountPercent;
+  if (data.description !== undefined) updateSet.description = data.description;
+  if (data.features !== undefined) updateSet.features = data.features;
+  if (data.isActive !== undefined) updateSet.isActive = data.isActive;
+  if (data.sortOrder !== undefined) updateSet.sortOrder = data.sortOrder;
+  if (Object.keys(updateSet).length > 0) {
+    await db.update(creditPackages).set(updateSet).where(eq(creditPackages.id, id));
+  }
+}
+
+export async function deleteCreditPackage(id: number) {
+  const db = await getDb();
+  if (!db) return;
+  await db.update(creditPackages).set({ isActive: false }).where(eq(creditPackages.id, id));
+}
+
+// ─── Core Credit Consumption (FIFO: expiring first, then permanent) ─
+export async function consumeCredits(
+  walletId: number,
+  amount: number,
+  description: string,
+  referenceType?: string,
+  referenceId?: number,
+  multiplier?: number,
+): Promise<{ newBalance: string; newPermanentBalance: string; totalConsumed: number; fromExpiring: number; fromPermanent: number }> {
+  const db = await getDb();
+  if (!db) throw new Error("Database not available");
+
+  const wallet = await getWalletById(walletId);
+  if (!wallet) throw new Error("Wallet not found");
+
+  let expiringBalance = parseFloat(wallet.balance);
+  let permBalance = parseFloat(wallet.permanentBalance ?? "0");
+  const totalAvailable = expiringBalance + permBalance;
+
+  if (totalAvailable < amount) {
+    // Check auto top-up before failing
+    if (wallet.autoTopUpEnabled && wallet.autoTopUpAmount) {
+      const topUpAmt = parseFloat(wallet.autoTopUpAmount);
+      permBalance += topUpAmt;
+      await db.update(wallets).set({ permanentBalance: permBalance.toFixed(2) }).where(eq(wallets.id, walletId));
+      await db.insert(creditLedger).values({
+        walletId,
+        type: "topup",
+        amount: topUpAmt.toFixed(2),
+        balanceAfter: (expiringBalance + permBalance).toFixed(2),
+        description: `Auto top-up triggered (${topUpAmt} credits)`,
+        source: "topup",
+      });
+      await db.insert(notifications).values({
+        userId: wallet.type === "personal" ? wallet.ownerId : null,
+        type: "auto_topup_triggered",
+        title: "Auto Top-Up Triggered",
+        message: `${topUpAmt} credits were automatically added to your wallet.`,
+        metadata: JSON.stringify({ walletId, amount: topUpAmt }),
+      });
+    }
+
+    // Re-check after potential top-up
+    const updatedTotal = expiringBalance + permBalance;
+    if (updatedTotal < amount) {
+      throw new Error(`Insufficient credits. Need ${amount.toFixed(1)}, have ${updatedTotal.toFixed(1)}`);
+    }
+  }
+
+  // FIFO deduction: expiring credits first
+  let fromExpiring = 0;
+  let fromPermanent = 0;
+
+  if (expiringBalance >= amount) {
+    fromExpiring = amount;
+    expiringBalance -= amount;
+  } else {
+    fromExpiring = expiringBalance;
+    fromPermanent = amount - expiringBalance;
+    expiringBalance = 0;
+    permBalance -= fromPermanent;
+  }
+
+  const newBalance = expiringBalance.toFixed(2);
+  const newPermBalance = permBalance.toFixed(2);
+  const currentMonthlySpent = parseFloat(wallet.monthlySpent ?? "0") + amount;
+
+  await db.update(wallets).set({
+    balance: newBalance,
+    permanentBalance: newPermBalance,
+    monthlySpent: currentMonthlySpent.toFixed(2),
+  }).where(eq(wallets.id, walletId));
+
+  await db.insert(creditLedger).values({
+    walletId,
+    type: "spend",
+    amount: (-amount).toFixed(2),
+    balanceAfter: (expiringBalance + permBalance).toFixed(2),
+    description,
+    referenceType,
+    referenceId,
+    multiplier: multiplier?.toFixed(2),
+    source: fromPermanent > 0 ? "package" : "subscription",
+  });
+
+  // Check threshold alerts
+  await checkCreditThreshold(walletId);
+
+  return { newBalance, newPermanentBalance: newPermBalance, totalConsumed: amount, fromExpiring, fromPermanent };
+}
+
+// ─── Purchase Credit Package ────────────────────────────────────────
+export async function purchasePackage(walletId: number, packageId: number) {
+  const db = await getDb();
+  if (!db) throw new Error("Database not available");
+
+  const pkg = await getCreditPackageById(packageId);
+  if (!pkg) throw new Error("Credit package not found");
+
+  const wallet = await getWalletById(walletId);
+  if (!wallet) throw new Error("Wallet not found");
+
+  const currentPerm = parseFloat(wallet.permanentBalance ?? "0");
+  const newPermBalance = (currentPerm + pkg.credits).toFixed(2);
+  const currentBalance = parseFloat(wallet.balance);
+
+  await db.update(wallets).set({ permanentBalance: newPermBalance }).where(eq(wallets.id, walletId));
+
+  await db.insert(creditLedger).values({
+    walletId,
+    type: "package_purchase",
+    amount: pkg.credits.toString(),
+    balanceAfter: (currentBalance + currentPerm + pkg.credits).toFixed(2),
+    description: `Purchased ${pkg.name} (${pkg.credits} credits)`,
+    source: "package",
+    packageId,
+  });
+
+  return { newPermanentBalance: newPermBalance, creditsAdded: pkg.credits, packageName: pkg.name };
+}
+
+// ─── Monthly Rollover Processing ────────────────────────────────────
+export async function processMonthlyRollover(walletId: number) {
+  const db = await getDb();
+  if (!db) throw new Error("Database not available");
+
+  const wallet = await getWalletById(walletId);
+  if (!wallet) throw new Error("Wallet not found");
+
+  const currentBalance = parseFloat(wallet.balance);
+  const rolloverPct = wallet.rolloverPercent ?? 0;
+  const maxRollover = wallet.maxRollover ?? 0;
+
+  let rolloverAmount = Math.floor(currentBalance * rolloverPct / 100);
+  if (maxRollover > 0) rolloverAmount = Math.min(rolloverAmount, maxRollover);
+  const breakageAmount = currentBalance - rolloverAmount;
+
+  // Record breakage (expired credits)
+  if (breakageAmount > 0) {
+    await db.insert(creditLedger).values({
+      walletId,
+      type: "expiration",
+      amount: (-breakageAmount).toFixed(2),
+      balanceAfter: (rolloverAmount + parseFloat(wallet.permanentBalance ?? "0")).toFixed(2),
+      description: `Monthly credit expiration: ${breakageAmount.toFixed(1)} credits expired`,
+      source: "subscription",
+    });
+  }
+
+  // Record rollover
+  if (rolloverAmount > 0) {
+    await db.insert(creditLedger).values({
+      walletId,
+      type: "rollover",
+      amount: rolloverAmount.toFixed(2),
+      balanceAfter: (rolloverAmount + parseFloat(wallet.permanentBalance ?? "0")).toFixed(2),
+      description: `Rolled over ${rolloverAmount} credits (${rolloverPct}%)`,
+      source: "subscription",
+    });
+  }
+
+  // Calculate new expiration (end of next month)
+  const now = new Date();
+  const nextMonthEnd = new Date(now.getFullYear(), now.getMonth() + 2, 0, 23, 59, 59);
+
+  // Reset balance to rollover + new monthly grant
+  const bundle = wallet.bundleId ? await getBundleById(wallet.bundleId) : null;
+  const monthlyGrant = bundle?.creditsPerMonth ?? 0;
+  const newBalance = (rolloverAmount + monthlyGrant).toFixed(2);
+
+  await db.update(wallets).set({
+    balance: newBalance,
+    rolloverBalance: rolloverAmount.toFixed(2),
+    creditExpiresAt: nextMonthEnd.getTime(),
+    monthlySpent: "0",
+  }).where(eq(wallets.id, walletId));
+
+  // Grant new monthly credits
+  if (monthlyGrant > 0) {
+    await db.insert(creditLedger).values({
+      walletId,
+      type: "grant",
+      amount: monthlyGrant.toFixed(2),
+      balanceAfter: (parseFloat(newBalance) + parseFloat(wallet.permanentBalance ?? "0")).toFixed(2),
+      description: `Monthly credit grant: ${monthlyGrant} credits`,
+      source: "subscription",
+      expiresAt: nextMonthEnd.getTime(),
+    });
+  }
+
+  // Notification
+  await db.insert(notifications).values({
+    userId: wallet.type === "personal" ? wallet.ownerId : null,
+    type: "rollover_processed",
+    title: "Monthly Credits Processed",
+    message: `${rolloverAmount} credits rolled over, ${breakageAmount.toFixed(0)} expired. ${monthlyGrant} new credits granted.`,
+    metadata: JSON.stringify({ walletId, rolloverAmount, breakageAmount, monthlyGrant }),
+  });
+
+  return { rolloverAmount, breakageAmount, monthlyGrant, newBalance };
+}
+
+// ─── Credit Threshold Alerts ────────────────────────────────────────
+export async function checkCreditThreshold(walletId: number) {
+  const db = await getDb();
+  if (!db) return;
+
+  const wallet = await getWalletById(walletId);
+  if (!wallet || !wallet.bundleId) return;
+
+  const bundle = await getBundleById(wallet.bundleId);
+  if (!bundle) return;
+
+  const monthlySpent = parseFloat(wallet.monthlySpent ?? "0");
+  const monthlyAlloc = bundle.creditsPerMonth;
+  const usagePct = monthlyAlloc > 0 ? (monthlySpent / monthlyAlloc) * 100 : 0;
+
+  const userId = wallet.type === "personal" ? wallet.ownerId : null;
+
+  if (usagePct >= 100) {
+    await db.insert(notifications).values({
+      userId,
+      type: "credit_threshold_100",
+      title: "Credits Fully Used",
+      message: `You've used 100% of your monthly ${monthlyAlloc} credits. Additional usage will be charged at the standard rate.`,
+      metadata: JSON.stringify({ walletId, usagePct: Math.round(usagePct), monthlySpent }),
+    });
+  } else if (usagePct >= 80) {
+    await db.insert(notifications).values({
+      userId,
+      type: "credit_threshold_80",
+      title: "Credit Usage at 80%",
+      message: `You've used ${Math.round(usagePct)}% of your monthly credits (${monthlySpent.toFixed(0)}/${monthlyAlloc}).`,
+      metadata: JSON.stringify({ walletId, usagePct: Math.round(usagePct), monthlySpent }),
+    });
+  }
+}
+
+// ─── Bundle by ID ───────────────────────────────────────────────────
+export async function getBundleById(id: number) {
+  const db = await getDb();
+  if (!db) return undefined;
+  const result = await db.select().from(creditBundles).where(eq(creditBundles.id, id)).limit(1);
+  return result[0];
+}
+
+export async function getBundleBySlug(slug: string) {
+  const db = await getDb();
+  if (!db) return undefined;
+  const result = await db.select().from(creditBundles).where(eq(creditBundles.slug, slug)).limit(1);
+  return result[0];
+}
+
+export async function createBundle(data: Partial<InsertCreditBundle> & { name: string; slug: string; creditsPerMonth: number; priceEur: string }) {
+  const db = await getDb();
+  if (!db) return;
+  await db.insert(creditBundles).values(data as any);
+}
+
+export async function updateBundle(id: number, data: Partial<InsertCreditBundle>) {
+  const db = await getDb();
+  if (!db) return;
+  const updateSet: Record<string, unknown> = {};
+  const fields = [
+    "name", "slug", "creditsPerMonth", "priceEur", "description", "features",
+    "isPopular", "isActive", "targetAudience", "contractType", "contractDurationMonths",
+    "rolloverPercent", "pricePerCredit", "walletType", "budgetControlLevel", "overageRate",
+    "minCommitMonths", "maxRolloverCredits",
+  ] as const;
+  for (const f of fields) {
+    if ((data as any)[f] !== undefined) updateSet[f] = (data as any)[f];
+  }
+  if (Object.keys(updateSet).length > 0) {
+    await db.update(creditBundles).set(updateSet).where(eq(creditBundles.id, id));
+  }
+}
+
+// ─── Wallet Auto Top-Up Settings ────────────────────────────────────
+export async function setWalletAutoTopUp(walletId: number, enabled: boolean, threshold?: string, amount?: string) {
+  const db = await getDb();
+  if (!db) return;
+  const updateSet: Record<string, unknown> = { autoTopUpEnabled: enabled };
+  if (threshold !== undefined) updateSet.autoTopUpThreshold = threshold;
+  if (amount !== undefined) updateSet.autoTopUpAmount = amount;
+  await db.update(wallets).set(updateSet).where(eq(wallets.id, walletId));
+}
+
+// ─── Wallet Detailed Balance ────────────────────────────────────────
+export async function getWalletDetailedBalance(walletId: number) {
+  const db = await getDb();
+  if (!db) return null;
+  const wallet = await getWalletById(walletId);
+  if (!wallet) return null;
+
+  const bundle = wallet.bundleId ? await getBundleById(wallet.bundleId) : null;
+  const controls = await getBudgetControlsByWallet(walletId);
+
+  return {
+    balance: wallet.balance,
+    permanentBalance: wallet.permanentBalance ?? "0",
+    totalBalance: (parseFloat(wallet.balance) + parseFloat(wallet.permanentBalance ?? "0")).toFixed(2),
+    expiringCredits: wallet.balance,
+    creditExpiresAt: wallet.creditExpiresAt,
+    rolloverPercent: wallet.rolloverPercent ?? 0,
+    maxRollover: wallet.maxRollover ?? 0,
+    monthlySpent: wallet.monthlySpent ?? "0",
+    monthlyAllocation: bundle?.creditsPerMonth ?? 0,
+    autoTopUpEnabled: wallet.autoTopUpEnabled ?? false,
+    autoTopUpThreshold: wallet.autoTopUpThreshold,
+    autoTopUpAmount: wallet.autoTopUpAmount,
+    contractType: wallet.contractType,
+    contractEndDate: wallet.contractEndDate,
+    bundleName: bundle?.name,
+    budgetControls: controls,
+  };
+}
+
+// ─── Budget Controls CRUD ───────────────────────────────────────────
+export async function getBudgetControlsByCompany(companyId: number) {
+  const db = await getDb();
+  if (!db) return [];
+  return db.select().from(budgetControls).where(and(eq(budgetControls.companyId, companyId), eq(budgetControls.isActive, true))).orderBy(asc(budgetControls.controlType));
+}
+
+export async function getBudgetControlsByWallet(walletId: number) {
+  const db = await getDb();
+  if (!db) return [];
+  return db.select().from(budgetControls).where(and(eq(budgetControls.walletId, walletId), eq(budgetControls.isActive, true)));
+}
+
+export async function getBudgetControlForUser(walletId: number, userId: number) {
+  const db = await getDb();
+  if (!db) return undefined;
+  const result = await db.select().from(budgetControls).where(
+    and(eq(budgetControls.walletId, walletId), eq(budgetControls.targetUserId, userId), eq(budgetControls.isActive, true))
+  ).limit(1);
+  return result[0];
+}
+
+export async function createBudgetControl(data: InsertBudgetControl) {
+  const db = await getDb();
+  if (!db) return;
+  await db.insert(budgetControls).values(data);
+}
+
+export async function updateBudgetControl(id: number, data: Partial<InsertBudgetControl>) {
+  const db = await getDb();
+  if (!db) return;
+  const updateSet: Record<string, unknown> = {};
+  const fields = ["controlType", "targetUserId", "targetTeam", "capAmount", "periodType", "allowedLocationIds", "allowedResourceTypes", "approvalThreshold", "approverUserId", "isActive"] as const;
+  for (const f of fields) {
+    if ((data as any)[f] !== undefined) updateSet[f] = (data as any)[f];
+  }
+  if (Object.keys(updateSet).length > 0) {
+    await db.update(budgetControls).set(updateSet).where(eq(budgetControls.id, id));
+  }
+}
+
+export async function deleteBudgetControl(id: number) {
+  const db = await getDb();
+  if (!db) return;
+  await db.update(budgetControls).set({ isActive: false }).where(eq(budgetControls.id, id));
+}
+
+export async function checkBudgetAllowance(
+  walletId: number,
+  userId: number,
+  amount: number,
+  resourceType?: string,
+  locationId?: number,
+): Promise<{ allowed: boolean; reason?: string; remainingBudget: number }> {
+  const db = await getDb();
+  if (!db) return { allowed: true, remainingBudget: Infinity };
+
+  const controls = await db.select().from(budgetControls).where(
+    and(eq(budgetControls.walletId, walletId), eq(budgetControls.isActive, true))
+  );
+
+  for (const ctrl of controls) {
+    // Per-employee spending cap
+    if (ctrl.controlType === "per_employee_cap" && ctrl.capAmount) {
+      if (ctrl.targetUserId && ctrl.targetUserId !== userId) continue;
+      const cap = parseFloat(ctrl.capAmount);
+      const spent = parseFloat(ctrl.currentSpend ?? "0");
+      if (spent + amount > cap) {
+        return { allowed: false, reason: `Spending cap exceeded. Limit: ${cap}, spent: ${spent.toFixed(1)}, requested: ${amount.toFixed(1)}`, remainingBudget: cap - spent };
+      }
+    }
+
+    // Location restriction
+    if (ctrl.controlType === "location_restriction" && ctrl.allowedLocationIds && locationId) {
+      const allowed = ctrl.allowedLocationIds as number[];
+      if (!allowed.includes(locationId)) {
+        return { allowed: false, reason: `Credits not valid at this location`, remainingBudget: 0 };
+      }
+    }
+
+    // Resource type restriction
+    if (ctrl.controlType === "resource_type_restriction" && ctrl.allowedResourceTypes && resourceType) {
+      const allowed = ctrl.allowedResourceTypes as string[];
+      if (!allowed.includes(resourceType)) {
+        return { allowed: false, reason: `Credits not valid for this resource type`, remainingBudget: 0 };
+      }
+    }
+
+    // Approval threshold
+    if (ctrl.controlType === "approval_threshold" && ctrl.approvalThreshold) {
+      const threshold = parseFloat(ctrl.approvalThreshold);
+      if (amount > threshold) {
+        return { allowed: false, reason: `Booking exceeds ${threshold} credits and requires manager approval`, remainingBudget: threshold };
+      }
+    }
+  }
+
+  return { allowed: true, remainingBudget: Infinity };
+}
+
+// ─── Commit Contracts CRUD ──────────────────────────────────────────
+export async function getCommitContractsByCompany(companyId: number) {
+  const db = await getDb();
+  if (!db) return [];
+  return db.select().from(commitContracts).where(eq(commitContracts.companyId, companyId)).orderBy(desc(commitContracts.startDate));
+}
+
+export async function getCommitContractById(id: number) {
+  const db = await getDb();
+  if (!db) return undefined;
+  const result = await db.select().from(commitContracts).where(eq(commitContracts.id, id)).limit(1);
+  return result[0];
+}
+
+export async function createCommitContract(data: InsertCommitContract) {
+  const db = await getDb();
+  if (!db) return;
+  await db.insert(commitContracts).values(data);
+}
+
+export async function updateCommitContract(id: number, data: Partial<InsertCommitContract>) {
+  const db = await getDb();
+  if (!db) return;
+  const updateSet: Record<string, unknown> = {};
+  const fields = [
+    "name", "totalCommitCredits", "totalCommitEur", "commitPeriodMonths",
+    "startDate", "endDate", "prepaidAmount", "monthlyAllocation",
+    "rampedCommitments", "discountPercent", "trueUpEnabled", "trueUpDate",
+    "earlyRenewalBonus", "status", "notes",
+  ] as const;
+  for (const f of fields) {
+    if ((data as any)[f] !== undefined) updateSet[f] = (data as any)[f];
+  }
+  if (Object.keys(updateSet).length > 0) {
+    await db.update(commitContracts).set(updateSet).where(eq(commitContracts.id, id));
+  }
+}
+
+export async function processCommitDrawdown(contractId: number, amount: number) {
+  const db = await getDb();
+  if (!db) return undefined;
+  const contract = await getCommitContractById(contractId);
+  if (!contract) throw new Error("Contract not found");
+  const newDrawdown = (parseFloat(contract.drawdownUsed ?? "0") + amount).toFixed(2);
+  await db.update(commitContracts).set({ drawdownUsed: newDrawdown }).where(eq(commitContracts.id, contractId));
+  return {
+    used: parseFloat(newDrawdown),
+    remaining: parseFloat(contract.totalCommitCredits) - parseFloat(newDrawdown),
+    utilizationPercent: Math.round((parseFloat(newDrawdown) / parseFloat(contract.totalCommitCredits)) * 100),
+  };
+}
+
+export async function getCommitContractUtilization(contractId: number) {
+  const contract = await getCommitContractById(contractId);
+  if (!contract) return null;
+  const used = parseFloat(contract.drawdownUsed ?? "0");
+  const total = parseFloat(contract.totalCommitCredits);
+  const elapsed = Date.now() - (contract.startDate ?? Date.now());
+  const totalDuration = (contract.endDate ?? Date.now()) - (contract.startDate ?? Date.now());
+  const timePct = totalDuration > 0 ? (elapsed / totalDuration) * 100 : 0;
+  return {
+    used,
+    total,
+    remaining: total - used,
+    utilizationPercent: total > 0 ? Math.round((used / total) * 100) : 0,
+    timeElapsedPercent: Math.min(Math.round(timePct), 100),
+    prepaid: parseFloat(contract.prepaidAmount ?? "0"),
+    monthlyAllocation: parseFloat(contract.monthlyAllocation ?? "0"),
+  };
+}
+
+export async function checkCommitTrueUp(contractId: number) {
+  const contract = await getCommitContractById(contractId);
+  if (!contract || !contract.trueUpEnabled) return null;
+  const used = parseFloat(contract.drawdownUsed ?? "0");
+  const total = parseFloat(contract.totalCommitCredits);
+  const shortfall = total - used;
+  return { shortfall: shortfall > 0 ? shortfall : 0, used, total, trueUpNeeded: shortfall > 0 };
+}
+
+// ─── Credit Bonuses CRUD ────────────────────────────────────────────
+export async function getCreditBonusesByWallet(walletId: number) {
+  const db = await getDb();
+  if (!db) return [];
+  return db.select().from(creditBonuses).where(eq(creditBonuses.walletId, walletId)).orderBy(desc(creditBonuses.createdAt));
+}
+
+export async function getPendingBonuses(walletId: number) {
+  const db = await getDb();
+  if (!db) return [];
+  return db.select().from(creditBonuses).where(
+    and(eq(creditBonuses.walletId, walletId), eq(creditBonuses.isApplied, false))
+  ).orderBy(asc(creditBonuses.createdAt));
+}
+
+export async function createCreditBonus(data: InsertCreditBonus) {
+  const db = await getDb();
+  if (!db) return;
+  await db.insert(creditBonuses).values(data);
+}
+
+export async function applyBonus(bonusId: number) {
+  const db = await getDb();
+  if (!db) throw new Error("Database not available");
+
+  const result = await db.select().from(creditBonuses).where(eq(creditBonuses.id, bonusId)).limit(1);
+  const bonus = result[0];
+  if (!bonus) throw new Error("Bonus not found");
+  if (bonus.isApplied) throw new Error("Bonus already applied");
+  if (!bonus.walletId) throw new Error("No wallet linked to bonus");
+
+  const wallet = await getWalletById(bonus.walletId);
+  if (!wallet) throw new Error("Wallet not found");
+
+  // Add bonus to permanent balance (bonuses don't expire unless explicitly set)
+  const currentPerm = parseFloat(wallet.permanentBalance ?? "0");
+  const bonusAmount = parseFloat(bonus.amount);
+  const newPerm = (currentPerm + bonusAmount).toFixed(2);
+
+  await db.update(wallets).set({ permanentBalance: newPerm }).where(eq(wallets.id, bonus.walletId));
+
+  await db.insert(creditLedger).values({
+    walletId: bonus.walletId,
+    type: "bonus",
+    amount: bonus.amount,
+    balanceAfter: (parseFloat(wallet.balance) + currentPerm + bonusAmount).toFixed(2),
+    description: bonus.description ?? `Bonus: ${bonus.type}`,
+    source: "bonus",
+  });
+
+  await db.update(creditBonuses).set({ isApplied: true, appliedAt: new Date() }).where(eq(creditBonuses.id, bonusId));
+
+  // Notification
+  await db.insert(notifications).values({
+    userId: bonus.userId,
+    type: "bonus_awarded",
+    title: "Bonus Credits Awarded!",
+    message: `${bonusAmount} bonus credits have been added to your wallet.`,
+    metadata: JSON.stringify({ bonusId, amount: bonusAmount, type: bonus.type }),
+  });
+
+  return { applied: true, amount: bonusAmount, newPermanentBalance: newPerm };
+}
+
+export async function createReferralBonus(referrerUserId: number, referredCompanyId: number, amount: number = 50) {
+  const db = await getDb();
+  if (!db) return;
+  // Find referrer's personal wallet
+  const referrerWallets = await db.select().from(wallets).where(
+    and(eq(wallets.ownerId, referrerUserId), eq(wallets.type, "personal"))
+  ).limit(1);
+  const walletId = referrerWallets[0]?.id;
+
+  await db.insert(creditBonuses).values({
+    type: "referral",
+    walletId,
+    userId: referrerUserId,
+    referrerUserId,
+    referredCompanyId,
+    amount: amount.toFixed(2),
+    description: `Referral bonus for bringing in a new company`,
+  });
+}
+
+// ─── Enhanced Ledger Summary ────────────────────────────────────────
+export async function getEnhancedLedgerSummary(walletId: number) {
+  const db = await getDb();
+  if (!db) return { totalSpent: 0, totalGranted: 0, totalTopup: 0, totalBreakage: 0, totalPackages: 0, totalOverage: 0, totalBonuses: 0, totalExpired: 0 };
+  const result = await db.select({
+    totalSpent: sql<number>`COALESCE(SUM(CASE WHEN type = 'spend' THEN ABS(amount) ELSE 0 END), 0)`,
+    totalGranted: sql<number>`COALESCE(SUM(CASE WHEN type = 'grant' THEN amount ELSE 0 END), 0)`,
+    totalTopup: sql<number>`COALESCE(SUM(CASE WHEN type = 'topup' THEN amount ELSE 0 END), 0)`,
+    totalBreakage: sql<number>`COALESCE(SUM(CASE WHEN type = 'breakage' THEN ABS(amount) ELSE 0 END), 0)`,
+    totalPackages: sql<number>`COALESCE(SUM(CASE WHEN type = 'package_purchase' THEN amount ELSE 0 END), 0)`,
+    totalOverage: sql<number>`COALESCE(SUM(CASE WHEN type = 'overage' THEN ABS(amount) ELSE 0 END), 0)`,
+    totalBonuses: sql<number>`COALESCE(SUM(CASE WHEN type = 'bonus' THEN amount ELSE 0 END), 0)`,
+    totalExpired: sql<number>`COALESCE(SUM(CASE WHEN type = 'expiration' THEN ABS(amount) ELSE 0 END), 0)`,
+  }).from(creditLedger).where(eq(creditLedger.walletId, walletId));
+  return result[0] ?? { totalSpent: 0, totalGranted: 0, totalTopup: 0, totalBreakage: 0, totalPackages: 0, totalOverage: 0, totalBonuses: 0, totalExpired: 0 };
+}
+
+// ─── Credit Admin Stats ─────────────────────────────────────────────
+export async function getCreditSystemStats() {
+  const db = await getDb();
+  if (!db) return { totalWallets: 0, totalCreditsInCirculation: 0, totalPermanentCredits: 0, totalMonthlyBurn: 0, activeContracts: 0, totalBonusesPending: 0 };
+
+  const allWallets = await db.select().from(wallets);
+  const activeCommits = await db.select().from(commitContracts).where(eq(commitContracts.status, "active"));
+  const pendingBonusResult = await db.select({
+    count: sql<number>`COUNT(*)`,
+    totalAmount: sql<number>`COALESCE(SUM(amount), 0)`,
+  }).from(creditBonuses).where(eq(creditBonuses.isApplied, false));
+
+  const totalExpiring = allWallets.reduce((s, w) => s + parseFloat(w.balance), 0);
+  const totalPermanent = allWallets.reduce((s, w) => s + parseFloat(w.permanentBalance ?? "0"), 0);
+  const monthlyBurn = allWallets.reduce((s, w) => s + parseFloat(w.monthlySpent ?? "0"), 0);
+
+  return {
+    totalWallets: allWallets.length,
+    totalCreditsInCirculation: Math.round((totalExpiring + totalPermanent) * 100) / 100,
+    totalPermanentCredits: Math.round(totalPermanent * 100) / 100,
+    totalMonthlyBurn: Math.round(monthlyBurn * 100) / 100,
+    activeContracts: activeCommits.length,
+    totalBonusesPending: pendingBonusResult[0]?.count ?? 0,
   };
 }

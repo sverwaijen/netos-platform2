@@ -7,7 +7,7 @@ import { Input } from "@/components/ui/input";
 import { Skeleton } from "@/components/ui/skeleton";
 import { toast } from "sonner";
 import { useState, useMemo } from "react";
-import { CreditCard, ArrowUpRight, ArrowDownRight, RefreshCw, TrendingUp } from "lucide-react";
+import { CreditCard, ArrowUpRight, ArrowDownRight, RefreshCw, TrendingUp, Clock, Package, Shield, Zap, Settings } from "lucide-react";
 import { BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer } from "recharts";
 
 export default function WalletPage() {
@@ -16,38 +16,52 @@ export default function WalletPage() {
   const { data: ledger } = trpc.wallets.ledger.useQuery({ walletId: 0 }, { enabled: isAuthenticated });
   const [topUpOpen, setTopUpOpen] = useState(false);
   const [topUpAmount, setTopUpAmount] = useState("50");
+  const [autoTopUpOpen, setAutoTopUpOpen] = useState(false);
+  const [autoTopUpThreshold, setAutoTopUpThreshold] = useState("10");
+  const [autoTopUpAmount, setAutoTopUpAmount] = useState("50");
 
   const utils = trpc.useUtils();
   const topUpMutation = trpc.wallets.topup.useMutation({
     onSuccess: () => { toast.success("Credits added."); setTopUpOpen(false); utils.wallets.mine.invalidate(); utils.wallets.ledger.invalidate(); },
     onError: (err: any) => toast.error(err.message),
   });
+  const autoTopUpMutation = trpc.wallets.setAutoTopUp.useMutation({
+    onSuccess: () => { toast.success("Auto top-up settings saved."); setAutoTopUpOpen(false); utils.wallets.mine.invalidate(); },
+    onError: (err: any) => toast.error(err.message),
+  });
 
   const personalWallet = wallets?.find((w: any) => w.type === "personal");
   const companyWallet = wallets?.find((w: any) => w.type === "company");
-  const totalBalance = wallets?.reduce((sum: number, w: any) => sum + parseFloat(w.balance), 0) ?? 0;
+  const personalBalance = personalWallet ? parseFloat(personalWallet.balance) : 0;
+  const personalPermanent = personalWallet ? parseFloat(personalWallet.permanentBalance ?? "0") : 0;
+  const companyBalance = companyWallet ? parseFloat(companyWallet.balance) : 0;
+  const companyPermanent = companyWallet ? parseFloat(companyWallet.permanentBalance ?? "0") : 0;
+  const totalBalance = personalBalance + personalPermanent + companyBalance + companyPermanent;
 
   const analytics = useMemo(() => {
-    if (!ledger || ledger.length === 0) return { spent: 0, earned: 0, breakage: 0, topups: 0, avgDaily: 0, spendByDay: [] };
-    const spent = ledger.filter((t: any) => t.type === "debit").reduce((s: number, t: any) => s + Math.abs(parseFloat(t.amount)), 0);
-    const earned = ledger.filter((t: any) => t.type !== "debit" && t.type !== "breakage").reduce((s: number, t: any) => s + parseFloat(t.amount), 0);
-    const breakage = ledger.filter((t: any) => t.type === "breakage").reduce((s: number, t: any) => s + Math.abs(parseFloat(t.amount)), 0);
+    if (!ledger || ledger.length === 0) return { spent: 0, earned: 0, breakage: 0, topups: 0, packages: 0, bonuses: 0, avgDaily: 0, spendByDay: [] };
+    const spent = ledger.filter((t: any) => t.type === "spend").reduce((s: number, t: any) => s + Math.abs(parseFloat(t.amount)), 0);
+    const earned = ledger.filter((t: any) => ["grant", "topup", "package_purchase", "bonus"].includes(t.type)).reduce((s: number, t: any) => s + parseFloat(t.amount), 0);
+    const breakage = ledger.filter((t: any) => ["breakage", "expiration"].includes(t.type)).reduce((s: number, t: any) => s + Math.abs(parseFloat(t.amount)), 0);
     const topups = ledger.filter((t: any) => t.type === "topup").reduce((s: number, t: any) => s + parseFloat(t.amount), 0);
+    const packages = ledger.filter((t: any) => t.type === "package_purchase").reduce((s: number, t: any) => s + parseFloat(t.amount), 0);
+    const bonuses = ledger.filter((t: any) => t.type === "bonus").reduce((s: number, t: any) => s + parseFloat(t.amount), 0);
     const dayMap: Record<number, number> = {};
     const dayNames = ["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"];
-    ledger.filter((t: any) => t.type === "debit").forEach((t: any) => {
+    ledger.filter((t: any) => t.type === "spend").forEach((t: any) => {
       const d = new Date(t.createdAt).getDay();
       dayMap[d] = (dayMap[d] || 0) + Math.abs(parseFloat(t.amount));
     });
     const spendByDay = dayNames.map((name, i) => ({ day: name, credits: Math.round(dayMap[i] || 0) }));
-    const uniqueDays = new Set(ledger.filter((t: any) => t.type === "debit").map((t: any) => new Date(t.createdAt).toDateString())).size;
-    return { spent, earned, breakage, topups, avgDaily: uniqueDays > 0 ? spent / uniqueDays : 0, spendByDay };
+    const uniqueDays = new Set(ledger.filter((t: any) => t.type === "spend").map((t: any) => new Date(t.createdAt).toDateString())).size;
+    return { spent, earned, breakage, topups, packages, bonuses, avgDaily: uniqueDays > 0 ? spent / uniqueDays : 0, spendByDay };
   }, [ledger]);
 
+  const rolloverPct = personalWallet?.rolloverPercent ?? 0;
   const rolloverCap = personalWallet?.maxRollover ? parseFloat(String(personalWallet.maxRollover)) : 0;
-  const currentBalance = personalWallet ? parseFloat(personalWallet.balance) : 0;
-  const rolloverPct = rolloverCap > 0 ? Math.min((currentBalance / rolloverCap) * 100, 100) : 0;
-  const atRiskCredits = rolloverCap > 0 ? Math.max(currentBalance - rolloverCap, 0) : 0;
+  const atRiskCredits = rolloverCap > 0 ? Math.max(personalBalance - rolloverCap, 0) : personalBalance;
+  const expiresAt = personalWallet?.creditExpiresAt;
+  const daysUntilExpiry = expiresAt ? Math.ceil((expiresAt - Date.now()) / (1000 * 60 * 60 * 24)) : null;
 
   if (isLoading) return <div className="space-y-4 p-1">{Array.from({ length: 4 }).map((_, i) => <Skeleton key={i} className="h-32" />)}</div>;
 
@@ -61,13 +75,28 @@ export default function WalletPage() {
             Your <strong className="font-semibold">wallet.</strong>
           </h1>
         </div>
-        <button onClick={() => setTopUpOpen(true)} className="flex items-center gap-2 px-4 py-2.5 sm:px-5 sm:py-3 bg-[#627653] text-white text-[10px] font-semibold tracking-[3px] uppercase hover:bg-[#4a5a3f] transition-all w-full sm:w-auto justify-center">
-          <CreditCard className="w-3.5 h-3.5" />Top up
-        </button>
+        <div className="flex gap-2">
+          <button onClick={() => setAutoTopUpOpen(true)} className="flex items-center gap-2 px-4 py-2.5 border border-white/10 text-white text-[10px] font-semibold tracking-[3px] uppercase hover:bg-white/5 transition-all">
+            <Settings className="w-3.5 h-3.5" />Auto Top-Up
+          </button>
+          <button onClick={() => setTopUpOpen(true)} className="flex items-center gap-2 px-4 py-2.5 sm:px-5 sm:py-3 bg-[#627653] text-white text-[10px] font-semibold tracking-[3px] uppercase hover:bg-[#4a5a3f] transition-all">
+            <CreditCard className="w-3.5 h-3.5" />Top up
+          </button>
+        </div>
       </div>
 
-      {/* Wallet cards */}
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-[1px] bg-white/[0.04]">
+      {/* Expiration warning */}
+      {daysUntilExpiry !== null && daysUntilExpiry <= 7 && daysUntilExpiry > 0 && personalBalance > 0 && (
+        <div className="bg-amber-500/10 border border-amber-500/20 p-4 flex items-center gap-3">
+          <Clock className="w-4 h-4 text-amber-400 shrink-0" />
+          <p className="text-[13px] text-amber-400 font-light">
+            {personalBalance.toFixed(0)} subscription credits expire in {daysUntilExpiry} day{daysUntilExpiry !== 1 ? "s" : ""}. Use them or they'll be lost (minus {rolloverPct}% rollover).
+          </p>
+        </div>
+      )}
+
+      {/* Wallet cards - split into subscription + permanent */}
+      <div className="grid grid-cols-1 md:grid-cols-4 gap-[1px] bg-white/[0.04]">
         <div className="bg-[#111] p-4 md:p-6">
           <div className="text-[10px] font-medium tracking-[2px] uppercase text-[#888] mb-2">Total Balance</div>
           <div className="text-3xl md:text-[clamp(32px,4vw,48px)] font-extralight tracking-[-1px]">{totalBalance.toFixed(0)}<span className="text-sm text-[#888] ml-1">credits</span></div>
@@ -77,48 +106,62 @@ export default function WalletPage() {
           </div>
         </div>
         <div className="bg-[#111] p-6 border-l-2 border-[#627653]">
-          <div className="text-[10px] font-medium tracking-[2px] uppercase text-[#888] mb-2">Personal</div>
-          <div className="text-3xl font-extralight">{personalWallet ? parseFloat(personalWallet.balance).toFixed(0) : "0"}<span className="text-sm text-[#888] ml-1">c</span></div>
-          {rolloverCap > 0 && <div className="text-[11px] text-[#888] mt-1">Rollover cap: {rolloverCap.toFixed(0)}c</div>}
+          <div className="text-[10px] font-medium tracking-[2px] uppercase text-[#888] mb-2">Subscription Credits</div>
+          <div className="text-3xl font-extralight">{(personalBalance + companyBalance).toFixed(0)}<span className="text-sm text-[#888] ml-1">c</span></div>
+          <div className="text-[11px] text-[#888] mt-1 flex items-center gap-1">
+            <Clock className="w-3 h-3" />Expiring {daysUntilExpiry !== null ? `in ${daysUntilExpiry}d` : "end of month"}
+          </div>
+        </div>
+        <div className="bg-[#111] p-6 border-l-2 border-[#4a7c8a]">
+          <div className="text-[10px] font-medium tracking-[2px] uppercase text-[#888] mb-2">Permanent Credits</div>
+          <div className="text-3xl font-extralight">{(personalPermanent + companyPermanent).toFixed(0)}<span className="text-sm text-[#888] ml-1">c</span></div>
+          <div className="text-[11px] text-[#4a7c8a] mt-1 flex items-center gap-1">
+            <Package className="w-3 h-3" />Never expires
+          </div>
         </div>
         <div className="bg-[#111] p-6 border-l-2 border-[#b8a472]">
           <div className="text-[10px] font-medium tracking-[2px] uppercase text-[#888] mb-2">Company</div>
-          <div className="text-3xl font-extralight">{companyWallet ? parseFloat(companyWallet.balance).toFixed(0) : "0"}<span className="text-sm text-[#888] ml-1">c</span></div>
+          <div className="text-3xl font-extralight">{(companyBalance + companyPermanent).toFixed(0)}<span className="text-sm text-[#888] ml-1">c</span></div>
           <div className="text-[11px] text-[#888] mt-1">Shared pool</div>
         </div>
       </div>
 
       {/* Analytics strip */}
-      <div className="grid grid-cols-2 md:grid-cols-4 gap-[1px] bg-white/[0.04]">
+      <div className="grid grid-cols-2 md:grid-cols-6 gap-[1px] bg-white/[0.04]">
         {[
-          { label: "Exchange Rate", value: "1c = \u20AC5", icon: CreditCard, color: "#627653" },
-          { label: "Avg Daily Spend", value: `${analytics.avgDaily.toFixed(1)}c`, icon: TrendingUp, color: "#b8a472" },
-          { label: "Total Top-ups", value: `${analytics.topups.toFixed(0)}c`, icon: ArrowUpRight, color: "#627653" },
-          { label: "Breakage", value: `${analytics.breakage.toFixed(0)}c`, icon: RefreshCw, color: "#888" },
+          { label: "Avg Daily", value: `${analytics.avgDaily.toFixed(1)}c`, icon: TrendingUp, color: "#b8a472" },
+          { label: "Top-ups", value: `${analytics.topups.toFixed(0)}c`, icon: ArrowUpRight, color: "#627653" },
+          { label: "Packages", value: `${analytics.packages.toFixed(0)}c`, icon: Package, color: "#4a7c8a" },
+          { label: "Bonuses", value: `${analytics.bonuses.toFixed(0)}c`, icon: Zap, color: "#b8a472" },
+          { label: "Expired", value: `${analytics.breakage.toFixed(0)}c`, icon: RefreshCw, color: "#888" },
+          { label: "Auto Top-Up", value: personalWallet?.autoTopUpEnabled ? "On" : "Off", icon: Shield, color: personalWallet?.autoTopUpEnabled ? "#627653" : "#888" },
         ].map((item, i) => (
-          <div key={i} className="bg-[#111] p-3 md:p-5 flex items-center gap-2 md:gap-3">
+          <div key={i} className="bg-[#111] p-3 md:p-4 flex items-center gap-2">
             <item.icon className="w-4 h-4 shrink-0" style={{ color: item.color }} />
             <div className="min-w-0">
-              <div className="text-[10px] text-[#888] tracking-[1px] uppercase truncate">{item.label}</div>
-              <div className="text-lg font-extralight">{item.value}</div>
+              <div className="text-[9px] text-[#888] tracking-[1px] uppercase truncate">{item.label}</div>
+              <div className="text-base font-extralight">{item.value}</div>
             </div>
           </div>
         ))}
       </div>
 
       {/* Rollover bar */}
-      {rolloverCap > 0 && (
+      {(rolloverPct > 0 || rolloverCap > 0) && (
         <Card className="bg-[#111] border-white/[0.06]">
           <CardContent className="p-6">
             <div className="text-[9px] font-semibold tracking-[4px] uppercase text-[#627653] mb-3">Rollover Status</div>
             <div className="flex items-center justify-between text-sm mb-2">
-              <span className="text-[#888] font-light">{currentBalance.toFixed(0)} / {rolloverCap.toFixed(0)} credits</span>
-              <span className="font-medium">{rolloverPct.toFixed(0)}%</span>
+              <span className="text-[#888] font-light">{personalBalance.toFixed(0)} subscription credits</span>
+              <span className="font-medium">{rolloverPct}% rollover</span>
             </div>
             <div className="w-full h-2 bg-white/[0.06] rounded-full overflow-hidden">
-              <div className="h-full bg-[#627653] rounded-full transition-all duration-500" style={{ width: `${rolloverPct}%` }} />
+              <div className="h-full bg-[#627653] rounded-full transition-all duration-500" style={{ width: `${Math.min((personalBalance / Math.max(rolloverCap, 1)) * 100, 100)}%` }} />
             </div>
-            {atRiskCredits > 0 && <p className="text-[11px] text-amber-400 font-light mt-2">{atRiskCredits.toFixed(0)} credits at risk of breakage at month end.</p>}
+            <div className="flex justify-between mt-2 text-[11px] text-[#888] font-light">
+              <span>Rollover: {Math.floor(personalBalance * rolloverPct / 100).toFixed(0)}c of {personalBalance.toFixed(0)}c</span>
+              {atRiskCredits > 0 && <span className="text-amber-400">{atRiskCredits.toFixed(0)}c at risk of expiration</span>}
+            </div>
           </CardContent>
         </Card>
       )}
@@ -160,6 +203,8 @@ export default function WalletPage() {
               {(ledger ?? []).slice(0, 50).map((tx: any, i: number) => {
                 const amount = parseFloat(tx.amount);
                 const isCredit = amount > 0;
+                const typeLabel = (tx.type || "transaction").replace(/_/g, " ");
+                const sourceLabel = tx.source ? ` (${tx.source})` : "";
                 return (
                   <div key={i} className="flex items-center justify-between py-3 border-b border-white/[0.03] last:border-0">
                     <div className="flex items-center gap-3">
@@ -167,7 +212,7 @@ export default function WalletPage() {
                         {isCredit ? <ArrowUpRight className="w-3.5 h-3.5 text-[#627653]" /> : <ArrowDownRight className="w-3.5 h-3.5 text-red-400" />}
                       </div>
                       <div>
-                        <p className="text-sm font-light capitalize">{tx.type?.replace("_", " ") || "Transaction"}</p>
+                        <p className="text-sm font-light capitalize">{typeLabel}{sourceLabel}</p>
                         <p className="text-[11px] text-[#888]">{tx.description || ""}</p>
                       </div>
                     </div>
@@ -216,6 +261,47 @@ export default function WalletPage() {
               className="bg-[#627653] text-white hover:bg-[#4a5a3f]"
             >
               {topUpMutation.isPending ? "Processing..." : `Add ${topUpAmount}c`}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      {/* Auto top-up dialog */}
+      <Dialog open={autoTopUpOpen} onOpenChange={setAutoTopUpOpen}>
+        <DialogContent className="bg-[#111] border-white/[0.06] sm:max-w-sm">
+          <DialogHeader>
+            <DialogTitle className="font-light text-lg">Auto Top-Up Settings</DialogTitle>
+          </DialogHeader>
+          <p className="text-[13px] text-[#888] font-light">Automatically add credits when your balance drops below a threshold.</p>
+          <div className="space-y-4">
+            <div>
+              <label className="text-[10px] text-[#888] tracking-[2px] uppercase font-medium">Threshold (credits)</label>
+              <Input type="number" value={autoTopUpThreshold} onChange={(e) => setAutoTopUpThreshold(e.target.value)} className="mt-1 bg-white/[0.03] border-white/[0.06]" min={1} />
+              <p className="text-[11px] text-[#888] mt-1">Top-up triggers when balance drops below this</p>
+            </div>
+            <div>
+              <label className="text-[10px] text-[#888] tracking-[2px] uppercase font-medium">Top-up amount (credits)</label>
+              <Input type="number" value={autoTopUpAmount} onChange={(e) => setAutoTopUpAmount(e.target.value)} className="mt-1 bg-white/[0.03] border-white/[0.06]" min={1} />
+            </div>
+          </div>
+          <DialogFooter className="flex gap-2">
+            {personalWallet?.autoTopUpEnabled && (
+              <Button variant="outline" onClick={() => {
+                if (personalWallet) autoTopUpMutation.mutate({ walletId: personalWallet.id, enabled: false });
+              }} className="border-red-500/20 text-red-400 bg-transparent hover:bg-red-500/10">
+                Disable
+              </Button>
+            )}
+            <Button variant="outline" onClick={() => setAutoTopUpOpen(false)} className="border-white/10 bg-transparent">Cancel</Button>
+            <Button
+              disabled={autoTopUpMutation.isPending}
+              onClick={() => {
+                if (personalWallet) autoTopUpMutation.mutate({ walletId: personalWallet.id, enabled: true, threshold: autoTopUpThreshold, amount: autoTopUpAmount });
+                else toast.error("No personal wallet found.");
+              }}
+              className="bg-[#627653] text-white hover:bg-[#4a5a3f]"
+            >
+              {autoTopUpMutation.isPending ? "Saving..." : "Enable Auto Top-Up"}
             </Button>
           </DialogFooter>
         </DialogContent>

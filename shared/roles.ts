@@ -79,6 +79,14 @@ export const PERMISSIONS = [
   // Re-engagement
   "reengagement.view",
   "reengagement.manage",
+  // Credit System
+  "credits.view",
+  "credits.manage",
+  "credits.purchase",
+  "budget_controls.view",
+  "budget_controls.manage",
+  "commit_contracts.view",
+  "commit_contracts.manage",
 ] as const;
 
 export type Permission = (typeof PERMISSIONS)[number];
@@ -110,6 +118,9 @@ export const ROLE_PERMISSIONS: Record<UserRole, readonly Permission[]> = {
     "settings.view",
     "roles.view",
     "reengagement.view", "reengagement.manage",
+    "credits.view", "credits.manage", "credits.purchase",
+    "budget_controls.view", "budget_controls.manage",
+    "commit_contracts.view", "commit_contracts.manage",
   ],
 
   teamadmin: [
@@ -126,6 +137,8 @@ export const ROLE_PERMISSIONS: Record<UserRole, readonly Permission[]> = {
     "parking.view",
     "notifications.view",
     "settings.view",
+    "credits.view", "credits.purchase",
+    "budget_controls.view", "budget_controls.manage",
   ],
 
   member: [
@@ -139,6 +152,7 @@ export const ROLE_PERMISSIONS: Record<UserRole, readonly Permission[]> = {
     "parking.view",
     "notifications.view",
     "settings.view",
+    "credits.view", "credits.purchase",
   ],
 
   guest: [

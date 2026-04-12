@@ -41,6 +41,10 @@ import {
   rozPricingTiersRouter, rozContractsRouter, rozInvoicesRouter,
   rozResourceSettingsRouter,
 } from "./routers/rozRouter";
+import {
+  creditPackagesRouter, budgetControlsRouter,
+  commitContractsRouter, creditBonusesRouter, creditAdminRouter,
+} from "./routers/creditRouter";
 
 const adminProcedure = protectedProcedure.use(({ ctx, next }) => {
   if (ctx.user.role !== "administrator" && ctx.user.role !== "host") {
@@ -166,6 +170,57 @@ export const appRouter = router({
     list: publicProcedure.query(async () => {
       return db.getAllBundles();
     }),
+    bySlug: publicProcedure.input(z.object({ slug: z.string() })).query(async ({ input }) => {
+      return db.getBundleBySlug(input.slug);
+    }),
+    byId: publicProcedure.input(z.object({ id: z.number() })).query(async ({ input }) => {
+      return db.getBundleById(input.id);
+    }),
+    create: adminProcedure.input(z.object({
+      name: z.string(),
+      slug: z.string(),
+      creditsPerMonth: z.number(),
+      priceEur: z.string(),
+      description: z.string().optional(),
+      features: z.array(z.string()).optional(),
+      isPopular: z.boolean().optional(),
+      targetAudience: z.enum(["freelancer", "individual", "smb", "business", "corporate"]).optional(),
+      contractType: z.enum(["monthly", "semi_annual", "annual", "multi_year"]).optional(),
+      contractDurationMonths: z.number().optional(),
+      rolloverPercent: z.number().optional(),
+      pricePerCredit: z.string().optional(),
+      walletType: z.enum(["personal", "company", "both"]).optional(),
+      budgetControlLevel: z.enum(["none", "basic", "advanced", "enterprise"]).optional(),
+      overageRate: z.string().optional(),
+      minCommitMonths: z.number().optional(),
+      maxRolloverCredits: z.number().optional(),
+    })).mutation(async ({ input }) => {
+      await db.createBundle(input as any);
+      return { success: true };
+    }),
+    update: adminProcedure.input(z.object({
+      id: z.number(),
+      name: z.string().optional(),
+      creditsPerMonth: z.number().optional(),
+      priceEur: z.string().optional(),
+      description: z.string().optional(),
+      features: z.array(z.string()).optional(),
+      isPopular: z.boolean().optional(),
+      isActive: z.boolean().optional(),
+      targetAudience: z.enum(["freelancer", "individual", "smb", "business", "corporate"]).optional(),
+      contractType: z.enum(["monthly", "semi_annual", "annual", "multi_year"]).optional(),
+      contractDurationMonths: z.number().optional(),
+      rolloverPercent: z.number().optional(),
+      pricePerCredit: z.string().optional(),
+      walletType: z.enum(["personal", "company", "both"]).optional(),
+      budgetControlLevel: z.enum(["none", "basic", "advanced", "enterprise"]).optional(),
+      overageRate: z.string().optional(),
+      maxRolloverCredits: z.number().optional(),
+    })).mutation(async ({ input }) => {
+      const { id, ...data } = input;
+      await db.updateBundle(id, data as any);
+      return { success: true };
+    }),
   }),
 
   // ─── Wallets & Credits ───
@@ -214,6 +269,25 @@ export const appRouter = router({
     ledgerSummary: protectedProcedure.input(z.object({ walletId: z.number() })).query(async ({ input }) => {
       return db.getLedgerSummary(input.walletId);
     }),
+    detailedBalance: protectedProcedure.input(z.object({ walletId: z.number() })).query(async ({ input }) => {
+      return db.getWalletDetailedBalance(input.walletId);
+    }),
+    setAutoTopUp: protectedProcedure.input(z.object({
+      walletId: z.number(),
+      enabled: z.boolean(),
+      threshold: z.string().optional(),
+      amount: z.string().optional(),
+    })).mutation(async ({ input }) => {
+      await db.setWalletAutoTopUp(input.walletId, input.enabled, input.threshold, input.amount);
+      return { success: true };
+    }),
+    processRollover: adminProcedure.input(z.object({ walletId: z.number() })).mutation(async ({ input }) => {
+      const result = await db.processMonthlyRollover(input.walletId);
+      return { success: true, ...result };
+    }),
+    enhancedSummary: protectedProcedure.input(z.object({ walletId: z.number() })).query(async ({ input }) => {
+      return db.getEnhancedLedgerSummary(input.walletId);
+    }),
   }),
 
   // ─── Bookings ───
@@ -239,29 +313,28 @@ export const appRouter = router({
       const baseCost = parseFloat(resource.creditCostPerHour) * hours;
       const totalCost = baseCost * multiplier;
 
-      // Deduct from wallet if provided
+      // Deduct from wallet using FIFO credit consumption
       let walletId = input.walletId;
       if (!walletId) {
         const personal = await db.ensurePersonalWallet(ctx.user.id);
         walletId = personal?.id;
       }
       if (walletId) {
+        // Check budget controls for company wallets
         const wallet = await db.getWalletById(walletId);
-        if (wallet) {
-          const currentBalance = parseFloat(wallet.balance);
-          if (currentBalance < totalCost) throw new Error(`Insufficient credits. Need ${totalCost.toFixed(1)}, have ${currentBalance.toFixed(1)}`);
-          const newBalance = (currentBalance - totalCost).toFixed(2);
-          await db.updateWalletBalance(walletId, newBalance);
-          await db.addLedgerEntry({
-            walletId,
-            type: "spend",
-            amount: (-totalCost).toFixed(2),
-            balanceAfter: newBalance,
-            description: `Booking: ${resource.name} (${hours}h × ${multiplier}x)`,
-            referenceType: "booking",
-            multiplier: multiplier.toFixed(2),
-          });
+        if (wallet?.type === "company") {
+          const allowance = await db.checkBudgetAllowance(walletId, ctx.user.id, totalCost, resource.type, input.locationId);
+          if (!allowance.allowed) throw new Error(allowance.reason ?? "Budget control restriction");
         }
+        // FIFO deduction: expiring credits first, then permanent
+        await db.consumeCredits(
+          walletId,
+          totalCost,
+          `Booking: ${resource.name} (${hours}h × ${multiplier}x)`,
+          "booking",
+          undefined,
+          multiplier,
+        );
       }
 
       await db.createBooking({
@@ -895,6 +968,12 @@ Return JSON with "subject" and "body" fields. The body should be HTML formatted.
   rozContracts: rozContractsRouter,
   rozInvoices: rozInvoicesRouter,
   rozResourceSettings: rozResourceSettingsRouter,
+  // ─── Credit System ───
+  creditPackages: creditPackagesRouter,
+  budgetControls: budgetControlsRouter,
+  commitContracts: commitContractsRouter,
+  creditBonuses: creditBonusesRouter,
+  creditAdmin: creditAdminRouter,
 });
 
 export type AppRouter = typeof appRouter;

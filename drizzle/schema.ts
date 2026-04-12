@@ -124,10 +124,28 @@ export const creditBundles = mysqlTable("credit_bundles", {
   isActive: boolean("isActive").default(true),
   stripeProductId: varchar("stripeProductId", { length: 128 }),
   stripePriceId: varchar("stripePriceId", { length: 128 }),
+  // Credit system upgrade fields
+  targetAudience: mysqlEnum("targetAudience", [
+    "freelancer", "individual", "smb", "business", "corporate",
+  ]),
+  contractType: mysqlEnum("contractType", [
+    "monthly", "semi_annual", "annual", "multi_year",
+  ]),
+  contractDurationMonths: int("contractDurationMonths"),
+  rolloverPercent: int("rolloverPercent").default(0),
+  pricePerCredit: decimal("pricePerCredit", { precision: 8, scale: 4 }),
+  walletType: mysqlEnum("walletType", ["personal", "company", "both"]),
+  budgetControlLevel: mysqlEnum("budgetControlLevel", [
+    "none", "basic", "advanced", "enterprise",
+  ]).default("none"),
+  overageRate: decimal("overageRate", { precision: 8, scale: 2 }),
+  minCommitMonths: int("minCommitMonths"),
+  maxRolloverCredits: int("maxRolloverCredits"),
   createdAt: timestamp("createdAt").defaultNow().notNull(),
 });
 
 export type CreditBundle = typeof creditBundles.$inferSelect;
+export type InsertCreditBundle = typeof creditBundles.$inferInsert;
 
 // ─── Wallets ─────────────────────────────────────────────────────────
 export const wallets = mysqlTable("wallets", {
@@ -140,6 +158,20 @@ export const wallets = mysqlTable("wallets", {
   maxRollover: int("maxRollover").default(0),
   stripeCustomerId: varchar("stripeCustomerId", { length: 128 }),
   stripeSubscriptionId: varchar("stripeSubscriptionId", { length: 128 }),
+  // Credit system upgrade fields
+  contractType: mysqlEnum("walletContractType", [
+    "monthly", "semi_annual", "annual", "multi_year",
+  ]),
+  contractStartDate: bigint("contractStartDate", { mode: "number" }),
+  contractEndDate: bigint("contractEndDate", { mode: "number" }),
+  rolloverPercent: int("rolloverPercent").default(0),
+  spendingCapPerMonth: decimal("spendingCapPerMonth", { precision: 12, scale: 2 }),
+  autoTopUpEnabled: boolean("autoTopUpEnabled").default(false),
+  autoTopUpThreshold: decimal("autoTopUpThreshold", { precision: 12, scale: 2 }),
+  autoTopUpAmount: decimal("autoTopUpAmount", { precision: 12, scale: 2 }),
+  creditExpiresAt: bigint("creditExpiresAt", { mode: "number" }),
+  permanentBalance: decimal("permanentBalance", { precision: 12, scale: 2 }).default("0"),
+  monthlySpent: decimal("monthlySpent", { precision: 12, scale: 2 }).default("0"),
   createdAt: timestamp("createdAt").defaultNow().notNull(),
   updatedAt: timestamp("updatedAt").defaultNow().onUpdateNow().notNull(),
 });
@@ -158,6 +190,10 @@ export const creditLedger = mysqlTable("credit_ledger", {
     "topup",
     "refund",
     "transfer",
+    "package_purchase",
+    "overage",
+    "bonus",
+    "expiration",
   ]).notNull(),
   amount: decimal("amount", { precision: 12, scale: 2 }).notNull(),
   balanceAfter: decimal("balanceAfter", { precision: 12, scale: 2 }).notNull(),
@@ -165,6 +201,12 @@ export const creditLedger = mysqlTable("credit_ledger", {
   referenceType: varchar("referenceType", { length: 64 }),
   referenceId: int("referenceId"),
   multiplier: decimal("multiplier", { precision: 4, scale: 2 }),
+  // Credit system upgrade fields
+  source: mysqlEnum("source", [
+    "subscription", "package", "topup", "bonus", "manual",
+  ]),
+  expiresAt: bigint("expiresAt", { mode: "number" }),
+  packageId: int("packageId"),
   createdAt: timestamp("createdAt").defaultNow().notNull(),
 });
 
@@ -316,6 +358,15 @@ export const notifications = mysqlTable("notifications", {
     "booking_reminder",
     "visitor_arrival",
     "system",
+    "credit_threshold_80",
+    "credit_threshold_100",
+    "credit_expired",
+    "auto_topup_triggered",
+    "budget_cap_reached",
+    "approval_required",
+    "commit_milestone",
+    "bonus_awarded",
+    "rollover_processed",
   ]).notNull(),
   title: varchar("title", { length: 256 }).notNull(),
   message: text("message"),
@@ -1857,4 +1908,118 @@ export const rozInvoices = mysqlTable("roz_invoices", {
 });
 
 export type RozInvoice = typeof rozInvoices.$inferSelect;
+
+// ─── Credit Packages (Standalone Purchases) ─────────────────────────
+export const creditPackages = mysqlTable("credit_packages", {
+  id: int("id").autoincrement().primaryKey(),
+  name: varchar("name", { length: 128 }).notNull(),
+  slug: varchar("slug", { length: 64 }).notNull().unique(),
+  credits: int("credits").notNull(),
+  priceEur: decimal("priceEur", { precision: 10, scale: 2 }).notNull(),
+  pricePerCredit: decimal("pricePerCredit", { precision: 8, scale: 4 }),
+  discountPercent: decimal("discountPercent", { precision: 5, scale: 2 }).default("0"),
+  description: text("description"),
+  features: json("features").$type<string[]>(),
+  minBundleTier: varchar("minBundleTier", { length: 64 }), // require a subscription to buy
+  isActive: boolean("isActive").default(true),
+  stripeProductId: varchar("stripeProductId", { length: 128 }),
+  stripePriceId: varchar("stripePriceId", { length: 128 }),
+  sortOrder: int("sortOrder").default(0),
+  createdAt: timestamp("createdAt").defaultNow().notNull(),
+  updatedAt: timestamp("updatedAt").defaultNow().onUpdateNow().notNull(),
+});
+
+export type CreditPackage = typeof creditPackages.$inferSelect;
+export type InsertCreditPackage = typeof creditPackages.$inferInsert;
+
+// ─── Budget Controls (Enterprise Spending Limits) ───────────────────
+export const budgetControls = mysqlTable("budget_controls", {
+  id: int("id").autoincrement().primaryKey(),
+  companyId: int("companyId").notNull(),
+  walletId: int("walletId"),
+  controlType: mysqlEnum("controlType", [
+    "per_employee_cap",
+    "team_budget",
+    "location_restriction",
+    "resource_type_restriction",
+    "approval_threshold",
+  ]).notNull(),
+  targetUserId: int("targetUserId"),
+  targetTeam: varchar("targetTeam", { length: 128 }),
+  capAmount: decimal("capAmount", { precision: 12, scale: 2 }),
+  periodType: mysqlEnum("periodType", ["daily", "weekly", "monthly"]).default("monthly"),
+  allowedLocationIds: json("allowedLocationIds").$type<number[]>(),
+  allowedResourceTypes: json("allowedResourceTypes").$type<string[]>(),
+  approvalThreshold: decimal("approvalThreshold", { precision: 12, scale: 2 }),
+  approverUserId: int("approverUserId"),
+  currentSpend: decimal("currentSpend", { precision: 12, scale: 2 }).default("0"),
+  periodResetAt: bigint("periodResetAt", { mode: "number" }),
+  isActive: boolean("isActive").default(true),
+  createdAt: timestamp("createdAt").defaultNow().notNull(),
+  updatedAt: timestamp("updatedAt").defaultNow().onUpdateNow().notNull(),
+});
+
+export type BudgetControl = typeof budgetControls.$inferSelect;
+export type InsertBudgetControl = typeof budgetControls.$inferInsert;
+
+// ─── Commit Contracts (Enterprise Agreements) ───────────────────────
+export const commitContracts = mysqlTable("commit_contracts", {
+  id: int("id").autoincrement().primaryKey(),
+  companyId: int("companyId").notNull(),
+  walletId: int("walletId"),
+  name: varchar("name", { length: 256 }).notNull(),
+  totalCommitCredits: decimal("totalCommitCredits", { precision: 14, scale: 2 }).notNull(),
+  totalCommitEur: decimal("totalCommitEur", { precision: 14, scale: 2 }),
+  commitPeriodMonths: int("commitPeriodMonths").notNull(),
+  startDate: bigint("startDate", { mode: "number" }).notNull(),
+  endDate: bigint("endDate", { mode: "number" }).notNull(),
+  prepaidAmount: decimal("prepaidAmount", { precision: 14, scale: 2 }).default("0"),
+  drawdownUsed: decimal("drawdownUsed", { precision: 14, scale: 2 }).default("0"),
+  monthlyAllocation: decimal("monthlyAllocation", { precision: 12, scale: 2 }),
+  rampedCommitments: json("rampedCommitments").$type<Record<string, string>>(), // year -> amount
+  discountPercent: decimal("discountPercent", { precision: 5, scale: 2 }).default("0"),
+  trueUpEnabled: boolean("trueUpEnabled").default(false),
+  trueUpDate: bigint("trueUpDate", { mode: "number" }),
+  earlyRenewalBonus: decimal("earlyRenewalBonus", { precision: 10, scale: 2 }),
+  status: mysqlEnum("commitStatus", [
+    "draft", "pending_approval", "active", "paused", "expired", "terminated",
+  ]).default("draft").notNull(),
+  notes: text("notes"),
+  stripeSubscriptionId: varchar("commitStripeSubId", { length: 128 }),
+  createdAt: timestamp("createdAt").defaultNow().notNull(),
+  updatedAt: timestamp("updatedAt").defaultNow().onUpdateNow().notNull(),
+});
+
+export type CommitContract = typeof commitContracts.$inferSelect;
+export type InsertCommitContract = typeof commitContracts.$inferInsert;
+
+// ─── Credit Bonuses (Gamification & Loyalty) ────────────────────────
+export const creditBonuses = mysqlTable("credit_bonuses", {
+  id: int("id").autoincrement().primaryKey(),
+  type: mysqlEnum("bonusType", [
+    "signup_bonus",
+    "referral",
+    "renewal",
+    "daypass_conversion",
+    "loyalty",
+    "promotion",
+    "manual",
+  ]).notNull(),
+  walletId: int("walletId"),
+  userId: int("userId"),
+  companyId: int("companyId"),
+  amount: decimal("amount", { precision: 12, scale: 2 }).notNull(),
+  description: text("description"),
+  referrerUserId: int("referrerUserId"),
+  referredCompanyId: int("referredCompanyId"),
+  sourceContractId: int("sourceContractId"),
+  sourceBundleId: int("sourceBundleId"),
+  expiresAt: bigint("bonusExpiresAt", { mode: "number" }),
+  isApplied: boolean("isApplied").default(false),
+  appliedAt: timestamp("appliedAt"),
+  createdAt: timestamp("createdAt").defaultNow().notNull(),
+});
+
+export type CreditBonus = typeof creditBonuses.$inferSelect;
+export type InsertCreditBonus = typeof creditBonuses.$inferInsert;
 export type InsertRozInvoice = typeof rozInvoices.$inferInsert;

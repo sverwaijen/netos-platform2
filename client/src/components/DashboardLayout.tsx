@@ -65,6 +65,8 @@ import {
   Sun,
   Moon,
   Shield,
+  FileSignature,
+  BarChart3,
   type LucideIcon,
 } from "lucide-react";
 import { CSSProperties, useEffect, useRef, useState } from "react";
@@ -124,7 +126,10 @@ const navCategories: NavCategory[] = [
     icon: Wallet,
     items: [
       { icon: Wallet, label: "Credits & Wallet", path: "/wallet", permission: "wallet.view" },
-      { icon: CreditCard, label: "Bundles", path: "/bundles", permission: "bundles.view" },
+      { icon: CreditCard, label: "Plans & Packages", path: "/bundles", permission: "bundles.view" },
+      { icon: Shield, label: "Budget Controls", path: "/budget-controls", permission: "budget_controls.view" },
+      { icon: FileSignature, label: "Commit Contracts", path: "/commit-contracts", permission: "commit_contracts.view" },
+      { icon: BarChart3, label: "Credit Admin", path: "/credits/admin", permission: "credits.manage" },
     ],
   },
   {
