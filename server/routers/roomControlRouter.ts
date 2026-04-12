@@ -6,6 +6,7 @@ import {
   roomAutomationRules, alertThresholds,
 } from "../../drizzle/schema";
 import { eq, and, desc, gte, lte } from "drizzle-orm";
+import { getSensorSimulator } from "../integrations/sensorSimulator";
 
 const adminProcedure = protectedProcedure.use(({ ctx, next }) => {
   if (ctx.user.role !== "administrator" && ctx.user.role !== "host") throw new Error("Forbidden");
@@ -103,6 +104,42 @@ export const roomControlPointsRouter = router({
     await db.insert(roomControlPoints).values(input);
     return { success: true };
   }),
+
+  setTemperatureTarget: protectedProcedure.input(z.object({
+    zoneId: z.number(),
+    targetTemp: z.number(),
+  })).mutation(async ({ input }) => {
+    const simulator = getSensorSimulator();
+    simulator.initializeZone(input.zoneId);
+    const success = simulator.setTargetTemperature(input.zoneId, input.targetTemp);
+    return { success };
+  }),
+
+  toggleLight: protectedProcedure.input(z.object({
+    zoneId: z.number(),
+    on: z.boolean(),
+  })).mutation(async ({ input }) => {
+    const simulator = getSensorSimulator();
+    simulator.initializeZone(input.zoneId);
+    const success = simulator.toggleLight(input.zoneId, input.on);
+    return { success };
+  }),
+
+  setDimmerLevel: protectedProcedure.input(z.object({
+    zoneId: z.number(),
+    level: z.number(),
+  })).mutation(async ({ input }) => {
+    const simulator = getSensorSimulator();
+    simulator.initializeZone(input.zoneId);
+    const success = simulator.setDimmerLevel(input.zoneId, input.level);
+    return { success };
+  }),
+
+  getControls: protectedProcedure.input(z.object({ zoneId: z.number() })).query(async ({ input }) => {
+    const simulator = getSensorSimulator();
+    simulator.initializeZone(input.zoneId);
+    return simulator.getControls(input.zoneId);
+  }),
 });
 
 // ─── Sensor Readings ───
@@ -167,29 +204,41 @@ export const sensorReadingsRouter = router({
   }).optional()).query(async ({ input }) => {
     const db = await getDb();
     if (!db) return [];
-    
+
     const zones = input?.locationId
       ? await db.select().from(roomControlZones).where(eq(roomControlZones.locationId, input.locationId))
       : await db.select().from(roomControlZones);
-    
+
     const result = [];
     for (const zone of zones) {
       const readings = await db.select().from(roomSensorReadings)
         .where(eq(roomSensorReadings.zoneId, zone.id))
         .orderBy(desc(roomSensorReadings.recordedAt))
         .limit(20);
-      
+
       const latestByType = new Map<string, typeof readings[0]>();
       for (const r of readings) {
         if (!latestByType.has(r.sensorType)) latestByType.set(r.sensorType, r);
       }
-      
+
       result.push({
         zone,
         readings: Array.from(latestByType.values()),
       });
     }
     return result;
+  }),
+
+  getLiveReadings: protectedProcedure.input(z.object({ zoneId: z.number() })).query(async ({ input }) => {
+    const simulator = getSensorSimulator();
+    simulator.initializeZone(input.zoneId);
+    return simulator.getReadings(input.zoneId);
+  }),
+
+  getAlerts: protectedProcedure.input(z.object({ zoneId: z.number() })).query(async ({ input }) => {
+    const simulator = getSensorSimulator();
+    simulator.initializeZone(input.zoneId);
+    return simulator.getAlerts(input.zoneId);
   }),
 });
 
