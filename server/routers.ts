@@ -11,6 +11,7 @@ import {
   blockedDatesRouter, resourceCategoriesRouter,
 } from "./routers/resourceAdmin";
 import { productCatalogRouter, kioskOrderRouter, signingRouter } from "./routers/kioskRouter";
+import { kioskQrRouter } from "./routers/kioskQrRouter";
 import {
   parkingZonesRouter, parkingSpotsRouter, parkingPricingRouter,
   parkingReservationsRouter, parkingSessionsRouter, parkingPermitsRouter,
@@ -976,6 +977,7 @@ Return JSON with "subject" and "body" fields. The body should be HTML formatted.
   // ─── Butler Kiosk & Signing ───
   products: productCatalogRouter,
   kioskOrders: kioskOrderRouter,
+  kioskQr: kioskQrRouter,
   signing: signingRouter,
   // ─── Smart Parking ───
   parkingZones: parkingZonesRouter,

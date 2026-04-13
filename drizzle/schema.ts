@@ -24,7 +24,7 @@ export const users = mysqlTable("users", {
   companyId: int("companyId"),
   invitedBy: int("invitedBy"),
   onboardingComplete: boolean("onboardingComplete").default(false),
-  qrToken: varchar("qrToken", { length: 64 }).unique(), // For QR code scanning in kiosk
+  qrToken: varchar("qrToken", { length: 128 }).unique(), // For QR code scanning in kiosk
   createdAt: timestamp("createdAt").defaultNow().notNull(),
   updatedAt: timestamp("updatedAt").defaultNow().onUpdateNow().notNull(),
   lastSignedIn: timestamp("lastSignedIn").defaultNow().notNull(),
