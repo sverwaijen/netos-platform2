@@ -1,4 +1,7 @@
-import { eq, and, gte, lte, desc, sql, asc, like, or, inArray, isNull, ne } from "drizzle-orm";
+import {
+import { createLogger } from "./_core/logger";
+
+const log = createLogger("Database"); eq, and, gte, lte, desc, sql, asc, like, or, inArray, isNull, ne } from "drizzle-orm";
 import { drizzle } from "drizzle-orm/mysql2";
 import {
   InsertUser, users, locations, resources, companies, creditBundles,
@@ -26,7 +29,7 @@ export async function getDb() {
     try {
       _db = drizzle(process.env.DATABASE_URL);
     } catch (error) {
-      console.warn("[Database] Failed to connect:", error);
+      log.warn("Failed to connect", { error: String(error) });
       _db = null;
     }
   }
