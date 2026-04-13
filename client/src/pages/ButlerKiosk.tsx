@@ -18,6 +18,14 @@ type CartItem = {
 
 type PaymentMethod = "personal_credits" | "company_credits" | "stripe_card" | "company_invoice" | "cash";
 
+type ScannedMember = {
+  id: number;
+  name: string;
+  email?: string;
+  avatarUrl?: string | null;
+  balance: string;
+};
+
 export default function ButlerKiosk() {
   const { user } = useAuth();
   const [selectedCategory, setSelectedCategory] = useState<number | null>(null);
@@ -26,10 +34,15 @@ export default function ButlerKiosk() {
   const [showPayment, setShowPayment] = useState(false);
   const [showSuccess, setShowSuccess] = useState(false);
   const [lastOrder, setLastOrder] = useState<{ orderNumber: string; totalCredits: string; totalEur: string } | null>(null);
+  const [qrScanMode, setQrScanMode] = useState(false);
+  const [qrInput, setQrInput] = useState("");
+  const [scannedMember, setScannedMember] = useState<ScannedMember | null>(null);
 
   const { data: categories } = trpc.products.categories.useQuery();
   const { data: allProducts } = trpc.products.list.useQuery({});
   const createOrder = trpc.kioskOrders.create.useMutation();
+  const verifyQR = trpc.kioskQr.verifyMemberQR.useMutation();
+  const createOrderWithMember = trpc.kioskQr.createOrderWithMember.useMutation();
 
   const filteredProducts = useMemo(() => {
     if (!allProducts) return [];
@@ -95,6 +108,67 @@ export default function ButlerKiosk() {
     }
   };
 
+  const handleQRScan = async () => {
+    if (!qrInput.trim()) return;
+
+    try {
+      // Extract token from QR code (format: kiosk://member/TOKEN or just TOKEN)
+      const token = qrInput.includes("/") ? qrInput.split("/").pop() : qrInput;
+      if (!token) {
+        toast.error("Invalid QR code format");
+        return;
+      }
+
+      const result = await verifyQR.mutateAsync({ token });
+      if (result.success && result.user && result.wallet) {
+        setScannedMember({
+          id: result.user.id,
+          name: result.user.name,
+          email: result.user.email,
+          avatarUrl: result.user.avatarUrl,
+          balance: result.wallet.balance,
+        });
+        setQrInput("");
+      } else {
+        toast.error(result.reason || "Invalid QR code");
+        setQrInput("");
+      }
+    } catch (err: unknown) {
+      toast.error(err instanceof Error ? err.message : "QR scan failed");
+      setQrInput("");
+    }
+  };
+
+  const handleMemberPayment = async () => {
+    if (!scannedMember || cart.length === 0) return;
+
+    try {
+      const token = qrInput || scannedMember.name; // Would need actual token stored
+      const result = await createOrderWithMember.mutateAsync({
+        token: qrInput.includes("/") ? qrInput.split("/").pop() || "" : qrInput,
+        locationId: 1,
+        items: cart.map((i) => ({ productId: i.productId, quantity: i.quantity })),
+      });
+
+      if (result.success) {
+        setLastOrder({
+          orderNumber: result.order.orderNumber,
+          totalCredits: result.order.totalCredits,
+          totalEur: result.order.totalEur,
+        });
+        setCart([]);
+        setScannedMember(null);
+        setQrScanMode(false);
+        setShowSuccess(true);
+        setTimeout(() => setShowSuccess(false), 5000);
+      } else {
+        toast.error(result.reason || "Order failed");
+      }
+    } catch (err: unknown) {
+      toast.error(err instanceof Error ? err.message : "Payment failed");
+    }
+  };
+
   // Category emoji map
   const categoryIcons: Record<string, string> = {
     "Coffee & Drinks": "☕",
@@ -128,6 +202,103 @@ export default function ButlerKiosk() {
             </div>
           </div>
           <p className="text-white/30 mt-8 text-sm">Returning to menu...</p>
+        </div>
+      </div>
+    );
+  }
+
+  // QR Scan Mode UI
+  if (qrScanMode) {
+    return (
+      <div className="w-screen h-screen bg-[#111] flex items-center justify-center p-4" style={{ fontFamily: "'Montserrat', sans-serif" }}>
+        <div className="w-full max-w-sm">
+          <button
+            onClick={() => setQrScanMode(false)}
+            className="flex items-center gap-2 text-white/50 hover:text-white mb-8 transition-colors"
+          >
+            <ChevronLeft className="w-4 h-4" />
+            Back to menu
+          </button>
+
+          {!scannedMember ? (
+            <div className="text-center">
+              <div className="w-32 h-32 rounded-lg bg-white/[0.05] border-2 border-dashed border-white/[0.1] flex items-center justify-center mx-auto mb-8">
+                <CreditCard className="w-12 h-12 text-white/20" />
+              </div>
+              <h1 className="text-3xl font-extralight text-white mb-2">Scan Member Card</h1>
+              <p className="text-white/40 text-sm mb-8">Hold member card near scanner</p>
+
+              <input
+                type="text"
+                placeholder="Paste QR token here"
+                value={qrInput}
+                onChange={(e) => setQrInput(e.target.value)}
+                onKeyPress={(e) => e.key === "Enter" && handleQRScan()}
+                autoFocus
+                className="w-full bg-white/[0.04] border border-white/[0.08] rounded-lg px-4 py-3 text-white text-center placeholder:text-white/30 focus:outline-none focus:border-[#627653]/50 mb-4"
+              />
+
+              <button
+                onClick={handleQRScan}
+                disabled={verifyQR.isPending || !qrInput.trim()}
+                className="w-full px-6 py-3 bg-[#627653] text-white rounded-lg font-medium hover:bg-[#4a5a3f] disabled:opacity-50 transition-all"
+              >
+                {verifyQR.isPending ? "Scanning..." : "Scan"}
+              </button>
+            </div>
+          ) : (
+            <div className="text-center">
+              {scannedMember.avatarUrl && (
+                <img
+                  src={scannedMember.avatarUrl}
+                  alt={scannedMember.name}
+                  className="w-24 h-24 rounded-full mx-auto mb-4 object-cover"
+                />
+              )}
+              <h2 className="text-2xl font-light text-white mb-1">{scannedMember.name}</h2>
+              <p className="text-white/50 text-sm mb-6">{scannedMember.email}</p>
+
+              <div className="bg-white/[0.05] rounded-lg p-4 mb-8 border border-white/[0.08]">
+                <p className="text-white/40 text-xs uppercase tracking-wider mb-2">Wallet Balance</p>
+                <p className="text-3xl font-semibold text-[#627653]">{scannedMember.balance}c</p>
+              </div>
+
+              {cart.length > 0 && (
+                <div>
+                  <div className="bg-white/[0.03] rounded-lg p-4 mb-6 border border-white/[0.08]">
+                    <div className="grid grid-cols-2 gap-4 text-center">
+                      <div>
+                        <p className="text-white/40 text-xs uppercase mb-1">Items</p>
+                        <p className="text-lg font-semibold text-white">{cart.reduce((s, i) => s + i.quantity, 0)}</p>
+                      </div>
+                      <div>
+                        <p className="text-white/40 text-xs uppercase mb-1">Total</p>
+                        <p className="text-lg font-semibold text-white">{cartTotal.credits}c</p>
+                      </div>
+                    </div>
+                  </div>
+
+                  <button
+                    onClick={handleMemberPayment}
+                    disabled={createOrderWithMember.isPending}
+                    className="w-full px-6 py-3 bg-[#627653] text-white rounded-lg font-medium hover:bg-[#4a5a3f] disabled:opacity-50 transition-all mb-3"
+                  >
+                    {createOrderWithMember.isPending ? "Processing..." : `Charge ${cartTotal.credits}c`}
+                  </button>
+                </div>
+              )}
+
+              <button
+                onClick={() => {
+                  setScannedMember(null);
+                  setQrInput("");
+                }}
+                className="w-full px-6 py-3 bg-white/[0.05] text-white rounded-lg font-medium hover:bg-white/[0.08] transition-all"
+              >
+                Scan Different Card
+              </button>
+            </div>
+          )}
         </div>
       </div>
     );
@@ -371,6 +542,21 @@ export default function ButlerKiosk() {
                   <div className="text-left flex-1">
                     <p className="font-medium">Invoice</p>
                     <p className="text-xs text-white/40">Add to company invoice</p>
+                  </div>
+                </button>
+
+                <button
+                  onClick={() => {
+                    setShowPayment(false);
+                    setQrScanMode(true);
+                  }}
+                  disabled={createOrder.isPending}
+                  className="w-full flex items-center gap-3 px-4 py-3.5 rounded-xl bg-white/[0.04] border border-[#627653]/30 text-white text-sm hover:border-[#627653]/60 hover:bg-white/[0.06] transition-all"
+                >
+                  <CreditCard className="w-5 h-5 text-[#627653]" />
+                  <div className="text-left flex-1">
+                    <p className="font-medium">Member Card (QR)</p>
+                    <p className="text-xs text-white/40">Scan member QR code</p>
                   </div>
                 </button>
 

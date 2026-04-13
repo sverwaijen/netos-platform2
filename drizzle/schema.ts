@@ -24,6 +24,7 @@ export const users = mysqlTable("users", {
   companyId: int("companyId"),
   invitedBy: int("invitedBy"),
   onboardingComplete: boolean("onboardingComplete").default(false),
+  qrToken: varchar("qrToken", { length: 128 }).unique(),
   createdAt: timestamp("createdAt").defaultNow().notNull(),
   updatedAt: timestamp("updatedAt").defaultNow().onUpdateNow().notNull(),
   lastSignedIn: timestamp("lastSignedIn").defaultNow().notNull(),
