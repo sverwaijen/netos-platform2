@@ -2076,4 +2076,24 @@ export const emailCampaignSends = mysqlTable("email_campaign_sends", {
 });
 
 export type EmailCampaignSend = typeof emailCampaignSends.$inferSelect;
+
+// ─── CRM: Website Visitors (LeadInfo-style tracking) ────────────────────────
+export const websiteVisitors = mysqlTable("website_visitors", {
+  id: int("id").autoincrement().primaryKey(),
+  ip: varchar("ip", { length: 45 }).notNull(), // IPv6 support
+  companyName: varchar("companyName", { length: 256 }),
+  companyDomain: varchar("companyDomain", { length: 256 }),
+  city: varchar("city", { length: 128 }),
+  country: varchar("country", { length: 64 }),
+  pageUrl: text("pageUrl").notNull(),
+  referrer: text("referrer"),
+  userAgent: text("userAgent"),
+  leadId: int("leadId"), // FK to crm_leads
+  visitedAt: bigint("visitedAt", { mode: "number" }).notNull(),
+  createdAt: timestamp("createdAt").defaultNow().notNull(),
+  updatedAt: timestamp("updatedAt").defaultNow().onUpdateNow().notNull(),
+});
+
+export type WebsiteVisitor = typeof websiteVisitors.$inferSelect;
+export type InsertWebsiteVisitor = typeof websiteVisitors.$inferInsert;
 export type InsertEmailCampaignSend = typeof emailCampaignSends.$inferInsert;
