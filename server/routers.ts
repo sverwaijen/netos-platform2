@@ -304,11 +304,28 @@ export const appRouter = router({
       const resource = await db.getResourceById(input.resourceId);
       if (!resource) throw new Error("Resource not found");
 
-      // Check availability
+      // Edge case: Validate time is in the future
+      if (input.startTime <= Date.now()) throw new Error("Booking time must be in the future");
+
+      // Edge case: Validate duration (30 min to 8 hours)
+      const durationMs = input.endTime - input.startTime;
+      const durationHours = durationMs / (1000 * 60 * 60);
+      if (durationHours < 0.5) throw new Error("Minimum booking duration is 30 minutes");
+      if (durationHours > 8) throw new Error("Maximum booking duration is 8 hours");
+
+      // Edge case: Prevent overlapping bookings for same resource
       const conflicts = await db.getResourceAvailability(input.resourceId, input.startTime, input.endTime);
       if (conflicts.length > 0) throw new Error("Resource is not available for the selected time slot");
 
-      const hours = (input.endTime - input.startTime) / (1000 * 60 * 60);
+      // Edge case: Prevent double-booking by same user at same time
+      const userBookings = await db.getBookingsByUser(ctx.user.id);
+      const doubleBooking = userBookings?.some((b: any) => {
+        if (b.status === "cancelled") return false;
+        return !(input.endTime <= b.startTime || input.startTime >= b.endTime);
+      });
+      if (doubleBooking) throw new Error("You already have a booking at this time");
+
+      const hours = durationHours;
       const dayOfWeek = new Date(input.startTime).getDay();
       const multiplier = await db.getMultiplierForDay(input.locationId, dayOfWeek);
       const baseCost = parseFloat(resource.creditCostPerHour) * hours;
@@ -372,11 +389,17 @@ export const appRouter = router({
       id: z.number(),
       status: z.enum(["confirmed", "checked_in", "completed", "cancelled", "no_show"]),
     })).mutation(async ({ ctx, input }) => {
-      // If cancelling, refund credits
+      // If cancelling, validate restrictions and refund credits
       if (input.status === "cancelled") {
         const allBookings = await db.getBookingsByUser(ctx.user.id);
         const booking = allBookings.find(b => b.id === input.id);
-        if (booking && booking.walletId) {
+        if (!booking) throw new Error("Booking not found");
+
+        // Cancellation time restriction: only allow > 1 hour before start
+        const hourBeforeStart = booking.startTime - (60 * 60 * 1000);
+        if (Date.now() > hourBeforeStart) throw new Error("Cancellations must be made at least 1 hour before the booking start time");
+
+        if (booking.walletId) {
           const wallet = await db.getWalletById(booking.walletId);
           if (wallet) {
             const refundAmount = parseFloat(booking.creditsCost);
@@ -399,6 +422,40 @@ export const appRouter = router({
     }),
     byDayOfWeek: protectedProcedure.query(async () => {
       return db.getBookingsByDayOfWeek();
+    }),
+    cancelBooking: protectedProcedure.input(z.object({
+      id: z.number(),
+    })).mutation(async ({ ctx, input }) => {
+      const allBookings = await db.getBookingsByUser(ctx.user.id);
+      const booking = allBookings.find(b => b.id === input.id);
+      if (!booking) throw new Error("Booking not found");
+      if (booking.status === "cancelled") throw new Error("Booking is already cancelled");
+
+      // Cancellation time restriction: only allow > 1 hour before start
+      const hourBeforeStart = booking.startTime - (60 * 60 * 1000);
+      if (Date.now() > hourBeforeStart) throw new Error("Cancellations must be made at least 1 hour before the booking start time");
+
+      // Refund credits to wallet
+      if (booking.walletId) {
+        const wallet = await db.getWalletById(booking.walletId);
+        if (wallet) {
+          const refundAmount = parseFloat(booking.creditsCost);
+          const newBalance = (parseFloat(wallet.balance) + refundAmount).toFixed(2);
+          await db.updateWalletBalance(booking.walletId, newBalance);
+          await db.addLedgerEntry({
+            walletId: booking.walletId,
+            type: "refund",
+            amount: refundAmount.toFixed(2),
+            balanceAfter: newBalance,
+            description: `Refund for cancelled booking #${input.id}`,
+            referenceType: "booking",
+            referenceId: input.id,
+          });
+        }
+      }
+
+      await db.updateBookingStatus(input.id, "cancelled");
+      return { success: true, refundedCredits: booking.creditsCost };
     }),
   }),
 

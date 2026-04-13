@@ -39,6 +39,7 @@ import ReEngagementFunnel from "./pages/ReEngagementFunnel";
 import AppShell from "./components/AppShell";
 import AppHome from "./pages/app/AppHome";
 import AppBookings from "./pages/app/AppBookings";
+import AppBookingNew from "./pages/app/AppBookingNew";
 import AppWallet from "./pages/app/AppWallet";
 import AppAccess from "./pages/app/AppAccess";
 import AppProfile from "./pages/app/AppProfile";
@@ -115,6 +116,7 @@ function Router() {
       <Route path="/parking/visitor/:qrToken" component={ParkingVisitor} />
       <Route path="/kitchen/prep" component={KitchenPrepDisplay} />
       {/* Member App routes (mobile-first PWA) */}
+      <Route path="/app/bookings/new">{() => <WrappedApp component={AppBookingNew} />}</Route>
       <Route path="/app/bookings">{() => <WrappedApp component={AppBookings} />}</Route>
       <Route path="/app/wallet">{() => <WrappedApp component={AppWallet} />}</Route>
       <Route path="/app/access">{() => <WrappedApp component={AppAccess} />}</Route>
