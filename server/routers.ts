@@ -48,6 +48,7 @@ import {
 } from "./routers/creditRouter";
 import { walletPaymentRouter } from "./routers/walletPaymentRouter";
 import { visitorTrackingRouter } from "./routers/visitorTrackingRouter";
+import { accessControlRouter, parkingAccessControlRouter } from "./routers/accessControlRouter";
 
 const adminProcedure = protectedProcedure.use(({ ctx, next }) => {
   if (ctx.user.role !== "administrator" && ctx.user.role !== "host") {
@@ -990,6 +991,9 @@ Return JSON with "subject" and "body" fields. The body should be HTML formatted.
   parkingAccess: parkingAccessRouter,
   parkingVisitorPermits: parkingVisitorPermitsRouter,
   parkingSla: parkingSlaRouter,
+  // ─── Access Control (Salto KS) ───
+  accessControl: accessControlRouter,
+  parkingAccessControl: parkingAccessControlRouter,
   // ─── Operations ───
   tickets: ticketsRouter,
   cannedResponses: cannedResponsesRouter,
