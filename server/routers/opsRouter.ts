@@ -8,6 +8,9 @@ import {
 } from "../../drizzle/schema";
 import { eq, and, desc, sql, gte, lte, ne, like, or } from "drizzle-orm";
 import { nanoid } from "nanoid";
+import { createLogger } from "../_core/logger";
+
+const log = createLogger("Ops");
 
 const adminProcedure = protectedProcedure.use(({ ctx, next }) => {
   if (ctx.user.role !== "administrator" && ctx.user.role !== "host") throw new Error("Forbidden");
@@ -108,7 +111,7 @@ export const ticketsRouter = router({
       aiSentiment = (["positive", "neutral", "negative"].includes(parsed.sentiment) ? parsed.sentiment : "neutral") as any;
       aiAutoResolved = parsed.canAutoResolve === true;
     } catch (e) {
-      console.warn("[AI] Ticket analysis failed:", e);
+      log.warn("AI ticket analysis failed", { error: String(e) });
     }
 
     // Calculate SLA deadline
