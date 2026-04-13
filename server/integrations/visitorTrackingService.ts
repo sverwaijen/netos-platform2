@@ -1,4 +1,7 @@
 /**
+import { createLogger } from "../_core/logger";
+
+const log = createLogger("VisitorTracking");
  * Visitor Tracking Service
  * LeadInfo-style IP-based company detection
  * Uses ipinfo.io API for IP geolocation and company lookup
@@ -48,7 +51,7 @@ export class VisitorTrackingService {
       const response = await fetch(url);
 
       if (!response.ok) {
-        console.warn(`IP lookup failed for ${cleanIp}: ${response.status}`);
+        log.warn("IP lookup failed", { ip, error: String(error) });
         return { ip: cleanIp };
       }
 
@@ -81,7 +84,7 @@ export class VisitorTrackingService {
         country: data.country,
       };
     } catch (error) {
-      console.error("IP lookup error:", error);
+      log.error("IP lookup error", error);
       return { ip };
     }
   }
