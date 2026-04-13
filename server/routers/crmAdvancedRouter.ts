@@ -2,6 +2,9 @@ import { z } from "zod";
 import { publicProcedure, protectedProcedure, router } from "../_core/trpc";
 import * as db from "../db";
 import { invokeLLM } from "../_core/llm";
+import { createLogger } from "../_core/logger";
+
+const log = createLogger("CRM");
 
 const adminProcedure = protectedProcedure.use(({ ctx, next }) => {
   if (ctx.user.role !== "administrator" && ctx.user.role !== "host") throw new Error("Forbidden: admin access required");
@@ -356,7 +359,7 @@ async function aiEnrichLead(lead: any) {
     const content = response.choices?.[0]?.message?.content;
     if (content) return JSON.parse(content as string);
   } catch (e) {
-    console.error("AI enrich failed:", e);
+    log.error("AI enrich failed:", e);
   }
   return {};
 }
@@ -413,7 +416,7 @@ async function aiGenerateOutreach(lead: any) {
     const content = response.choices?.[0]?.message?.content;
     if (content) return JSON.parse(content as string);
   } catch (e) {
-    console.error("AI outreach failed:", e);
+    log.error("AI outreach failed:", e);
   }
   return { subject: "Uitnodiging Mr. Green", body: "Kon geen gepersonaliseerd bericht genereren.", followUpSuggestion: "Bel na 3 dagen op." };
 }
@@ -448,7 +451,7 @@ async function aiAnalyzeLead(lead: any) {
     const content = response.choices?.[0]?.message?.content;
     if (content) return JSON.parse(content as string);
   } catch (e) {
-    console.error("AI analyze failed:", e);
+    log.error("AI analyze failed:", e);
   }
   return { strengths: [], risks: [], recommendedApproach: "Neem contact op", estimatedCloseTime: "Onbekend", suggestedNextStep: "Bel op" };
 }
@@ -485,7 +488,7 @@ async function aiAnalyzeVisitor(visitor: any) {
     const content = response.choices?.[0]?.message?.content;
     if (content) return JSON.parse(content as string);
   } catch (e) {
-    console.error("AI visitor analyze failed:", e);
+    log.error("AI visitor analyze failed:", e);
   }
   return { companyName: "Onbekend", industry: "Onbekend", companySize: "Onbekend", revenue: "Onbekend", intent: "medium", interestAreas: [], recommendedAction: "Monitor" };
 }
@@ -518,7 +521,7 @@ async function aiGenerateVisitorOutreach(visitor: any) {
     const content = response.choices?.[0]?.message?.content;
     if (content) return JSON.parse(content as string);
   } catch (e) {
-    console.error("AI visitor outreach failed:", e);
+    log.error("AI visitor outreach failed:", e);
   }
   return { subject: "Welkom bij Mr. Green", body: "Kon geen gepersonaliseerd bericht genereren.", channel: "email" };
 }
@@ -534,7 +537,7 @@ async function aiGenerateReengagementInvite(entry: any) {
     const content = response.choices?.[0]?.message?.content;
     return (typeof content === "string" ? content : "") || "Kon geen uitnodiging genereren.";
   } catch (e) {
-    console.error("AI re-engagement invite failed:", e);
+    log.error("AI re-engagement invite failed:", e);
     return "Kon geen uitnodiging genereren.";
   }
 }
