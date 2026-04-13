@@ -1,0 +1,50 @@
+{
+  "name": "Mr. Green Members App",
+  "short_name": "Mr. Green",
+  "description": "Member app for coworking space bookings, wallet management, and support",
+  "start_url": "/app",
+  "scope": "/app/",
+  "display": "standalone",
+  "orientation": "portrait",
+  "background_color": "#0a0a0a",
+  "theme_color": "#627653",
+  "icons": [
+    {
+      "src": "/favicon.ico",
+      "sizes": "64x64 32x32 24x24",
+      "type": "image/x-icon"
+    }
+  ],
+  "categories": ["productivity"],
+  "screenshots": [
+    {
+      "src": "/screenshots/home.png",
+      "sizes": "540x720",
+      "type": "image/png",
+      "form_factor": "narrow"
+    }
+  ],
+  "shortcuts": [
+    {
+      "name": "Boekingen",
+      "short_name": "Boekingen",
+      "description": "Bekijk en maak boekingen",
+      "url": "/app/bookings",
+      "icons": [{ "src": "/favicon.ico", "sizes": "96x96" }]
+    },
+    {
+      "name": "Wallet",
+      "short_name": "Wallet",
+      "description": "Beheer je credits",
+      "url": "/app/wallet",
+      "icons": [{ "src": "/favicon.ico", "sizes": "96x96" }]
+    },
+    {
+      "name": "Support",
+      "short_name": "Support",
+      "description": "Hulp nodig?",
+      "url": "/app/support",
+      "icons": [{ "src": "/favicon.ico", "sizes": "96x96" }]
+    }
+  ]
+}
