@@ -15,6 +15,7 @@ import {
   budgetControls, InsertBudgetControl,
   commitContracts, InsertCommitContract,
   creditBonuses, InsertCreditBonus,
+  walletTransactions, InsertWalletTransaction,
 } from "../drizzle/schema";
 import { ENV } from './_core/env';
 

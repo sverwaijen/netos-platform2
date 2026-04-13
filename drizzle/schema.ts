@@ -793,6 +793,7 @@ export const kioskOrders = mysqlTable("kiosk_orders", {
   companyId: int("companyId"), // for "on company tab" payments
   bookingId: int("bookingId"), // linked booking (if add-on order)
   status: mysqlEnum("status", ["pending", "processing", "completed", "cancelled", "refunded"]).default("pending"),
+  kitchenStatus: mysqlEnum("kitchenStatus", ["new", "preparing", "ready", "picked_up"]).default("new"),
   paymentMethod: mysqlEnum("paymentMethod", [
     "personal_credits",
     "company_credits",
@@ -807,6 +808,9 @@ export const kioskOrders = mysqlTable("kiosk_orders", {
   totalEur: decimal("totalEur", { precision: 10, scale: 2 }).default("0"),
   stripePaymentIntentId: varchar("stripePaymentIntentId", { length: 256 }),
   notes: text("notes"),
+  kitchenStartedAt: timestamp("kitchenStartedAt"),
+  kitchenReadyAt: timestamp("kitchenReadyAt"),
+  kitchenPickedUpAt: timestamp("kitchenPickedUpAt"),
   createdAt: timestamp("createdAt").defaultNow().notNull(),
   updatedAt: timestamp("updatedAt").defaultNow().onUpdateNow().notNull(),
 });

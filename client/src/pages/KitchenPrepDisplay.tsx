@@ -1,23 +1,25 @@
 /**
  * KitchenPrepDisplay — Interactive 65" touchscreen for kitchen preparation.
  * 16:9 landscape, large touch-friendly buttons.
- * Crew can tap a dish to see step-by-step preparation instructions from the Foodbook.
- * NOT an order system — all items are pre-prepared.
+ * Shows real-time orders in 3 columns: New | Preparing | Ready
+ * Click order to bump status, see prep timer per order, auto-poll every 3 seconds.
  */
 import { trpc } from "@/lib/trpc";
 import { BRAND } from "@/lib/brand";
 import { useState, useEffect, useMemo } from "react";
 import {
   ChefHat, ArrowLeft, Clock, Leaf, CheckCircle2,
-  ChevronRight, Search, X,
+  ChevronRight, Search, X, AlertCircle, Zap,
 } from "lucide-react";
 
 export default function KitchenPrepDisplay() {
   const [time, setTime] = useState(new Date());
+  const [locationId, setLocationId] = useState<number>(1); // Default, could be from URL/context
   const [selectedItemId, setSelectedItemId] = useState<number | null>(null);
   const [activeCategory, setActiveCategory] = useState<string | null>(null);
   const [completedSteps, setCompletedSteps] = useState<Set<number>>(new Set());
   const [searchQuery, setSearchQuery] = useState("");
+  const [elapsedTimes, setElapsedTimes] = useState<Record<number, number>>({});
 
   // ─── Data ─────────────────────────────────────────────────────────
   const { data: preparations } = trpc.menuPreparations.allActive.useQuery(undefined, {
@@ -29,14 +31,57 @@ export default function KitchenPrepDisplay() {
     { enabled: !!selectedItemId }
   );
 
+  // Real-time orders polling every 3 seconds
+  const { data: activeOrders, refetch: refetchOrders } = trpc.kioskOrder.getActiveOrders.useQuery(
+    { locationId },
+    { refetchInterval: 3000 }
+  );
+
+  const { data: orderStats } = trpc.kioskOrder.getOrderStats.useQuery(
+    { locationId },
+    { refetchInterval: 5000 }
+  );
+
+  const updateKitchenStatus = trpc.kioskOrder.updateKitchenStatus.useMutation({
+    onSuccess: () => {
+      refetchOrders();
+    },
+  });
+
   // ─── Clock ────────────────────────────────────────────────────────
   useEffect(() => {
     const interval = setInterval(() => setTime(new Date()), 1000);
     return () => clearInterval(interval);
   }, []);
 
-  // ─── Group by category ────────────────────────────────────────────
+  // ─── Track elapsed time for each order ─────────────────────────────
+  useEffect(() => {
+    if (!activeOrders) return;
+    const interval = setInterval(() => {
+      const newTimes: Record<number, number> = {};
+      for (const order of activeOrders) {
+        const now = new Date().getTime();
+        const created = new Date(order.createdAt).getTime();
+        newTimes[order.id] = Math.floor((now - created) / 1000);
+      }
+      setElapsedTimes(newTimes);
+    }, 1000);
+    return () => clearInterval(interval);
+  }, [activeOrders]);
+
+  // ─── Group by kitchen status ───────────────────────────────────────
   const grouped = useMemo(() => {
+    if (!activeOrders) return { new: [], preparing: [], ready: [] };
+    const map: Record<string, typeof activeOrders> = { new: [], preparing: [], ready: [] };
+    for (const order of activeOrders) {
+      const status = order.kitchenStatus || "new";
+      if (status in map) map[status].push(order);
+    }
+    return map;
+  }, [activeOrders]);
+
+  // ─── Group preparations by category ────────────────────────────────
+  const prepGrouped = useMemo(() => {
     if (!preparations) return {};
     const map: Record<string, typeof preparations> = {};
     for (const prep of preparations) {
@@ -47,11 +92,11 @@ export default function KitchenPrepDisplay() {
     return map;
   }, [preparations]);
 
-  const categories = Object.keys(grouped);
+  const prepCategories = Object.keys(prepGrouped);
 
-  // ─── Filtered items ───────────────────────────────────────────────
-  const visibleItems = useMemo(() => {
-    let items = activeCategory ? (grouped[activeCategory] || []) : (preparations || []);
+  // ─── Filtered prep items ──────────────────────────────────────────
+  const visiblePreps = useMemo(() => {
+    let items = activeCategory ? (prepGrouped[activeCategory] || []) : (preparations || []);
     if (searchQuery) {
       const q = searchQuery.toLowerCase();
       items = items.filter((p) =>
@@ -59,7 +104,7 @@ export default function KitchenPrepDisplay() {
       );
     }
     return items;
-  }, [preparations, grouped, activeCategory, searchQuery]);
+  }, [preparations, prepGrouped, activeCategory, searchQuery]);
 
   // ─── Toggle step completion ───────────────────────────────────────
   const toggleStep = (idx: number) => {
@@ -72,9 +117,20 @@ export default function KitchenPrepDisplay() {
   };
 
   // ─── Reset when selecting new item ────────────────────────────────
-  const selectItem = (id: number) => {
+  const selectPrep = (id: number) => {
     setSelectedItemId(id);
     setCompletedSteps(new Set());
+  };
+
+  // ─── Bump order status ────────────────────────────────────────────
+  const bumpOrderStatus = (orderId: number, currentStatus: string) => {
+    const nextStatuses: Record<string, string> = {
+      new: "preparing",
+      preparing: "ready",
+      ready: "picked_up",
+    };
+    const nextStatus = nextStatuses[currentStatus] || "new";
+    updateKitchenStatus.mutate({ orderId, kitchenStatus: nextStatus as any });
   };
 
   const goBack = () => {
@@ -83,6 +139,11 @@ export default function KitchenPrepDisplay() {
   };
 
   const timeStr = time.toLocaleTimeString("nl-NL", { hour: "2-digit", minute: "2-digit" });
+  const formatTime = (seconds: number) => {
+    const mins = Math.floor(seconds / 60);
+    const secs = seconds % 60;
+    return `${mins}m ${secs}s`;
+  };
 
   // ═══════════════════════════════════════════════════════════════════
   // ─── DETAIL VIEW: Preparation steps ──────────────────────────────
@@ -169,7 +230,7 @@ export default function KitchenPrepDisplay() {
   }
 
   // ═══════════════════════════════════════════════════════════════════
-  // ─── LIST VIEW: All dishes with preparations ─────────────────────
+  // ─── MAIN VIEW: Orders in 3 columns + Preparations ────────────────
   // ═══════════════════════════════════════════════════════════════════
   return (
     <div className="fixed inset-0 bg-[#0f1a0a] flex flex-col" style={{ fontFamily: "'Inter', sans-serif" }}>
@@ -180,81 +241,171 @@ export default function KitchenPrepDisplay() {
           <div className="h-8 w-px bg-white/10" />
           <div className="flex items-center gap-2">
             <ChefHat className="w-6 h-6 text-[#627653]" />
-            <h1 className="text-xl font-light text-white">Bereidingskaart</h1>
+            <h1 className="text-xl font-light text-white">Keuken Monitor</h1>
           </div>
         </div>
-        <div className="flex items-center gap-4">
-          {/* Search */}
-          <div className="relative">
-            <Search className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-white/30" />
-            <input type="text" placeholder="Zoek gerecht..."
-              value={searchQuery} onChange={(e) => setSearchQuery(e.target.value)}
-              className="pl-12 pr-10 py-3 w-72 rounded-xl bg-white/[0.05] border border-white/[0.08] text-white text-lg placeholder:text-white/25 focus:outline-none focus:ring-2 focus:ring-[#627653]/40 touch-manipulation" />
-            {searchQuery && (
-              <button onClick={() => setSearchQuery("")}
-                className="absolute right-3 top-1/2 -translate-y-1/2 p-1 rounded-lg hover:bg-white/5 touch-manipulation">
-                <X className="w-5 h-5 text-white/40" />
-              </button>
-            )}
-          </div>
+        <div className="flex items-center gap-6">
+          {/* Stats */}
+          {orderStats && (
+            <div className="flex gap-4 px-6 py-3 rounded-xl bg-white/[0.05]">
+              <div className="flex items-center gap-2">
+                <Clock className="w-4 h-4 text-[#b8a472]" />
+                <span className="text-sm text-white/70">Gem. prep: {orderStats.avgPrepTimeSeconds ? formatTime(orderStats.avgPrepTimeSeconds) : "-"}</span>
+              </div>
+              <div className="flex items-center gap-2">
+                <Zap className="w-4 h-4 text-[#b8a472]" />
+                <span className="text-sm text-white/70">Klaar: {orderStats.readyCount}/{orderStats.totalOrdersToday}</span>
+              </div>
+            </div>
+          )}
           <span className="text-2xl font-extralight text-white/60 tabular-nums">{timeStr}</span>
         </div>
       </div>
 
-      {/* Category tabs */}
-      <div className="flex gap-2 px-10 py-4 shrink-0 overflow-x-auto">
-        <button onClick={() => setActiveCategory(null)}
-          className={`px-6 py-3 rounded-xl text-base font-medium transition-all touch-manipulation whitespace-nowrap ${
-            !activeCategory ? "bg-[#627653] text-white" : "bg-white/[0.04] text-white/50 hover:bg-white/[0.06]"
-          }`}>
-          Alles
-        </button>
-        {categories.map((cat) => (
-          <button key={cat} onClick={() => setActiveCategory(cat)}
-            className={`px-6 py-3 rounded-xl text-base font-medium transition-all touch-manipulation whitespace-nowrap ${
-              activeCategory === cat ? "bg-[#627653] text-white" : "bg-white/[0.04] text-white/50 hover:bg-white/[0.06]"
-            }`}>
-            {cat}
-            <span className="ml-2 text-sm opacity-50">{grouped[cat]?.length}</span>
-          </button>
-        ))}
+      {/* Orders in 3 columns */}
+      <div className="flex-1 overflow-hidden flex gap-6 px-10 py-6">
+        {/* NEW column */}
+        <div className="flex-1 flex flex-col min-w-0">
+          <div className="flex items-center gap-2 px-4 py-3 mb-4 bg-[#dc2626]/15 rounded-lg border border-[#dc2626]/30">
+            <AlertCircle className="w-5 h-5 text-[#dc2626]" />
+            <h2 className="text-lg font-semibold text-[#dc2626]">Nieuw ({grouped.new.length})</h2>
+          </div>
+          <div className="flex-1 overflow-y-auto space-y-3 pr-4">
+            {grouped.new.map((order) => (
+              <button
+                key={order.id}
+                onClick={() => bumpOrderStatus(order.id, "new")}
+                className="w-full p-4 rounded-xl bg-[#dc2626]/10 border-2 border-[#dc2626]/30 hover:bg-[#dc2626]/20 active:bg-[#dc2626]/25 transition-all text-left touch-manipulation">
+                <div className="flex items-start justify-between">
+                  <div className="min-w-0 flex-1">
+                    <p className="font-semibold text-white truncate">{order.orderNumber}</p>
+                    <p className="text-xs text-white/50 mt-1">
+                      {order.items?.map((item: any) => item.productName).join(", ") || "Geen items"}
+                    </p>
+                  </div>
+                  <div className="text-right ml-2">
+                    <p className="text-sm text-[#dc2626] font-medium">{formatTime(elapsedTimes[order.id] || 0)}</p>
+                  </div>
+                </div>
+              </button>
+            ))}
+            {grouped.new.length === 0 && (
+              <div className="flex items-center justify-center h-32 text-white/20">
+                <p className="text-sm">Geen nieuwe bestellingen</p>
+              </div>
+            )}
+          </div>
+        </div>
+
+        {/* PREPARING column */}
+        <div className="flex-1 flex flex-col min-w-0">
+          <div className="flex items-center gap-2 px-4 py-3 mb-4 bg-[#f59e0b]/15 rounded-lg border border-[#f59e0b]/30">
+            <Clock className="w-5 h-5 text-[#f59e0b]" />
+            <h2 className="text-lg font-semibold text-[#f59e0b]">Bereiden ({grouped.preparing.length})</h2>
+          </div>
+          <div className="flex-1 overflow-y-auto space-y-3 pr-4">
+            {grouped.preparing.map((order) => (
+              <button
+                key={order.id}
+                onClick={() => bumpOrderStatus(order.id, "preparing")}
+                className="w-full p-4 rounded-xl bg-[#f59e0b]/10 border-2 border-[#f59e0b]/30 hover:bg-[#f59e0b]/20 active:bg-[#f59e0b]/25 transition-all text-left touch-manipulation">
+                <div className="flex items-start justify-between">
+                  <div className="min-w-0 flex-1">
+                    <p className="font-semibold text-white truncate">{order.orderNumber}</p>
+                    <p className="text-xs text-white/50 mt-1">
+                      {order.items?.map((item: any) => item.productName).join(", ") || "Geen items"}
+                    </p>
+                  </div>
+                  <div className="text-right ml-2">
+                    <p className="text-sm text-[#f59e0b] font-medium">{formatTime(elapsedTimes[order.id] || 0)}</p>
+                  </div>
+                </div>
+              </button>
+            ))}
+            {grouped.preparing.length === 0 && (
+              <div className="flex items-center justify-center h-32 text-white/20">
+                <p className="text-sm">Geen bestellingen in bereiding</p>
+              </div>
+            )}
+          </div>
+        </div>
+
+        {/* READY column */}
+        <div className="flex-1 flex flex-col min-w-0">
+          <div className="flex items-center gap-2 px-4 py-3 mb-4 bg-[#22c55e]/15 rounded-lg border border-[#22c55e]/30">
+            <CheckCircle2 className="w-5 h-5 text-[#22c55e]" />
+            <h2 className="text-lg font-semibold text-[#22c55e]">Klaar ({grouped.ready.length})</h2>
+          </div>
+          <div className="flex-1 overflow-y-auto space-y-3 pr-4">
+            {grouped.ready.map((order) => (
+              <button
+                key={order.id}
+                onClick={() => bumpOrderStatus(order.id, "ready")}
+                className="w-full p-4 rounded-xl bg-[#22c55e]/10 border-2 border-[#22c55e]/30 hover:bg-[#22c55e]/20 active:bg-[#22c55e]/25 transition-all text-left touch-manipulation">
+                <div className="flex items-start justify-between">
+                  <div className="min-w-0 flex-1">
+                    <p className="font-semibold text-white truncate">{order.orderNumber}</p>
+                    <p className="text-xs text-white/50 mt-1">
+                      {order.items?.map((item: any) => item.productName).join(", ") || "Geen items"}
+                    </p>
+                  </div>
+                  <div className="text-right ml-2">
+                    <p className="text-sm text-[#22c55e] font-medium">{formatTime(elapsedTimes[order.id] || 0)}</p>
+                  </div>
+                </div>
+              </button>
+            ))}
+            {grouped.ready.length === 0 && (
+              <div className="flex items-center justify-center h-32 text-white/20">
+                <p className="text-sm">Geen klare bestellingen</p>
+              </div>
+            )}
+          </div>
+        </div>
       </div>
 
-      {/* Items grid */}
-      <div className="flex-1 overflow-y-auto px-10 py-4">
-        <div className="grid grid-cols-3 gap-4">
-          {visibleItems.map((prep) => (
-            <button key={prep.id} onClick={() => selectItem(prep.menuItemId)}
-              className="flex items-center gap-4 p-5 rounded-2xl bg-white/[0.03] border border-white/[0.06] hover:bg-white/[0.06] active:bg-white/[0.08] transition-all text-left touch-manipulation group">
-              <div className="w-14 h-14 rounded-xl bg-[#627653]/15 flex items-center justify-center shrink-0">
-                <ChefHat className="w-6 h-6 text-[#627653]" />
-              </div>
-              <div className="flex-1 min-w-0">
-                <h3 className="text-lg font-medium text-white truncate">{prep.itemName}</h3>
-                {prep.itemSubtitle && (
-                  <p className="text-sm text-white/30 truncate mt-0.5">{prep.itemSubtitle}</p>
-                )}
-                <p className="text-xs text-[#627653]/60 mt-1">
-                  {(prep.steps as string[]).length} stappen
-                </p>
-              </div>
-              <ChevronRight className="w-6 h-6 text-white/15 group-hover:text-white/30 shrink-0" />
+      {/* Bottom: Preparations browser */}
+      <div className="border-t border-[#627653]/15 shrink-0 h-64 flex flex-col">
+        <div className="flex items-center justify-between px-10 py-3 bg-white/[0.02]">
+          <h2 className="text-sm font-semibold text-white/60 uppercase">Recepten beschikbaar</h2>
+          <div className="relative">
+            <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-white/30" />
+            <input type="text" placeholder="Zoeken..."
+              value={searchQuery} onChange={(e) => setSearchQuery(e.target.value)}
+              className="pl-9 pr-3 py-2 w-48 rounded-lg bg-white/[0.05] border border-white/[0.08] text-sm text-white placeholder:text-white/25 focus:outline-none focus:ring-2 focus:ring-[#627653]/40" />
+          </div>
+        </div>
+
+        {/* Category tabs */}
+        <div className="flex gap-2 px-10 py-3 overflow-x-auto border-b border-[#627653]/15">
+          <button onClick={() => setActiveCategory(null)}
+            className={`px-4 py-2 rounded-lg text-sm font-medium transition-all whitespace-nowrap ${
+              !activeCategory ? "bg-[#627653] text-white" : "bg-white/[0.04] text-white/50 hover:bg-white/[0.06]"
+            }`}>
+            Alles
+          </button>
+          {prepCategories.map((cat) => (
+            <button key={cat} onClick={() => setActiveCategory(cat)}
+              className={`px-4 py-2 rounded-lg text-sm font-medium transition-all whitespace-nowrap ${
+                activeCategory === cat ? "bg-[#627653] text-white" : "bg-white/[0.04] text-white/50 hover:bg-white/[0.06]"
+              }`}>
+              {cat}
             </button>
           ))}
         </div>
 
-        {visibleItems.length === 0 && (
-          <div className="flex flex-col items-center justify-center py-20 text-white/20">
-            <ChefHat className="w-16 h-16 mb-4 opacity-30" />
-            <p className="text-xl font-light">Geen bereidingen gevonden</p>
+        {/* Preps grid */}
+        <div className="flex-1 overflow-y-auto px-10 py-3">
+          <div className="grid grid-cols-6 gap-2">
+            {visiblePreps.map((prep) => (
+              <button key={prep.id} onClick={() => selectPrep(prep.menuItemId)}
+                className="p-2 rounded-lg bg-white/[0.03] border border-white/[0.06] hover:bg-white/[0.06] transition-all text-left group">
+                <p className="text-xs font-medium text-white truncate">{prep.itemName}</p>
+                <p className="text-xs text-white/30 truncate">{(prep.steps as string[]).length} stappen</p>
+              </button>
+            ))}
           </div>
-        )}
-      </div>
-
-      {/* Bottom bar */}
-      <div className="flex items-center justify-between px-10 py-3 shrink-0 border-t border-[#627653]/10">
-        <p className="text-xs text-white/15">Tik op een gerecht voor bereidingsinstructies</p>
-        <p className="text-xs text-white/15">{preparations?.length || 0} recepten beschikbaar</p>
+        </div>
       </div>
     </div>
   );
