@@ -1,4 +1,7 @@
 /**
+import { createLogger } from "../_core/logger";
+
+const log = createLogger("Supabase");
  * Supabase Integration Module for NET OS Platform
  * 
  * This module provides a bridge between the NET OS Platform and Supabase,
@@ -25,7 +28,7 @@ let config: SupabaseConfig | null = null;
 
 export function initSupabase(cfg: SupabaseConfig) {
   config = cfg;
-  console.log("[Supabase] Initialized with URL:", cfg.url);
+  log.info("Initialized", { url: ENV.supabaseUrl });
 }
 
 export function getSupabaseConfig(): SupabaseConfig | null {
@@ -93,7 +96,7 @@ export async function supabaseSelect(table: string, query?: string) {
  */
 export async function supabaseBroadcast(channel: string, event: string, payload: Record<string, unknown>) {
   if (!config) {
-    console.warn("[Supabase] Not configured, skipping broadcast");
+    log.warn("Not configured, skipping broadcast");
     return;
   }
   try {
@@ -113,9 +116,9 @@ export async function supabaseBroadcast(channel: string, event: string, payload:
         }],
       }),
     });
-    if (!res.ok) console.warn("[Supabase] Broadcast failed:", res.status);
+    if (!res.ok) log.warn("Broadcast failed:", res.status);
   } catch (e) {
-    console.warn("[Supabase] Broadcast error:", e);
+    log.warn("Broadcast error:", e);
   }
 }
 
@@ -143,7 +146,7 @@ export async function syncUserToSupabase(user: {
       synced_at: new Date().toISOString(),
     }], "skynet_id");
   } catch (e) {
-    console.warn("[Supabase] User sync failed:", e);
+    log.warn("User sync failed:", e);
   }
 }
 
