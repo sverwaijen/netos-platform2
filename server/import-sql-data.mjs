@@ -1,6 +1,6 @@
 #!/usr/bin/env node
 /**
- * Import data from PostgreSQL SQL dump (extracted JSON) into netos-platform2 MySQL database.
+ * Import data from PostgreSQL SQL dump (extracted JSON) into skynet-platform2 MySQL database.
  * 
  * Maps old Nexudus-based PostgreSQL schema → new Drizzle MySQL schema.
  * 
@@ -597,7 +597,7 @@ async function main() {
       const [result] = await conn.execute(
         `INSERT INTO devices (locationId, name, type, serialNumber, status, firmwareVersion)
          VALUES (?, ?, 'netlink', ?, ?, ?)`,
-        [locationId, `NETOS-${dev.model}-${dev.id.substring(0, 8)}`, dev.id.substring(0, 16), status, dev.sw_version || "1.0.0"]
+        [locationId, `SKYNET-${dev.model}-${dev.id.substring(0, 8)}`, dev.id.substring(0, 16), status, dev.sw_version || "1.0.0"]
       );
       deviceIdMap[dev.id] = result.insertId;
       deviceCount++;

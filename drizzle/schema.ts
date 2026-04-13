@@ -302,7 +302,7 @@ export const employeePhotos = mysqlTable("employee_photos", {
 
 export type EmployeePhoto = typeof employeePhotos.$inferSelect;
 
-// ─── Devices (NETOS Netlink IoT) ─────────────────────────────────────
+// ─── Devices (Skynet Netlink IoT) ─────────────────────────────────────
 export const devices = mysqlTable("devices", {
   id: int("id").autoincrement().primaryKey(),
   locationId: int("locationId").notNull(),

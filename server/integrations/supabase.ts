@@ -133,15 +133,15 @@ export async function syncUserToSupabase(user: {
 }) {
   if (!config) return;
   try {
-    await supabaseUpsert("netos_users", [{
-      netos_id: user.id,
+    await supabaseUpsert("skynet_users", [{
+      skynet_id: user.id,
       open_id: user.openId,
       name: user.name,
       email: user.email,
       avatar_url: user.avatarUrl,
       role: user.role,
       synced_at: new Date().toISOString(),
-    }], "netos_id");
+    }], "skynet_id");
   } catch (e) {
     console.warn("[Supabase] User sync failed:", e);
   }
@@ -185,9 +185,9 @@ export function getSupabaseMigrationSQL(): string {
 -- NET OS Platform Mirror Tables for Supabase
 -- Run this in your Supabase SQL Editor
 
-CREATE TABLE IF NOT EXISTS netos_users (
+CREATE TABLE IF NOT EXISTS skynet_users (
   id BIGSERIAL PRIMARY KEY,
-  netos_id INTEGER UNIQUE NOT NULL,
+  skynet_id INTEGER UNIQUE NOT NULL,
   open_id TEXT UNIQUE NOT NULL,
   name TEXT,
   email TEXT,
@@ -198,12 +198,12 @@ CREATE TABLE IF NOT EXISTS netos_users (
   synced_at TIMESTAMPTZ DEFAULT NOW()
 );
 
-CREATE TABLE IF NOT EXISTS netos_parking_sessions (
+CREATE TABLE IF NOT EXISTS skynet_parking_sessions (
   id BIGSERIAL PRIMARY KEY,
-  netos_id INTEGER UNIQUE,
+  skynet_id INTEGER UNIQUE,
   zone_id INTEGER NOT NULL,
   spot_id INTEGER,
-  user_id INTEGER REFERENCES netos_users(netos_id),
+  user_id INTEGER REFERENCES skynet_users(skynet_id),
   license_plate TEXT,
   entry_time BIGINT NOT NULL,
   exit_time BIGINT,
@@ -212,21 +212,21 @@ CREATE TABLE IF NOT EXISTS netos_parking_sessions (
   synced_at TIMESTAMPTZ DEFAULT NOW()
 );
 
-CREATE TABLE IF NOT EXISTS netos_tickets (
+CREATE TABLE IF NOT EXISTS skynet_tickets (
   id BIGSERIAL PRIMARY KEY,
-  netos_id INTEGER UNIQUE,
+  skynet_id INTEGER UNIQUE,
   ticket_number TEXT UNIQUE NOT NULL,
   subject TEXT NOT NULL,
   status TEXT DEFAULT 'new',
   priority TEXT DEFAULT 'normal',
-  requester_id INTEGER REFERENCES netos_users(netos_id),
+  requester_id INTEGER REFERENCES skynet_users(skynet_id),
   ai_auto_resolved BOOLEAN DEFAULT FALSE,
   synced_at TIMESTAMPTZ DEFAULT NOW()
 );
 
-CREATE TABLE IF NOT EXISTS netos_access_tokens (
+CREATE TABLE IF NOT EXISTS skynet_access_tokens (
   id BIGSERIAL PRIMARY KEY,
-  user_id INTEGER REFERENCES netos_users(netos_id),
+  user_id INTEGER REFERENCES skynet_users(skynet_id),
   token_type TEXT NOT NULL, -- 'salto', 'unifi', 'parking'
   token_value TEXT NOT NULL,
   expires_at TIMESTAMPTZ,
@@ -234,19 +234,19 @@ CREATE TABLE IF NOT EXISTS netos_access_tokens (
 );
 
 -- Enable Row Level Security
-ALTER TABLE netos_users ENABLE ROW LEVEL SECURITY;
-ALTER TABLE netos_parking_sessions ENABLE ROW LEVEL SECURITY;
-ALTER TABLE netos_tickets ENABLE ROW LEVEL SECURITY;
-ALTER TABLE netos_access_tokens ENABLE ROW LEVEL SECURITY;
+ALTER TABLE skynet_users ENABLE ROW LEVEL SECURITY;
+ALTER TABLE skynet_parking_sessions ENABLE ROW LEVEL SECURITY;
+ALTER TABLE skynet_tickets ENABLE ROW LEVEL SECURITY;
+ALTER TABLE skynet_access_tokens ENABLE ROW LEVEL SECURITY;
 
 -- RLS Policies: users can only see their own data
-CREATE POLICY "Users can view own profile" ON netos_users FOR SELECT USING (auth.uid()::text = open_id);
-CREATE POLICY "Users can view own parking" ON netos_parking_sessions FOR SELECT USING (user_id IN (SELECT netos_id FROM netos_users WHERE open_id = auth.uid()::text));
-CREATE POLICY "Users can view own tickets" ON netos_tickets FOR SELECT USING (requester_id IN (SELECT netos_id FROM netos_users WHERE open_id = auth.uid()::text));
-CREATE POLICY "Users can view own tokens" ON netos_access_tokens FOR SELECT USING (user_id IN (SELECT netos_id FROM netos_users WHERE open_id = auth.uid()::text));
+CREATE POLICY "Users can view own profile" ON skynet_users FOR SELECT USING (auth.uid()::text = open_id);
+CREATE POLICY "Users can view own parking" ON skynet_parking_sessions FOR SELECT USING (user_id IN (SELECT skynet_id FROM skynet_users WHERE open_id = auth.uid()::text));
+CREATE POLICY "Users can view own tickets" ON skynet_tickets FOR SELECT USING (requester_id IN (SELECT skynet_id FROM skynet_users WHERE open_id = auth.uid()::text));
+CREATE POLICY "Users can view own tokens" ON skynet_access_tokens FOR SELECT USING (user_id IN (SELECT skynet_id FROM skynet_users WHERE open_id = auth.uid()::text));
 
 -- Enable Realtime
-ALTER PUBLICATION supabase_realtime ADD TABLE netos_parking_sessions;
-ALTER PUBLICATION supabase_realtime ADD TABLE netos_tickets;
+ALTER PUBLICATION supabase_realtime ADD TABLE skynet_parking_sessions;
+ALTER PUBLICATION supabase_realtime ADD TABLE skynet_tickets;
 `;
 }

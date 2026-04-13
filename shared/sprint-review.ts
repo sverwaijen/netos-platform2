@@ -1,5 +1,5 @@
 /**
- * NETOS PLATFORM — Sprint Review & Feedback System
+ * SKYNET PLATFORM — Sprint Review & Feedback System
  *
  * Types en helpers voor het sprint review proces.
  * Na elke sprint kunnen stakeholders per module feedback geven.

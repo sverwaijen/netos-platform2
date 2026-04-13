@@ -80,7 +80,7 @@ interface SaltoKSConfig {
 }
 
 // Key operations:
-// 1. createSaltoUser(netosUser) → saltoUserId
+// 1. createSaltoUser(skynetUser) → saltoUserId
 // 2. issueMobileKey(saltoUserId, accessGroupId) → mobileKeyData
 // 3. revokeMobileKey(saltoUserId, mobileKeyId)
 // 4. listAccessPoints() → doors[]
@@ -226,7 +226,7 @@ import type { AppRouter } from '../../../server/routers';
 const trpc = createTRPCClient<AppRouter>({
   links: [
     httpBatchLink({
-      url: `${NETOS_PLATFORM_URL}/api/trpc`,
+      url: `${SKYNET_PLATFORM_URL}/api/trpc`,
       headers: () => ({
         Authorization: `Bearer ${getStoredToken()}`,
       }),
@@ -275,7 +275,7 @@ eas submit --platform android
 ## Environment Variables (Mobile)
 
 ```env
-EXPO_PUBLIC_NETOS_URL=https://your-netos-platform.manus.space
+EXPO_PUBLIC_SKYNET_URL=https://your-skynet-platform.manus.space
 EXPO_PUBLIC_SUPABASE_URL=https://your-project.supabase.co
 EXPO_PUBLIC_SUPABASE_ANON_KEY=your-anon-key
 EXPO_PUBLIC_SALTO_SITE_ID=your-salto-site-id

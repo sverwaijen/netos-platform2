@@ -1,5 +1,5 @@
 /**
- * NETOS PLATFORM — Feature Registry & Heartbeat System
+ * SKYNET PLATFORM — Feature Registry & Heartbeat System
  *
  * Centraal register van alle modules. Bepaalt:
  * - Welke modules actief zijn (feature flags)

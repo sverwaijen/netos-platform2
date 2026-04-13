@@ -1,4 +1,4 @@
-# Sprint Workflow — Netos Platform
+# Sprint Workflow — Skynet Platform
 
 ## Overzicht
 

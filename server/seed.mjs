@@ -129,7 +129,7 @@ async function seed() {
     for (let i = 1; i <= 25; i++) {
       await connection.execute(
         `INSERT INTO devices (locationId, name, type, serialNumber, status, firmwareVersion) VALUES (?, ?, ?, ?, ?, ?)`,
-        [loc.id, `NETOS-NL-${loc.id}-${String(i).padStart(3, "0")}`, "netlink", `NL${loc.id}${String(i).padStart(4, "0")}`, i <= 23 ? "online" : "offline", "3.2.1"]
+        [loc.id, `SKYNET-NL-${loc.id}-${String(i).padStart(3, "0")}`, "netlink", `NL${loc.id}${String(i).padStart(4, "0")}`, i <= 23 ? "online" : "offline", "3.2.1"]
       );
     }
   }

@@ -133,7 +133,7 @@ export default function InvitesPage() {
                   <div className="flex items-center gap-3">
                     <span className={`text-[10px] font-semibold tracking-[2px] uppercase ${isAccepted ? "text-[#627653]" : "text-[#888]"}`}>{inv.status}</span>
                     {inv.status === "pending" && (
-                      <button onClick={() => copyLink(`https://netos.mrgreenoffices.nl/invite/${inv.token}`)} className="text-[#888] hover:text-white transition-all">
+                      <button onClick={() => copyLink(`https://skynet.mrgreenoffices.nl/invite/${inv.token}`)} className="text-[#888] hover:text-white transition-all">
                         <Copy className="w-3.5 h-3.5" />
                       </button>
                     )}

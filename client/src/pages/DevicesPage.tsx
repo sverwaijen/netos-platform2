@@ -140,7 +140,7 @@ export default function DevicesPage() {
       {tab === "alerts" && (
         <div className="space-y-0">
           {[
-            { level: "warning", msg: "NETOS Netlink #1042 — Sensor battery low (12%)", time: "2 hours ago" },
+            { level: "warning", msg: "Skynet Netlink #1042 — Sensor battery low (12%)", time: "2 hours ago" },
             { level: "info", msg: "Firmware update v3.2.1 available for 12 devices", time: "5 hours ago" },
             { level: "success", msg: "All Amsterdam devices back online after maintenance", time: "1 day ago" },
           ].map((a, i) => (

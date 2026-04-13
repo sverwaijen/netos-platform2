@@ -186,7 +186,7 @@ export default function LocationDetail() {
               return (
                 <div key={day} className={`text-center p-2 rounded-lg ${isToday ? "bg-primary/20 ring-1 ring-primary/40" : "bg-secondary/50"}`}>
                   <div className="text-xs text-muted-foreground">{day}</div>
-                  <div className={`text-sm font-bold mt-1 ${m < 0.7 ? "text-netos-green" : m > 1.1 ? "text-amber-400" : "text-foreground"}`}>{m}x</div>
+                  <div className={`text-sm font-bold mt-1 ${m < 0.7 ? "text-skynet-green" : m > 1.1 ? "text-amber-400" : "text-foreground"}`}>{m}x</div>
                 </div>
               );
             })}
@@ -319,7 +319,7 @@ export default function LocationDetail() {
             <Button variant="ghost" size="icon" onClick={() => shiftDate(-1)}><ChevronLeft className="w-4 h-4" /></Button>
             <div className="text-center">
               <p className="text-sm font-medium">{selectedDate.toLocaleDateString("en-US", { weekday: "long", month: "long", day: "numeric" })}</p>
-              <p className="text-xs text-muted-foreground">Multiplier: <span className={todayMultiplier < 0.7 ? "text-netos-green font-bold" : todayMultiplier > 1.1 ? "text-amber-400 font-bold" : ""}>{todayMultiplier}x</span></p>
+              <p className="text-xs text-muted-foreground">Multiplier: <span className={todayMultiplier < 0.7 ? "text-skynet-green font-bold" : todayMultiplier > 1.1 ? "text-amber-400 font-bold" : ""}>{todayMultiplier}x</span></p>
             </div>
             <Button variant="ghost" size="icon" onClick={() => shiftDate(1)}><ChevronRight className="w-4 h-4" /></Button>
           </div>
@@ -369,7 +369,7 @@ export default function LocationDetail() {
                 <span>Base: {(parseFloat(bookingResource?.creditCostPerHour ?? "0") * (selectedEnd - selectedStart)).toFixed(1)}c</span>
               </div>
               <div className="flex justify-between text-xs text-muted-foreground"><span>Multiplier</span><span>{todayMultiplier}x</span></div>
-              <div className="flex justify-between text-sm font-bold border-t border-border/30 pt-1 mt-1"><span>Total</span><span className="text-netos-green">{estimatedCost.toFixed(1)} credits</span></div>
+              <div className="flex justify-between text-sm font-bold border-t border-border/30 pt-1 mt-1"><span>Total</span><span className="text-skynet-green">{estimatedCost.toFixed(1)} credits</span></div>
             </div>
           )}
           <DialogFooter>

@@ -443,7 +443,7 @@ describe("visitors", () => {
     expect(result.success).toBe(true);
     expect(result.accessToken).toBeDefined();
     expect(result.accessToken.length).toBeGreaterThan(10);
-    expect(result.deepLink).toContain("netos.mrgreenoffices.nl/visit/");
+    expect(result.deepLink).toContain("skynet.mrgreenoffices.nl/visit/");
   });
 
   it("mine returns visitor list", async () => {
@@ -468,7 +468,7 @@ describe("invites", () => {
 
     expect(result.success).toBe(true);
     expect(result.token).toBeDefined();
-    expect(result.inviteLink).toContain("netos.mrgreenoffices.nl/invite/");
+    expect(result.inviteLink).toContain("skynet.mrgreenoffices.nl/invite/");
     expect(result.expiresAt).toBeDefined();
   });
 

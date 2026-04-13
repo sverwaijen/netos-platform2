@@ -1,4 +1,4 @@
-# AGENTS.md — Netos Platform Multi-Agent Guidelines
+# AGENTS.md — Skynet Platform Multi-Agent Guidelines
 
 Dit bestand is de "huisregels" voor alle AI-agents die aan deze codebase werken.
 Elke agent (Manus, Claude, Cursor, Copilot, etc.) MOET dit bestand lezen voordat er code geschreven wordt.
@@ -7,7 +7,7 @@ Elke agent (Manus, Claude, Cursor, Copilot, etc.) MOET dit bestand lezen voordat
 
 ## Project Overzicht
 
-**Netos Platform** is een autonoom kantoor-besturingssysteem (SaaS) voor Mr. Green Boutique Offices.
+**Skynet Platform** is een autonoom kantoor-besturingssysteem (SaaS) voor Mr. Green Boutique Offices.
 
 - **Frontend:** React 19 + TailwindCSS 4 + Radix UI + Vite
 - **Backend:** Express + tRPC + Drizzle ORM
@@ -82,7 +82,7 @@ Elke PR die nieuwe functionaliteit toevoegt MOET tests bevatten:
 ## Architectuur Overzicht
 
 ```
-netos-platform2/
+skynet-platform2/
 ├── client/              # React frontend (Vite)
 │   ├── components/      # Herbruikbare UI componenten
 │   ├── pages/           # Route-gebaseerde pagina's

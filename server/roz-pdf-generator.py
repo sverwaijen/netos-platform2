@@ -1045,6 +1045,6 @@ if __name__ == '__main__':
         with open(sys.argv[1], 'r') as f:
             demo_data.update(json.load(f))
 
-    output = sys.argv[2] if len(sys.argv) > 2 else '/home/ubuntu/netos-platform2/roz-demo/roz-contract-demo.pdf'
+    output = sys.argv[2] if len(sys.argv) > 2 else '/home/ubuntu/skynet-platform2/roz-demo/roz-contract-demo.pdf'
     result = generate_roz_contract(demo_data, output)
     print(f"ROZ Contract PDF generated: {result}")

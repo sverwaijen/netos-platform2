@@ -182,7 +182,7 @@ export default function SettingsPage() {
           {[
             { name: "Salto KS", desc: "Smart access control", icon: Key, connected: true },
             { name: "Stripe", desc: "Payment processing", icon: CreditCard, connected: true },
-            { name: "NETOS IoT", desc: "Device & sensor management", icon: Wifi, connected: true },
+            { name: "Skynet IoT", desc: "Device & sensor management", icon: Wifi, connected: true },
             { name: "Calendar Sync", desc: "Google/Outlook sync", icon: Calendar, connected: false },
           ].map((int) => (
             <div key={int.name} className="flex items-center justify-between py-4 border-b border-white/[0.03]">

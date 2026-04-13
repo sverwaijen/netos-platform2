@@ -495,7 +495,7 @@ export const appRouter = router({
         locationId: input.locationId,
         accessToken: token,
       });
-      return { success: true, accessToken: token, deepLink: `https://netos.mrgreenoffices.nl/visit/${token}` };
+      return { success: true, accessToken: token, deepLink: `https://skynet.mrgreenoffices.nl/visit/${token}` };
     }),
     mine: protectedProcedure.query(async ({ ctx }) => {
       return db.getVisitorsByUser(ctx.user.id);
@@ -585,7 +585,7 @@ export const appRouter = router({
         token,
         expiresAt,
       });
-      return { success: true, token, inviteLink: `https://netos.mrgreenoffices.nl/invite/${token}`, expiresAt };
+      return { success: true, token, inviteLink: `https://skynet.mrgreenoffices.nl/invite/${token}`, expiresAt };
     }),
     mine: protectedProcedure.query(async ({ ctx }) => {
       return db.getInvitesByUser(ctx.user.id);

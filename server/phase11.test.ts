@@ -383,10 +383,10 @@ describe("Supabase Integration", () => {
   it("should generate valid migration SQL", async () => {
     const { getSupabaseMigrationSQL } = await import("./integrations/supabase");
     const sql = getSupabaseMigrationSQL();
-    expect(sql).toContain("CREATE TABLE IF NOT EXISTS netos_users");
-    expect(sql).toContain("CREATE TABLE IF NOT EXISTS netos_parking_sessions");
-    expect(sql).toContain("CREATE TABLE IF NOT EXISTS netos_tickets");
-    expect(sql).toContain("CREATE TABLE IF NOT EXISTS netos_access_tokens");
+    expect(sql).toContain("CREATE TABLE IF NOT EXISTS skynet_users");
+    expect(sql).toContain("CREATE TABLE IF NOT EXISTS skynet_parking_sessions");
+    expect(sql).toContain("CREATE TABLE IF NOT EXISTS skynet_tickets");
+    expect(sql).toContain("CREATE TABLE IF NOT EXISTS skynet_access_tokens");
     expect(sql).toContain("ENABLE ROW LEVEL SECURITY");
     expect(sql).toContain("supabase_realtime");
   });
