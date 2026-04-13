@@ -46,6 +46,7 @@ import {
   commitContractsRouter, creditBonusesRouter, creditAdminRouter,
 } from "./routers/creditRouter";
 import { walletPaymentRouter } from "./routers/walletPaymentRouter";
+import { visitorTrackingRouter } from "./routers/visitorTrackingRouter";
 
 const adminProcedure = protectedProcedure.use(({ ctx, next }) => {
   if (ctx.user.role !== "administrator" && ctx.user.role !== "host") {
@@ -947,6 +948,7 @@ Return JSON with "subject" and "body" fields. The body should be HTML formatted.
   crmVisitors: crmVisitorsRouter,
   memberProfiles: memberProfilesRouter,
   reengagement: reengagementRouter,
+  visitorTracking: visitorTrackingRouter,
   // ─── Signage Module ───
   signageScreens: signageScreensRouter,
   signageGroups: signageGroupsRouter,
