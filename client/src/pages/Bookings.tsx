@@ -40,6 +40,8 @@ export default function Bookings() {
   });
 
   const now = Date.now();
+  const CANCEL_THRESHOLD_MS = 60 * 60 * 1000; // 1 hour
+
   const upcoming = useMemo(() => (bookings ?? []).filter((b: any) => new Date(b.startTime).getTime() > now && b.status !== "cancelled"), [bookings, now]);
   const past = useMemo(() => (bookings ?? []).filter((b: any) => new Date(b.startTime).getTime() <= now || b.status === "cancelled"), [bookings, now]);
   const filtered = tab === "upcoming" ? upcoming : tab === "past" ? past : (bookings ?? []);
@@ -47,6 +49,23 @@ export default function Bookings() {
   const totalHours = (bookings ?? []).filter((b: any) => b.status !== "cancelled").reduce((sum: number, b: any) => {
     return sum + (new Date(b.endTime).getTime() - new Date(b.startTime).getTime()) / 3600000;
   }, 0);
+
+  const canCancelBooking = (booking: any) => {
+    const start = new Date(booking.startTime).getTime();
+    const timeUntilStart = start - now;
+    return booking.status !== "cancelled" && timeUntilStart >= CANCEL_THRESHOLD_MS;
+  };
+
+  const getCancelButtonTooltip = (booking: any) => {
+    if (booking.status === "cancelled") return "Already cancelled";
+    const start = new Date(booking.startTime).getTime();
+    const timeUntilStart = start - now;
+    if (timeUntilStart < CANCEL_THRESHOLD_MS) {
+      const minutesLeft = Math.floor(timeUntilStart / 60000);
+      return `Can only cancel 1 hour before start (${minutesLeft} min remaining)`;
+    }
+    return "Cancel this booking";
+  };
 
   if (isLoading) return <div className="space-y-4 p-1">{Array.from({ length: 4 }).map((_, i) => <Skeleton key={i} className="h-20" />)}</div>;
 
@@ -116,7 +135,8 @@ export default function Bookings() {
             const end = new Date(b.endTime);
             const isPast = start.getTime() <= now;
             const isCancelled = b.status === "cancelled";
-            const canCancel = !isPast && !isCancelled;
+            const canCancel = canCancelBooking(b);
+            const tooltip = getCancelButtonTooltip(b);
             return (
               <div key={b.id} className={`flex flex-col sm:flex-row sm:items-center justify-between py-4 border-b border-white/[0.03] hover:bg-white/[0.02] transition-colors gap-3 ${isCancelled ? "opacity-40" : ""}`}>
                 <div className="flex items-center gap-3 sm:gap-4 min-w-0">
@@ -140,14 +160,25 @@ export default function Bookings() {
                       {isCancelled ? "Cancelled" : isPast ? "Completed" : "Confirmed"}
                     </p>
                   </div>
-                  {canCancel && (
+                  <div className="relative group">
                     <button
-                      onClick={() => setCancelTarget(b)}
-                      className="w-8 h-8 flex items-center justify-center rounded border border-white/[0.06] hover:border-red-500/30 hover:bg-red-500/10 transition-all"
+                      onClick={() => canCancel && setCancelTarget(b)}
+                      disabled={!canCancel}
+                      title={tooltip}
+                      className={`w-8 h-8 flex items-center justify-center rounded border transition-all ${
+                        canCancel
+                          ? "border-white/[0.06] hover:border-red-500/30 hover:bg-red-500/10 cursor-pointer"
+                          : "border-white/[0.03] opacity-40 cursor-not-allowed"
+                      }`}
                     >
                       <X className="w-3.5 h-3.5 text-[#888]" />
                     </button>
-                  )}
+                    {!canCancel && (
+                      <div className="absolute bottom-full right-0 mb-2 px-2 py-1 bg-[#1a1a1a] border border-white/[0.1] rounded text-[10px] text-[#888] whitespace-nowrap opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none z-10">
+                        {tooltip}
+                      </div>
+                    )}
+                  </div>
                 </div>
               </div>
             );
@@ -201,25 +232,27 @@ export default function Bookings() {
             </DialogTitle>
           </DialogHeader>
           {cancelTarget && (
-            <div className="bg-white/[0.03] p-4 rounded-lg">
-              <p className="text-sm font-light text-white">{cancelTarget.resourceName || "Resource"}</p>
-              <p className="text-[11px] text-[#888] mt-1 flex items-center gap-2">
-                <MapPin className="w-3 h-3" /> {cancelTarget.locationName} &middot; {new Date(cancelTarget.startTime).toLocaleDateString("nl-NL")} &middot; <span className="text-[#627653]">{parseFloat(cancelTarget.creditsCost || "0").toFixed(1)} credits</span>
-              </p>
-            </div>
-          )}
-          <div className="bg-[#627653]/10 border border-[#627653]/20 rounded-lg p-3">
-            <p className="text-[12px] text-white/70 font-light">
-              <CheckCircle className="w-3.5 h-3.5 inline mr-1.5 text-[#627653]" />
-              Credits will be refunded to your wallet
-            </p>
-          </div>
-          {cancelTarget && Date.now() > cancelTarget.startTime - (60 * 60 * 1000) && (
-            <div className="bg-orange-500/10 border border-orange-500/20 rounded-lg p-3">
-              <p className="text-[12px] text-orange-300 font-light">
-                <AlertCircle className="w-3.5 h-3.5 inline mr-1.5" />
-                Cancellations require 1 hour notice before booking
-              </p>
+            <div className="space-y-4">
+              <div className="bg-white/[0.03] p-4 rounded-lg">
+                <p className="text-sm font-light text-white">{cancelTarget.resourceName || "Resource"}</p>
+                <p className="text-[11px] text-[#888] mt-1 flex items-center gap-2">
+                  <MapPin className="w-3 h-3" /> {cancelTarget.locationName} &middot; {new Date(cancelTarget.startTime).toLocaleDateString("nl-NL")} &middot; <span className="text-[#627653]">{parseFloat(cancelTarget.creditsCost || "0").toFixed(1)} credits</span>
+                </p>
+              </div>
+              <div className="bg-[#627653]/10 border border-[#627653]/20 rounded-lg p-3">
+                <p className="text-[12px] text-white/70 font-light">
+                  <CheckCircle className="w-3.5 h-3.5 inline mr-1.5 text-[#627653]" />
+                  Credits will be refunded to your wallet
+                </p>
+              </div>
+              {Date.now() > cancelTarget.startTime - (60 * 60 * 1000) && (
+                <div className="bg-orange-500/10 border border-orange-500/20 rounded-lg p-3">
+                  <p className="text-[12px] text-orange-300 font-light">
+                    <AlertCircle className="w-3.5 h-3.5 inline mr-1.5" />
+                    Cancellations require 1 hour notice before booking
+                  </p>
+                </div>
+              )}
             </div>
           )}
           <DialogFooter className="gap-2">
