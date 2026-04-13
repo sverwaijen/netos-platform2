@@ -3,6 +3,9 @@
  * Supports Resend API (primary) with fallback patterns for SendGrid
  */
 import fetch from "node-fetch";
+import { createLogger } from "../_core/logger";
+
+const log = createLogger("Email");
 
 const RESEND_API_KEY = process.env.RESEND_API_KEY;
 const RESEND_BASE_URL = "https://api.resend.com";
@@ -58,7 +61,7 @@ export async function send(options: SendEmailOptions): Promise<{ success: boolea
 
     if (!response.ok) {
       const errorData = await response.json() as any;
-      console.error("Resend API error:", errorData);
+      log.error("Resend API error:", errorData);
       return { success: false, error: `Failed to send email: ${response.statusText}` };
     }
 
@@ -68,7 +71,7 @@ export async function send(options: SendEmailOptions): Promise<{ success: boolea
       messageId: data.id,
     };
   } catch (error) {
-    console.error("Email send error:", error);
+    log.error("Email send error:", error);
     return { success: false, error: `Error sending email: ${error instanceof Error ? error.message : "Unknown error"}` };
   }
 }
@@ -121,7 +124,7 @@ export async function trackOpen(db: any, sendId: string, openedAt: Date = new Da
     // The actual update is done by the endpoint that receives the tracking pixel request
     console.log(`Email open tracked for sendId: ${sendId}`);
   } catch (error) {
-    console.error("Error tracking email open:", error);
+    log.error("Error tracking email open:", error);
   }
 }
 
