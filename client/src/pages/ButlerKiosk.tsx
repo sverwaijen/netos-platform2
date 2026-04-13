@@ -1,9 +1,9 @@
 import { trpc } from "@/lib/trpc";
-import { useState, useMemo } from "react";
+import { useState, useMemo, useRef } from "react";
 import { useAuth } from "@/_core/hooks/useAuth";
 import {
   Coffee, ShoppingCart, CreditCard, Wallet, Building2, X, Plus, Minus,
-  ChevronLeft, Search, Leaf, Check
+  ChevronLeft, Search, Leaf, Check, QrCode, User
 } from "lucide-react";
 import { toast } from "sonner";
 
@@ -18,6 +18,15 @@ type CartItem = {
 
 type PaymentMethod = "personal_credits" | "company_credits" | "stripe_card" | "company_invoice" | "cash";
 
+type MemberInfo = {
+  userId: number;
+  name: string;
+  email?: string;
+  phone?: string;
+  walletBalance: number;
+  walletId?: number;
+};
+
 export default function ButlerKiosk() {
   const { user } = useAuth();
   const [selectedCategory, setSelectedCategory] = useState<number | null>(null);
@@ -26,10 +35,16 @@ export default function ButlerKiosk() {
   const [showPayment, setShowPayment] = useState(false);
   const [showSuccess, setShowSuccess] = useState(false);
   const [lastOrder, setLastOrder] = useState<{ orderNumber: string; totalCredits: string; totalEur: string } | null>(null);
+  const [showQRScanner, setShowQRScanner] = useState(false);
+  const [qrInput, setQrInput] = useState("");
+  const [scannedMember, setScannedMember] = useState<MemberInfo | null>(null);
+  const qrInputRef = useRef<HTMLInputElement>(null);
 
   const { data: categories } = trpc.products.categories.useQuery();
   const { data: allProducts } = trpc.products.list.useQuery({});
   const createOrder = trpc.kioskOrders.create.useMutation();
+  const verifyQR = trpc.kioskOrders.verifyMemberQR.useMutation();
+  const createOrderWithMember = trpc.kioskOrders.createOrderWithMember.useMutation();
 
   const filteredProducts = useMemo(() => {
     if (!allProducts) return [];
@@ -79,19 +94,64 @@ export default function ButlerKiosk() {
 
   const handlePayment = async (method: PaymentMethod) => {
     try {
-      const result = await createOrder.mutateAsync({
-        locationId: 1, // TODO: detect from kiosk location
-        userId: user?.id,
-        paymentMethod: method,
-        items: cart.map((i) => ({ productId: i.productId, quantity: i.quantity })),
-      });
-      setLastOrder({ orderNumber: result.orderNumber, totalCredits: result.totalCredits, totalEur: result.totalEur });
-      setCart([]);
-      setShowPayment(false);
-      setShowSuccess(true);
-      setTimeout(() => setShowSuccess(false), 5000);
+      // If using member QR, use special endpoint
+      if (scannedMember && method === "personal_credits") {
+        const result = await createOrderWithMember.mutateAsync({
+          locationId: 1,
+          qrData: `${scannedMember.userId}:${qrInput}`,
+          paymentMethod: method,
+          items: cart.map((i) => ({ productId: i.productId, quantity: i.quantity })),
+        });
+        setLastOrder({ orderNumber: result.orderNumber, totalCredits: result.totalCredits, totalEur: result.totalEur });
+        setCart([]);
+        setShowPayment(false);
+        setShowSuccess(true);
+        setScannedMember(null);
+        setQrInput("");
+        setTimeout(() => setShowSuccess(false), 5000);
+      } else {
+        const result = await createOrder.mutateAsync({
+          locationId: 1,
+          userId: user?.id,
+          paymentMethod: method,
+          items: cart.map((i) => ({ productId: i.productId, quantity: i.quantity })),
+        });
+        setLastOrder({ orderNumber: result.orderNumber, totalCredits: result.totalCredits, totalEur: result.totalEur });
+        setCart([]);
+        setShowPayment(false);
+        setShowSuccess(true);
+        setTimeout(() => setShowSuccess(false), 5000);
+      }
     } catch (err: unknown) {
-      toast.error(err instanceof Error ? err.message : "Order failed");
+      const msg = err instanceof Error ? err.message : "Order failed";
+      if (msg.includes("Insufficient balance")) {
+        toast.error("Insufficient wallet balance");
+      } else if (msg.includes("Invalid QR")) {
+        toast.error("QR code invalid or expired");
+      } else {
+        toast.error(msg);
+      }
+    }
+  };
+
+  const handleQRScan = async (qrData: string) => {
+    try {
+      const member = await verifyQR.mutateAsync({ qrData });
+      setScannedMember({
+        userId: member.userId,
+        name: member.name,
+        email: member.email,
+        phone: member.phone,
+        walletBalance: member.walletBalance,
+        walletId: member.walletId,
+      });
+      setQrInput(qrData);
+      setShowQRScanner(false);
+      toast.success(`Welcome, ${member.name}!`);
+    } catch (err: unknown) {
+      const msg = err instanceof Error ? err.message : "QR scan failed";
+      toast.error(msg);
+      setQrInput("");
     }
   };
 
@@ -235,16 +295,72 @@ export default function ButlerKiosk() {
         </div>
       </div>
 
-      {/* Right: Cart sidebar */}
-      <div className={`${cart.length > 0 ? 'flex' : 'hidden md:flex'} w-full md:w-[380px] bg-white/[0.02] border-t md:border-t-0 md:border-l border-white/[0.06] flex-col max-h-[50vh] md:max-h-none`}>
-        <div className="px-6 py-5 border-b border-white/[0.06]">
-          <div className="flex items-center gap-3">
-            <ShoppingCart className="w-5 h-5 text-[#627653]" />
-            <h2 className="text-white font-semibold">Your Order</h2>
-            {cart.length > 0 && (
-              <span className="ml-auto text-xs text-white/40">{cart.reduce((s, i) => s + i.quantity, 0)} items</span>
-            )}
+      {/* Right: Cart & QR Scanner sidebar */}
+      <div className={`${cart.length > 0 || showQRScanner || scannedMember ? 'flex' : 'hidden md:flex'} w-full md:w-[380px] bg-white/[0.02] border-t md:border-t-0 md:border-l border-white/[0.06] flex-col max-h-[50vh] md:max-h-none`}>
+        {/* QR Scanner UI */}
+        {showQRScanner && (
+          <div className="flex-1 flex flex-col p-6 border-b border-white/[0.06]">
+            <div className="flex items-center justify-between mb-4">
+              <h3 className="text-white font-semibold flex items-center gap-2">
+                <QrCode className="w-5 h-5 text-[#627653]" />
+                Scan Member QR
+              </h3>
+              <button
+                onClick={() => { setShowQRScanner(false); setQrInput(""); }}
+                className="text-white/40 hover:text-white"
+              >
+                <X className="w-4 h-4" />
+              </button>
+            </div>
+            <input
+              ref={qrInputRef}
+              type="text"
+              placeholder="Scan QR code or paste data..."
+              value={qrInput}
+              onChange={(e) => setQrInput(e.target.value)}
+              onKeyDown={(e) => {
+                if (e.key === "Enter" && qrInput) {
+                  handleQRScan(qrInput);
+                }
+              }}
+              autoFocus
+              className="w-full bg-white/[0.04] border border-white/[0.08] rounded-lg px-4 py-3 text-white text-sm placeholder:text-white/30 focus:outline-none focus:border-[#627653]/50 mb-3"
+            />
+            <p className="text-xs text-white/40 text-center">Press Enter to scan or scan with camera device</p>
           </div>
+        )}
+
+        {/* Scanned Member Info */}
+        {scannedMember && !showQRScanner && (
+          <div className="px-6 py-4 border-b border-white/[0.06] bg-[#627653]/10">
+            <div className="flex items-center justify-between mb-3">
+              <div className="flex items-center gap-2">
+                <User className="w-5 h-5 text-[#627653]" />
+                <div>
+                  <p className="text-white font-medium text-sm">{scannedMember.name}</p>
+                  <p className="text-xs text-white/40">{scannedMember.email}</p>
+                </div>
+              </div>
+              <button
+                onClick={() => setScannedMember(null)}
+                className="text-white/40 hover:text-white"
+              >
+                <X className="w-4 h-4" />
+              </button>
+            </div>
+            <div className="bg-white/[0.02] rounded-lg p-2">
+              <p className="text-xs text-white/50 mb-1">Wallet Balance</p>
+              <p className="text-[#627653] font-semibold">{scannedMember.walletBalance.toFixed(2)} credits</p>
+            </div>
+          </div>
+        )}
+
+        <div className="px-6 py-5 border-b border-white/[0.06] flex items-center gap-3">
+          <ShoppingCart className="w-5 h-5 text-[#627653]" />
+          <h2 className="text-white font-semibold">Your Order</h2>
+          {cart.length > 0 && (
+            <span className="ml-auto text-xs text-white/40">{cart.reduce((s, i) => s + i.quantity, 0)} items</span>
+          )}
         </div>
 
         {cart.length === 0 ? (
@@ -302,7 +418,7 @@ export default function ButlerKiosk() {
 
             {/* Payment buttons */}
             {!showPayment ? (
-              <div className="px-6 pb-6">
+              <div className="px-6 pb-6 space-y-2">
                 <button
                   onClick={() => setShowPayment(true)}
                   className="w-full py-4 rounded-xl bg-[#627653] text-white font-semibold text-sm tracking-wider uppercase hover:bg-[#627653]/90 transition-all active:scale-[0.98]"
@@ -310,8 +426,15 @@ export default function ButlerKiosk() {
                   Pay Now
                 </button>
                 <button
+                  onClick={() => setShowQRScanner(!showQRScanner)}
+                  className="w-full py-3 rounded-xl bg-white/[0.04] border border-white/[0.08] text-white font-semibold text-sm tracking-wider uppercase hover:border-[#627653]/40 transition-all flex items-center justify-center gap-2"
+                >
+                  <QrCode className="w-4 h-4" />
+                  {scannedMember ? "Change Member" : "Scan Member QR"}
+                </button>
+                <button
                   onClick={() => setCart([])}
-                  className="w-full py-2 mt-2 text-white/30 text-xs hover:text-white/50 transition-colors"
+                  className="w-full py-2 text-white/30 text-xs hover:text-white/50 transition-colors"
                 >
                   Clear Order
                 </button>
@@ -326,10 +449,24 @@ export default function ButlerKiosk() {
                 </button>
                 <p className="text-white/50 text-xs uppercase tracking-wider mb-3">Choose payment method</p>
 
+                {scannedMember && (
+                  <button
+                    onClick={() => handlePayment("personal_credits")}
+                    disabled={createOrderWithMember.isPending}
+                    className="w-full flex items-center gap-3 px-4 py-3.5 rounded-xl bg-[#627653]/20 border border-[#627653]/40 text-white text-sm hover:bg-[#627653]/30 transition-all"
+                  >
+                    <User className="w-5 h-5 text-[#627653]" />
+                    <div className="text-left flex-1">
+                      <p className="font-medium">{scannedMember.name}</p>
+                      <p className="text-xs text-white/40">{scannedMember.walletBalance.toFixed(2)}c available</p>
+                    </div>
+                  </button>
+                )}
+
                 <button
                   onClick={() => handlePayment("personal_credits")}
-                  disabled={createOrder.isPending}
-                  className="w-full flex items-center gap-3 px-4 py-3.5 rounded-xl bg-white/[0.04] border border-white/[0.08] text-white text-sm hover:border-[#627653]/40 transition-all"
+                  disabled={createOrder.isPending || !!scannedMember}
+                  className={`w-full flex items-center gap-3 px-4 py-3.5 rounded-xl border text-white text-sm transition-all ${scannedMember ? "opacity-50 cursor-not-allowed" : "bg-white/[0.04] border-white/[0.08] hover:border-[#627653]/40"}`}
                 >
                   <Wallet className="w-5 h-5 text-[#627653]" />
                   <div className="text-left flex-1">

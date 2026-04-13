@@ -22,8 +22,10 @@ export default function CrmVisitors() {
   const [analysisResult, setAnalysisResult] = useState<any>(null);
   const [convertingId, setConvertingId] = useState<number | null>(null);
 
-  const { data: visitors, refetch } = trpc.crmVisitors.list.useQuery({
+  const { data: visitors, refetch } = trpc.visitorTracking.getRecentVisitors.useQuery({
     limit: 50,
+    hoursBack: 24,
+    companyName: search || undefined,
   });
 
   const analyzeMut = trpc.crmVisitors.analyze.useMutation({
@@ -74,10 +76,10 @@ export default function CrmVisitors() {
       {/* Stats */}
       <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
         {[
-          { label: "Bezoekers vandaag", value: visitors?.filter(v => new Date(v.firstVisitAt).toDateString() === new Date().toDateString()).length || 0, color: "text-purple-400" },
-          { label: "Geïdentificeerd", value: visitors?.filter(v => v.isIdentified).length || 0, color: "text-red-400" },
-          { label: "Met bedrijf", value: visitors?.filter(v => v.companyName).length || 0, color: "text-green-400" },
-          { label: "Matched met lead", value: visitors?.filter(v => v.matchedLeadId).length || 0, color: "text-blue-400" },
+          { label: "Totaal bezoekers", value: visitors?.reduce((sum: number, v: any) => sum + v.visitCount, 0) || 0, color: "text-purple-400" },
+          { label: "Unieke bedrijven", value: visitors?.length || 0, color: "text-red-400" },
+          { label: "Geidenticeerd", value: visitors?.filter((v: any) => v.company && !v.company.startsWith("Unknown")).length || 0, color: "text-green-400" },
+          { label: "Linked to leads", value: visitors?.filter((v: any) => v.leadId).length || 0, color: "text-blue-400" },
         ].map(s => (
           <Card key={s.label} className="bg-zinc-900/50 border-zinc-800">
             <CardContent className="p-3 text-center">
@@ -99,52 +101,43 @@ export default function CrmVisitors() {
       {/* Visitors List */}
       <div className="space-y-3">
         {visitors?.map(visitor => (
-          <Card key={visitor.id} className={`bg-zinc-900/50 border-zinc-800 ${visitor.status === "outreach_sent" ? "opacity-60" : ""}`}>
+          <Card key={visitor.company} className={`bg-zinc-900/50 border-zinc-800`}>
             <CardContent className="p-4">
               <div className="flex flex-col sm:flex-row sm:items-start gap-4">
                 {/* Company info */}
                 <div className="flex-1 min-w-0">
                   <div className="flex items-center gap-2 flex-wrap">
                     <h3 className="font-semibold text-white">
-                      {visitor.companyName || visitor.ipAddress || "Onbekend"}
+                      {visitor.company || "Onbekend"}
                     </h3>
-                    <Badge className={visitor.isIdentified ? "bg-green-500/20 text-green-400 border-green-500/30" : "bg-zinc-500/20 text-zinc-400 border-zinc-500/30"}>
-                      {visitor.isIdentified ? "Geïdentificeerd" : "Anoniem"}
+                    <Badge className={visitor.company && !visitor.company.startsWith("Unknown") ? "bg-green-500/20 text-green-400 border-green-500/30" : "bg-zinc-500/20 text-zinc-400 border-zinc-500/30"}>
+                      {visitor.company && !visitor.company.startsWith("Unknown") ? "Geidentificeerd" : "Anoniem"}
                     </Badge>
-                    <Badge variant="outline" className="text-xs border-zinc-700 text-zinc-300">
-                      {visitor.status}
-                    </Badge>
-                    {visitor.matchedLeadId && (
+                    {visitor.leadId && (
                       <Badge className="bg-blue-500/20 text-blue-400 border-blue-500/30">
-                        Matched met lead #{visitor.matchedLeadId}
+                        Lead #{visitor.leadId}
                       </Badge>
                     )}
                   </div>
 
                   <div className="flex flex-wrap items-center gap-3 mt-2 text-xs text-zinc-400">
-                    {visitor.companyIndustry && (
-                      <span className="flex items-center gap-1"><Building2 className="h-3 w-3" /> {visitor.companyIndustry}</span>
-                    )}
                     {visitor.city && (
                       <span className="flex items-center gap-1"><MapPin className="h-3 w-3" /> {visitor.city}{visitor.country ? `, ${visitor.country}` : ""}</span>
                     )}
                     <span className="flex items-center gap-1">
-                      <Clock className="h-3 w-3" /> {new Date(visitor.firstVisitAt).toLocaleString("nl-NL")}
+                      <Clock className="h-3 w-3" /> {new Date(visitor.lastVisit).toLocaleString("nl-NL")}
                     </span>
                     <span className="flex items-center gap-1">
-                      <Eye className="h-3 w-3" /> {visitor.totalPageViews || 1} pagina's
+                      <Eye className="h-3 w-3" /> {visitor.visitCount} bezoeken
                     </span>
-                    {visitor.totalVisits && visitor.totalVisits > 1 && (
-                      <span>{visitor.totalVisits} bezoeken</span>
-                    )}
                   </div>
 
                   {/* Pages visited */}
-                  {visitor.pagesViewed && (visitor.pagesViewed as string[]).length > 0 && (
+                  {visitor.pages && visitor.pages.length > 0 && (
                     <div className="flex flex-wrap gap-1 mt-2">
-                      {(visitor.pagesViewed as string[]).slice(0, 5).map((page: string, i: number) => (
+                      {visitor.pages.slice(0, 5).map((page: string, i: number) => (
                         <Badge key={i} variant="outline" className="text-[10px] border-zinc-700 text-zinc-400">
-                          {page}
+                          {page.replace(/^.*:\/\/[^/]+/, "").substring(0, 30)}
                         </Badge>
                       ))}
                     </div>
@@ -153,20 +146,16 @@ export default function CrmVisitors() {
 
                 {/* Actions */}
                 <div className="flex items-center gap-2 shrink-0">
-                  <Button size="sm" variant="outline" onClick={() => handleAnalyze(visitor)}
-                    disabled={analyzingId === visitor.id}
-                    className="border-zinc-700 text-zinc-300 hover:bg-zinc-800">
-                    {analyzingId === visitor.id ? <Loader2 className="h-3 w-3 animate-spin" /> : <Brain className="h-3 w-3 mr-1" />}
-                    AI Analyse
-                  </Button>
-                  {!visitor.matchedLeadId && (
-                    <Button size="sm" onClick={() => { setConvertingId(visitor.id); convertMut.mutate({ id: visitor.id }); }}
-                      disabled={convertingId === visitor.id}
-                      className="bg-green-600 hover:bg-green-700">
-                      {convertingId === visitor.id ? <Loader2 className="h-3 w-3 animate-spin" /> : <UserPlus className="h-3 w-3 mr-1" />}
+                  {!visitor.leadId && (
+                    <Button size="sm" className="bg-green-600 hover:bg-green-700">
+                      <UserPlus className="h-3 w-3 mr-1" />
                       → Lead
                     </Button>
                   )}
+                  <Button size="sm" variant="outline" className="border-zinc-700 text-zinc-300 hover:bg-zinc-800">
+                    <Eye className="h-3 w-3 mr-1" />
+                    Details
+                  </Button>
                 </div>
               </div>
 

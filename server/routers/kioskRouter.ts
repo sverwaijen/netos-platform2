@@ -15,6 +15,7 @@ import {
   companies,
   wallets,
   creditLedger,
+  users,
 } from "../../drizzle/schema";
 import { scrapeWebsiteBranding } from "../scraper";
 import { nanoid } from "nanoid";
@@ -432,5 +433,175 @@ export const signingRouter = router({
         });
       }
       return { success: true };
+    }),
+    // ─── QR Code generation ───
+    generateMemberQR: protectedProcedure.query(async ({ ctx }) => {
+      const db = await getDb();
+      if (!db) throw new Error("Database unavailable");
+
+      // Generate or retrieve existing QR token
+      let qrToken = ctx.user.id ? (await db.select({ qrToken: users.qrToken }).from(users).where(eq(users.id, ctx.user.id)).limit(1))?.[0]?.qrToken : null;
+
+      if (!qrToken) {
+        // Generate new unique token
+        qrToken = nanoid(32);
+        if (ctx.user.id) {
+          await db.update(users).set({ qrToken }).where(eq(users.id, ctx.user.id));
+        }
+      }
+
+      // Create QR data string: "userid:token" format for easy parsing
+      const qrData = `${ctx.user.id}:${qrToken}`;
+
+      return {
+        success: true,
+        qrData,
+        qrToken,
+        userId: ctx.user.id,
+        encodedQR: Buffer.from(qrData).toString('base64'),
+      };
+    }),
+    // ─── QR Code verification ───
+    verifyMemberQR: publicProcedure.input(z.object({
+      qrData: z.string(),
+    })).query(async ({ input }) => {
+      const db = await getDb();
+      if (!db) throw new Error("Database unavailable");
+
+      // Parse QR data: "userid:token" format
+      const [userIdStr, token] = input.qrData.split(":");
+      const userId = parseInt(userIdStr, 10);
+
+      if (!userId || !token) throw new Error("Invalid QR format");
+
+      // Verify token matches user
+      const userRecord = await db.select().from(users).where(eq(users.id, userId)).limit(1);
+      const user = userRecord[0];
+
+      if (!user || user.qrToken !== token) throw new Error("QR token invalid or expired");
+
+      // Get wallet info
+      const walletRecord = await db.select().from(wallets).where(and(eq(wallets.ownerId, userId), eq(wallets.type, "personal"))).limit(1);
+      const wallet = walletRecord[0];
+
+      return {
+        success: true,
+        userId: user.id,
+        name: user.name || "Unknown",
+        email: user.email,
+        phone: user.phone,
+        walletBalance: wallet?.balance ? parseFloat(wallet.balance as string) : 0,
+        walletId: wallet?.id,
+      };
+    }),
+    // ─── Create order with member (via QR) ───
+    createOrderWithMember: publicProcedure.input(z.object({
+      locationId: z.number(),
+      qrData: z.string(),
+      paymentMethod: z.enum(["personal_credits", "company_credits", "stripe_card", "company_invoice", "cash"]),
+      items: z.array(z.object({
+        productId: z.number(),
+        quantity: z.number().min(1),
+      })),
+      notes: z.string().optional(),
+    })).mutation(async ({ input }) => {
+      const db = await getDb();
+      if (!db) throw new Error("DB unavailable");
+
+      // Verify QR and get user info
+      const [userIdStr, token] = input.qrData.split(":");
+      const userId = parseInt(userIdStr, 10);
+      if (!userId || !token) throw new Error("Invalid QR format");
+
+      const userRecord = await db.select().from(users).where(eq(users.id, userId)).limit(1);
+      const user = userRecord[0];
+      if (!user || user.qrToken !== token) throw new Error("QR token invalid or expired");
+
+      // Fetch product prices
+      const productIds = input.items.map((i) => i.productId);
+      const prods = await db.select().from(products).where(sql`${products.id} IN (${sql.join(productIds.map(id => sql`${id}`), sql`, `)})`);
+      const prodMap = new Map(prods.map((p) => [p.id, p]));
+
+      let subtotalCredits = 0;
+      let subtotalEur = 0;
+      let vatTotal = 0;
+
+      const orderItems = input.items.map((item) => {
+        const prod = prodMap.get(item.productId);
+        if (!prod) throw new Error(`Product ${item.productId} not found`);
+        const credits = parseFloat(prod.priceCredits as string) * item.quantity;
+        const eur = parseFloat(prod.priceEur as string) * item.quantity;
+        const vat = eur * (parseFloat(prod.vatRate as string || "21") / 100);
+        subtotalCredits += credits;
+        subtotalEur += eur;
+        vatTotal += vat;
+        return {
+          productId: item.productId,
+          productName: prod.name,
+          quantity: item.quantity,
+          unitPriceCredits: prod.priceCredits as string,
+          unitPriceEur: prod.priceEur as string,
+          totalCredits: credits.toFixed(2),
+          totalEur: eur.toFixed(2),
+          vatRate: prod.vatRate as string || "21.00",
+        };
+      });
+
+      const orderNumber = `ORD-${nanoid(8).toUpperCase()}`;
+
+      // Insert order
+      const [result] = await db.insert(kioskOrders).values({
+        orderNumber,
+        locationId: input.locationId,
+        userId: userId,
+        companyId: user.companyId,
+        paymentMethod: input.paymentMethod,
+        subtotalCredits: subtotalCredits.toFixed(2),
+        subtotalEur: subtotalEur.toFixed(2),
+        vatAmount: vatTotal.toFixed(2),
+        totalCredits: subtotalCredits.toFixed(2),
+        totalEur: (subtotalEur + vatTotal).toFixed(2),
+        notes: input.notes || null,
+        status: "completed",
+      }).$returningId();
+
+      const orderId = result.id;
+
+      // Insert order items
+      for (const item of orderItems) {
+        await db.insert(kioskOrderItems).values({ orderId, ...item });
+      }
+
+      // Deduct credits if paying with credits
+      if (input.paymentMethod === "personal_credits") {
+        const userWallets = await db.select().from(wallets).where(and(eq(wallets.ownerId, userId), eq(wallets.type, "personal"))).limit(1);
+        if (userWallets[0]) {
+          const currentBalance = parseFloat(userWallets[0].balance as string);
+          if (currentBalance < subtotalCredits) throw new Error(`Insufficient balance. Need ${subtotalCredits.toFixed(2)}c, have ${currentBalance.toFixed(2)}c`);
+
+          const newBalance = (currentBalance - subtotalCredits).toFixed(2);
+          await db.update(wallets).set({ balance: newBalance }).where(eq(wallets.id, userWallets[0].id));
+          await db.insert(creditLedger).values({
+            walletId: userWallets[0].id,
+            type: "spend",
+            amount: subtotalCredits.toFixed(2),
+            balanceAfter: newBalance,
+            description: `Kiosk order ${orderNumber}`,
+            referenceType: "kiosk_order",
+            referenceId: orderId,
+          });
+        }
+      }
+
+      return {
+        success: true,
+        orderNumber,
+        totalCredits: subtotalCredits.toFixed(2),
+        totalEur: (subtotalEur + vatTotal).toFixed(2),
+        memberName: user.name,
+        walletBalance: input.paymentMethod === "personal_credits"
+          ? (await db.select().from(wallets).where(and(eq(wallets.ownerId, userId), eq(wallets.type, "personal"))).limit(1))?.[0]
+          : null,
+      };
     }),
 });
