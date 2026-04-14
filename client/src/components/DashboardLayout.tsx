@@ -137,6 +137,7 @@ const navCategories: NavCategory[] = [
     icon: Target,
     permission: "crm.view",
     items: [
+      { icon: FileText, label: "Invoices", path: "/invoices", permission: "wallet.manage" },
       { icon: Target, label: "Pipeline", path: "/crm", permission: "crm.view" },
       { icon: Zap, label: "Marketing Flow", path: "/crm/flow", permission: "crm.manage" },
       { icon: Crosshair, label: "Triggers", path: "/crm/triggers", permission: "crm.manage" },
