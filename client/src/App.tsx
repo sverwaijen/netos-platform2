@@ -53,6 +53,7 @@ import UserRolesPage from "./pages/UserRolesPage";
 import BudgetControlsPage from "./pages/BudgetControlsPage";
 import CommitContractsPage from "./pages/CommitContractsPage";
 import CreditAdminDashboard from "./pages/CreditAdminDashboard";
+import PersonalDashboard from "./pages/PersonalDashboard";
 
 function WrappedPage({ component: Component }: { component: React.ComponentType }) {
   return (
@@ -76,6 +77,7 @@ function Router() {
       <Route path="/" component={Home} />
       {/* Admin / Dashboard routes */}
       <Route path="/dashboard">{() => <WrappedPage component={Dashboard} />}</Route>
+      <Route path="/my-dashboard">{() => <WrappedPage component={PersonalDashboard} />}</Route>
       <Route path="/locations/:slug">{() => <DashboardLayout><LocationDetail /></DashboardLayout>}</Route>
       <Route path="/locations">{() => <WrappedPage component={Locations} />}</Route>
       <Route path="/bookings">{() => <WrappedPage component={Bookings} />}</Route>

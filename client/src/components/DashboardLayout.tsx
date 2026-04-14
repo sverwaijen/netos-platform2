@@ -67,6 +67,7 @@ import {
   Shield,
   FileSignature,
   BarChart3,
+  Star,
   type LucideIcon,
 } from "lucide-react";
 import { CSSProperties, useEffect, useRef, useState } from "react";
@@ -99,6 +100,7 @@ const navCategories: NavCategory[] = [
     icon: LayoutDashboard,
     items: [
       { icon: LayoutDashboard, label: "Dashboard", path: "/dashboard", permission: "dashboard.view" },
+      { icon: Star, label: "My Dashboard", path: "/my-dashboard", permission: "dashboard.view" },
     ],
   },
   {
