@@ -57,6 +57,7 @@ import CommitContractsPage from "./pages/CommitContractsPage";
 import CreditAdminDashboard from "./pages/CreditAdminDashboard";
 import CommunityEvents from "./pages/CommunityEvents";
 
+import InvoiceDashboard from "./pages/InvoiceDashboard";
 function WrappedPage({ component: Component }: { component: React.ComponentType }) {
   return (
     <DashboardLayout>
@@ -83,6 +84,7 @@ function Router() {
       <Route path="/locations">{() => <WrappedPage component={Locations} />}</Route>
       <Route path="/bookings">{() => <WrappedPage component={Bookings} />}</Route>
       <Route path="/wallet">{() => <WrappedPage component={WalletPage} />}</Route>
+      <Route path="/invoices">{() => <WrappedPage component={InvoiceDashboard} />}</Route>
       <Route path="/bundles">{() => <WrappedPage component={BundlesPage} />}</Route>
       <Route path="/companies">{() => <WrappedPage component={Companies} />}</Route>
       <Route path="/visitors">{() => <WrappedPage component={Visitors} />}</Route>
