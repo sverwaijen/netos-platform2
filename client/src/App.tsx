@@ -53,6 +53,7 @@ import UserRolesPage from "./pages/UserRolesPage";
 import BudgetControlsPage from "./pages/BudgetControlsPage";
 import CommitContractsPage from "./pages/CommitContractsPage";
 import CreditAdminDashboard from "./pages/CreditAdminDashboard";
+import RecurringBookingsPage from "./pages/RecurringBookingsPage";
 
 function WrappedPage({ component: Component }: { component: React.ComponentType }) {
   return (
@@ -78,6 +79,7 @@ function Router() {
       <Route path="/dashboard">{() => <WrappedPage component={Dashboard} />}</Route>
       <Route path="/locations/:slug">{() => <DashboardLayout><LocationDetail /></DashboardLayout>}</Route>
       <Route path="/locations">{() => <WrappedPage component={Locations} />}</Route>
+      <Route path="/bookings/recurring">{() => <WrappedPage component={RecurringBookingsPage} />}</Route>
       <Route path="/bookings">{() => <WrappedPage component={Bookings} />}</Route>
       <Route path="/wallet">{() => <WrappedPage component={WalletPage} />}</Route>
       <Route path="/bundles">{() => <WrappedPage component={BundlesPage} />}</Route>
