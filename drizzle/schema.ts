@@ -1038,6 +1038,56 @@ export const ticketSlaPolicies = mysqlTable("ticket_sla_policies", {
 
 export type TicketSlaPolicy = typeof ticketSlaPolicies.$inferSelect;
 
+// ─── Escalation Rules ──────────────────────────────────────────────
+export const escalationRules = mysqlTable("escalation_rules", {
+  id: int("id").autoincrement().primaryKey(),
+  name: varchar("name", { length: 128 }).notNull(),
+  description: text("description"),
+  priority: mysqlEnum("escalationPriority", ["low", "normal", "high", "urgent"]),
+  category: varchar("escalationCategory", { length: 64 }),
+  escalateAfterMinutes: int("escalateAfterMinutes").notNull(),
+  triggerType: mysqlEnum("triggerType", [
+    "no_response", "no_resolution", "sla_breach", "priority_change",
+  ]).default("no_response").notNull(),
+  escalationLevel: int("escalationLevel").default(1).notNull(),
+  escalateToRole: mysqlEnum("escalateToRole", ["administrator", "host", "teamadmin", "member", "guest"]).default("host"),
+  escalateToUserId: int("escalateToUserId"),
+  notifyEmail: boolean("notifyEmail").default(true),
+  notifyInApp: boolean("notifyInApp").default(true),
+  autoReassign: boolean("autoReassign").default(false),
+  autoPriorityBump: boolean("autoPriorityBump").default(false),
+  isActive: boolean("isActive").default(true),
+  createdAt: timestamp("createdAt").defaultNow().notNull(),
+  updatedAt: timestamp("updatedAt").defaultNow().onUpdateNow().notNull(),
+});
+
+export type EscalationRule = typeof escalationRules.$inferSelect;
+export type InsertEscalationRule = typeof escalationRules.$inferInsert;
+
+// ─── Escalation Log ────────────────────────────────────────────────
+export const escalationLog = mysqlTable("escalation_log", {
+  id: int("id").autoincrement().primaryKey(),
+  ticketId: int("ticketId").notNull(),
+  ruleId: int("ruleId").notNull(),
+  escalationLevel: int("escalationLevel").notNull(),
+  previousAssigneeId: int("previousAssigneeId"),
+  newAssigneeId: int("newAssigneeId"),
+  previousPriority: varchar("previousPriority", { length: 16 }),
+  newPriority: varchar("newPriority", { length: 16 }),
+  reason: text("reason").notNull(),
+  workaround: text("workaround"),
+  status: mysqlEnum("escalationStatus", [
+    "triggered", "acknowledged", "resolved", "expired",
+  ]).default("triggered").notNull(),
+  acknowledgedById: int("acknowledgedById"),
+  acknowledgedAt: bigint("acknowledgedAt", { mode: "number" }),
+  slaBreach: boolean("slaBreach").default(false),
+  createdAt: timestamp("createdAt").defaultNow().notNull(),
+});
+
+export type EscalationLogEntry = typeof escalationLog.$inferSelect;
+export type InsertEscalationLogEntry = typeof escalationLog.$inferInsert;
+
 // ─── Canned Responses ──────────────────────────────────────────────
 export const cannedResponses = mysqlTable("canned_responses", {
   id: int("id").autoincrement().primaryKey(),

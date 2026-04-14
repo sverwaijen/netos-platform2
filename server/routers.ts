@@ -23,6 +23,9 @@ import {
   opsAgendaRouter, presenceRouter,
 } from "./routers/opsRouter";
 import {
+  escalationRulesRouter, escalationLogRouter,
+} from "./routers/escalationRouter";
+import {
   roomControlZonesRouter, roomControlPointsRouter,
   sensorReadingsRouter, automationRulesRouter, alertThresholdsRouter,
 } from "./routers/roomControlRouter";
@@ -1005,6 +1008,9 @@ Return JSON with "subject" and "body" fields. The body should be HTML formatted.
   sla: slaRouter,
   opsAgenda: opsAgendaRouter,
   presence: presenceRouter,
+  // ─── Escalation ───
+  escalationRules: escalationRulesRouter,
+  escalationLog: escalationLogRouter,
   // ─── Room Control ───
   roomControlZones: roomControlZonesRouter,
   roomControlPoints: roomControlPointsRouter,
