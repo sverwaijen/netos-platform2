@@ -67,6 +67,7 @@ import {
   Shield,
   FileSignature,
   BarChart3,
+  Leaf,
   type LucideIcon,
 } from "lucide-react";
 import { CSSProperties, useEffect, useRef, useState } from "react";
@@ -152,6 +153,7 @@ const navCategories: NavCategory[] = [
     permission: "operations.view",
     items: [
       { icon: Ticket, label: "Operations", path: "/operations", permission: "operations.view" },
+      { icon: Leaf, label: "Energy & Sustainability", path: "/energy", permission: "operations.view" },
       { icon: Car, label: "Parking", path: "/parking", permission: "parking.view" },
       { icon: Coffee, label: "Butler Kiosk", path: "/butler/admin", permission: "butler.view" },
       { icon: ChefHat, label: "Menukaart", path: "/menu", permission: "menu.view" },
