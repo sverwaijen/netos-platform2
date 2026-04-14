@@ -49,6 +49,15 @@ import {
 import { walletPaymentRouter } from "./routers/walletPaymentRouter";
 import { visitorTrackingRouter } from "./routers/visitorTrackingRouter";
 
+// TODO: #36 - No Database Transactions
+// Critical mutations involve multiple DB writes (bookings, wallet updates, etc.)
+// These should be wrapped in Drizzle transactions to ensure atomicity
+// Examples:
+// - Booking creation + credit deduction
+// - Parking permit creation + access log entry
+// - Credit purchase + wallet balance update
+// Use: db.transaction(async (tx) => { ... })
+
 const adminProcedure = protectedProcedure.use(({ ctx, next }) => {
   if (ctx.user.role !== "administrator" && ctx.user.role !== "host") {
     throw new Error("Forbidden: admin access required");
