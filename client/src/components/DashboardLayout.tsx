@@ -167,6 +167,7 @@ const navCategories: NavCategory[] = [
       { icon: Bell, label: "Notifications", path: "/notifications", permission: "notifications.view" },
       { icon: Shield, label: "User Roles", path: "/settings/roles", permission: "roles.view" },
       { icon: Settings, label: "Settings", path: "/settings", permission: "settings.view" },
+      { icon: Shield, label: "SSO Config", path: "/settings/sso", permission: "settings.manage" },
     ],
   },
 ];
