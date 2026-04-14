@@ -6,8 +6,8 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "
 import { Input } from "@/components/ui/input";
 import { Skeleton } from "@/components/ui/skeleton";
 import { toast } from "sonner";
-import { useState, useMemo } from "react";
-import { CreditCard, ArrowUpRight, ArrowDownRight, RefreshCw, TrendingUp, Clock, Package, Shield, Zap, Settings } from "lucide-react";
+import { useState, useMemo, useEffect } from "react";
+import { CreditCard, ArrowUpRight, ArrowDownRight, RefreshCw, TrendingUp, Clock, Package, Shield, Zap, Settings, Banknote, CheckCircle2 } from "lucide-react";
 import { BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer } from "recharts";
 
 export default function WalletPage() {
@@ -22,6 +22,41 @@ export default function WalletPage() {
   const [autoTopUpAmount, setAutoTopUpAmount] = useState("50");
   const [bundleDialogOpen, setBundleDialogOpen] = useState(false);
   const [selectedBundle, setSelectedBundle] = useState<any>(null);
+  const [paymentMethod, setPaymentMethod] = useState<"card" | "ideal">("ideal");
+  const [paymentHistoryOpen, setPaymentHistoryOpen] = useState(false);
+
+  const { data: paymentHistory = [] } = trpc.walletPayment.getPaymentHistory.useQuery(
+    { limit: 20 },
+    { enabled: isAuthenticated }
+  );
+  const { data: stripeStatus } = trpc.walletPayment.getStripeStatus.useQuery();
+
+  // Handle return from Stripe checkout
+  useEffect(() => {
+    const params = new URLSearchParams(window.location.search);
+    const sessionId = params.get("session_id");
+    const success = params.get("success");
+    if (sessionId && success === "true") {
+      // Fulfill the checkout on return
+      fetch(`/api/trpc/walletPayment.handleCheckoutCompleted`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ json: { sessionId } }),
+      }).then(() => {
+        toast.success("Betaling geslaagd! Credits zijn toegevoegd.");
+        // Clean up URL params
+        window.history.replaceState({}, "", "/wallet");
+      }).catch(() => {
+        toast.info("Betaling wordt verwerkt...");
+        window.history.replaceState({}, "", "/wallet");
+      });
+    }
+    const cancelled = params.get("cancelled");
+    if (cancelled === "true") {
+      toast.info("Betaling geannuleerd.");
+      window.history.replaceState({}, "", "/wallet");
+    }
+  }, []);
 
   const utils = trpc.useUtils();
   const topUpMutation = trpc.wallets.topup.useMutation({
@@ -38,7 +73,7 @@ export default function WalletPage() {
         window.location.href = data.checkoutUrl;
       }
     },
-    onError: (err: any) => toast.error(err.message),
+    onError: (err: any) => toast.error(err.message || "Betaling kon niet gestart worden"),
   });
 
   const personalWallet = wallets?.find((w: any) => w.type === "personal");
@@ -87,6 +122,9 @@ export default function WalletPage() {
           </h1>
         </div>
         <div className="flex gap-2">
+          <button onClick={() => setPaymentHistoryOpen(true)} className="flex items-center gap-2 px-4 py-2.5 border border-white/10 text-white text-[10px] font-semibold tracking-[3px] uppercase hover:bg-white/5 transition-all">
+            <Banknote className="w-3.5 h-3.5" />Betalingen
+          </button>
           <button onClick={() => setAutoTopUpOpen(true)} className="flex items-center gap-2 px-4 py-2.5 border border-white/10 text-white text-[10px] font-semibold tracking-[3px] uppercase hover:bg-white/5 transition-all">
             <Settings className="w-3.5 h-3.5" />Auto Top-Up
           </button>
@@ -318,15 +356,15 @@ export default function WalletPage() {
         </DialogContent>
       </Dialog>
 
-      {/* Bundle selection dialog */}
+      {/* Bundle selection dialog with iDEAL/card choice */}
       <Dialog open={bundleDialogOpen} onOpenChange={setBundleDialogOpen}>
         <DialogContent className="bg-[#111] border-white/[0.06] sm:max-w-md">
           <DialogHeader>
-            <DialogTitle className="font-light text-lg">Choose credit bundle</DialogTitle>
+            <DialogTitle className="font-light text-lg">Credits opwaarderen</DialogTitle>
           </DialogHeader>
-          <p className="text-[13px] text-[#888] font-light">Select a bundle and pay securely with Stripe.</p>
+          <p className="text-[13px] text-[#888] font-light">Kies een bundel en betaal veilig via Stripe.</p>
           {bundles.length === 0 ? (
-            <div className="text-center py-8 text-[#888]">No bundles available</div>
+            <div className="text-center py-8 text-[#888]">Geen bundels beschikbaar</div>
           ) : (
             <div className="space-y-2">
               {bundles.map((bundle: any) => (
@@ -347,26 +385,103 @@ export default function WalletPage() {
                         <p className="text-[10px] text-[#888] mt-2">{bundle.description}</p>
                       )}
                     </div>
-                    <p className="font-semibold text-[#627653]">€{bundle.priceEur}</p>
+                    <p className="font-semibold text-[#627653]">&euro;{bundle.priceEur}</p>
                   </div>
                 </button>
               ))}
             </div>
           )}
+
+          {/* Payment method selection */}
+          {stripeStatus?.configured && (
+            <div className="mt-2">
+              <div className="text-[10px] text-[#888] tracking-[2px] uppercase font-medium mb-2">Betaalmethode</div>
+              <div className="grid grid-cols-2 gap-2">
+                <button
+                  onClick={() => setPaymentMethod("ideal")}
+                  className={`p-3 border text-left transition-all flex items-center gap-2 ${
+                    paymentMethod === "ideal"
+                      ? "border-[#627653] bg-[#627653]/10"
+                      : "border-white/[0.06] hover:border-white/20"
+                  }`}
+                >
+                  <Banknote className="w-4 h-4 text-[#cc6699]" />
+                  <div>
+                    <p className="text-sm font-medium">iDEAL</p>
+                    <p className="text-[10px] text-[#888]">Nederlandse banken</p>
+                  </div>
+                </button>
+                <button
+                  onClick={() => setPaymentMethod("card")}
+                  className={`p-3 border text-left transition-all flex items-center gap-2 ${
+                    paymentMethod === "card"
+                      ? "border-[#627653] bg-[#627653]/10"
+                      : "border-white/[0.06] hover:border-white/20"
+                  }`}
+                >
+                  <CreditCard className="w-4 h-4 text-[#4a7c8a]" />
+                  <div>
+                    <p className="text-sm font-medium">Creditcard</p>
+                    <p className="text-[10px] text-[#888]">Visa, Mastercard</p>
+                  </div>
+                </button>
+              </div>
+            </div>
+          )}
+
           <DialogFooter>
-            <Button variant="outline" onClick={() => setBundleDialogOpen(false)} className="border-white/10 bg-transparent">Cancel</Button>
+            <Button variant="outline" onClick={() => setBundleDialogOpen(false)} className="border-white/10 bg-transparent">Annuleren</Button>
             <Button
               disabled={!selectedBundle || checkoutMutation.isPending}
               onClick={() => {
                 if (selectedBundle) {
-                  checkoutMutation.mutate({ bundleId: selectedBundle.id });
+                  checkoutMutation.mutate({ bundleId: selectedBundle.id, paymentMethod });
                 }
               }}
               className="bg-[#627653] text-white hover:bg-[#4a5a3f]"
             >
-              {checkoutMutation.isPending ? "Processing..." : "Proceed to payment"}
+              {checkoutMutation.isPending ? "Bezig..." : "Afrekenen"}
             </Button>
           </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      {/* Payment history dialog */}
+      <Dialog open={paymentHistoryOpen} onOpenChange={setPaymentHistoryOpen}>
+        <DialogContent className="bg-[#111] border-white/[0.06] sm:max-w-md">
+          <DialogHeader>
+            <DialogTitle className="font-light text-lg">Betaalgeschiedenis</DialogTitle>
+          </DialogHeader>
+          {paymentHistory.length === 0 ? (
+            <div className="text-center py-8 text-[#888]">
+              <CreditCard className="w-6 h-6 mx-auto mb-2 opacity-30" />
+              <p className="text-sm font-light">Nog geen betalingen</p>
+            </div>
+          ) : (
+            <div className="space-y-0 max-h-80 overflow-y-auto">
+              {paymentHistory.map((tx: any) => {
+                const statusColor = tx.status === "completed" ? "text-[#627653]" : tx.status === "failed" ? "text-red-400" : "text-amber-400";
+                const statusLabel = tx.status === "completed" ? "Betaald" : tx.status === "failed" ? "Mislukt" : "In behandeling";
+                return (
+                  <div key={tx.id} className="flex items-center justify-between py-3 border-b border-white/[0.03] last:border-0">
+                    <div className="flex items-center gap-3">
+                      <div className="w-8 h-8 rounded flex items-center justify-center bg-[#627653]/10">
+                        {tx.status === "completed" ? <CheckCircle2 className="w-3.5 h-3.5 text-[#627653]" /> : <Clock className="w-3.5 h-3.5 text-amber-400" />}
+                      </div>
+                      <div>
+                        <p className="text-sm font-light">{tx.description || `Top-up ${tx.creditsAdded}c`}</p>
+                        <p className="text-[11px] text-[#888]">&euro;{parseFloat(tx.amount).toFixed(2)}</p>
+                      </div>
+                    </div>
+                    <div className="text-right">
+                      <p className={`text-[11px] font-medium ${statusColor}`}>{statusLabel}</p>
+                      <p className="text-[11px] text-[#888]">{new Date(tx.createdAt).toLocaleDateString("nl-NL", { day: "numeric", month: "short", year: "numeric" })}</p>
+                    </div>
+                  </div>
+                );
+              })}
+            </div>
+          )}
         </DialogContent>
       </Dialog>
     </div>

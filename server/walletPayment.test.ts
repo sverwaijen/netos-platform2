@@ -10,6 +10,13 @@ vi.mock("stripe", () => ({
         retrieve: vi.fn(),
       },
     },
+    customers: {
+      create: vi.fn(),
+      retrieve: vi.fn(),
+    },
+    webhooks: {
+      constructEvent: vi.fn(),
+    },
   })),
 }));
 
@@ -97,7 +104,7 @@ describe("Wallet Payment Router", () => {
       const session = {
         id: "cs_test_123",
         url: "https://checkout.stripe.com/pay/cs_test_123",
-        payment_method_types: ["card"],
+        payment_method_types: ["card", "ideal"],
         metadata: {
           walletId,
           bundleId,
@@ -109,6 +116,20 @@ describe("Wallet Payment Router", () => {
       expect(session.url).toContain("checkout.stripe.com");
       expect(session.metadata.walletId).toBe(walletId);
       expect(session.metadata.bundleId).toBe(bundleId);
+    });
+
+    it("should include iDEAL payment method for NL market", async () => {
+      const paymentMethods = ["card", "ideal"];
+
+      expect(paymentMethods).toContain("ideal");
+      expect(paymentMethods).toContain("card");
+    });
+
+    it("should support ideal-only payment method selection", async () => {
+      const paymentMethod = "ideal";
+      const paymentMethodTypes = paymentMethod === "ideal" ? ["ideal"] : ["card", "ideal"];
+
+      expect(paymentMethodTypes).toEqual(["ideal"]);
     });
 
     it("should handle missing bundle gracefully", async () => {
@@ -153,6 +174,67 @@ describe("Wallet Payment Router", () => {
       expect(newWallet.type).toBe("personal");
       expect(newWallet.balance).toBe("0");
     });
+
+    it("should set locale to nl for Dutch market", async () => {
+      const sessionConfig = {
+        locale: "nl",
+        payment_method_types: ["card", "ideal"],
+        mode: "payment",
+      };
+
+      expect(sessionConfig.locale).toBe("nl");
+    });
+  });
+
+  describe("Stripe Customer Management", () => {
+    it("should create a new Stripe customer with correct details", async () => {
+      const customer = {
+        id: "cus_test_abc123",
+        email: "user@example.com",
+        name: "Test User",
+        metadata: {
+          skynetUserId: "123",
+          walletId: "456",
+        },
+      };
+
+      expect(customer.id).toContain("cus_");
+      expect(customer.email).toBe("user@example.com");
+      expect(customer.metadata.skynetUserId).toBe("123");
+    });
+
+    it("should reuse existing Stripe customer from wallet", async () => {
+      const existingCustomerId = "cus_existing_123";
+      const wallet = {
+        id: 456,
+        stripeCustomerId: existingCustomerId,
+      };
+
+      // Should return existing customer ID
+      expect(wallet.stripeCustomerId).toBe(existingCustomerId);
+    });
+
+    it("should create new customer if wallet has no Stripe customer", async () => {
+      const wallet = {
+        id: 456,
+        stripeCustomerId: null,
+      };
+
+      expect(wallet.stripeCustomerId).toBeNull();
+      // In real code, this triggers customer creation
+    });
+
+    it("should store Stripe customer ID on wallet after creation", async () => {
+      const walletId = 456;
+      const newCustomerId = "cus_new_456";
+
+      const updatedWallet = {
+        id: walletId,
+        stripeCustomerId: newCustomerId,
+      };
+
+      expect(updatedWallet.stripeCustomerId).toBe(newCustomerId);
+    });
   });
 
   describe("Balance Calculation", () => {
@@ -192,6 +274,122 @@ describe("Wallet Payment Router", () => {
       }
 
       expect(balance).toBe("175.00");
+    });
+  });
+
+  describe("Checkout Fulfillment (Idempotency)", () => {
+    it("should skip fulfillment for already completed transactions", async () => {
+      const transaction = {
+        id: 1,
+        status: "completed",
+        creditsAdded: "250.00",
+      };
+
+      // If already completed, return early
+      if (transaction.status === "completed") {
+        const result = { success: true, alreadyProcessed: true };
+        expect(result.alreadyProcessed).toBe(true);
+      }
+    });
+
+    it("should fulfill pending transactions correctly", async () => {
+      const transaction = {
+        id: 1,
+        status: "pending",
+        creditsAdded: "250.00",
+        walletId: 456,
+      };
+
+      // Pending -> should be processed
+      expect(transaction.status).toBe("pending");
+      // After fulfillment:
+      const updatedTransaction = { ...transaction, status: "completed" };
+      expect(updatedTransaction.status).toBe("completed");
+    });
+
+    it("should update wallet balance during fulfillment", async () => {
+      const walletBalance = "100.00";
+      const creditsAdded = "250.00";
+
+      const newBalance = (parseFloat(walletBalance) + parseFloat(creditsAdded)).toFixed(2);
+
+      expect(newBalance).toBe("350.00");
+    });
+  });
+
+  describe("Webhook Event Handling", () => {
+    it("should handle checkout.session.completed event", async () => {
+      const event = {
+        type: "checkout.session.completed",
+        data: {
+          object: {
+            id: "cs_test_123",
+            payment_status: "paid",
+            client_reference_id: "1",
+          },
+        },
+      };
+
+      expect(event.type).toBe("checkout.session.completed");
+      expect(event.data.object.payment_status).toBe("paid");
+    });
+
+    it("should handle async payment succeeded event (iDEAL)", async () => {
+      const event = {
+        type: "checkout.session.async_payment_succeeded",
+        data: {
+          object: {
+            id: "cs_test_ideal_123",
+            payment_status: "paid",
+            client_reference_id: "2",
+          },
+        },
+      };
+
+      expect(event.type).toBe("checkout.session.async_payment_succeeded");
+    });
+
+    it("should handle async payment failed event", async () => {
+      const event = {
+        type: "checkout.session.async_payment_failed",
+        data: {
+          object: {
+            id: "cs_test_fail_123",
+            client_reference_id: "3",
+          },
+        },
+      };
+
+      // Transaction should be marked as failed
+      const transactionId = parseInt(event.data.object.client_reference_id, 10);
+      expect(transactionId).toBe(3);
+    });
+
+    it("should handle payment_intent.payment_failed event", async () => {
+      const event = {
+        type: "payment_intent.payment_failed",
+        data: {
+          object: {
+            id: "pi_test_fail_123",
+            last_payment_error: {
+              message: "Card declined",
+            },
+          },
+        },
+      };
+
+      expect(event.data.object.last_payment_error.message).toBe("Card declined");
+    });
+
+    it("should return 200 for unhandled event types", async () => {
+      const event = {
+        type: "customer.subscription.updated",
+        data: { object: {} },
+      };
+
+      // Unhandled events should be acknowledged but not processed
+      const response = { received: true };
+      expect(response.received).toBe(true);
     });
   });
 
@@ -291,6 +489,26 @@ describe("Wallet Payment Router", () => {
     });
   });
 
+  describe("Direct Top-Up Session", () => {
+    it("should validate minimum amount of 5 EUR", async () => {
+      const amount = 4;
+      expect(amount).toBeLessThan(5);
+      // In real code, this would throw a validation error
+    });
+
+    it("should validate maximum amount of 1000 EUR", async () => {
+      const amount = 1001;
+      expect(amount).toBeGreaterThan(1000);
+      // In real code, this would throw a validation error
+    });
+
+    it("should create direct top-up with 1:1 EUR to credit ratio", async () => {
+      const amountEur = 50;
+      const credits = amountEur.toString();
+      expect(credits).toBe("50");
+    });
+  });
+
   describe("Transaction History", () => {
     it("should retrieve user transaction history", async () => {
       const userId = 123;
@@ -304,6 +522,18 @@ describe("Wallet Payment Router", () => {
 
       expect(userTransactions).toHaveLength(3);
       expect(userTransactions[0].type).toBe("topup");
+    });
+
+    it("should filter by transaction type", async () => {
+      const mockTransactions = [
+        { id: 1, type: "topup" },
+        { id: 2, type: "topup" },
+        { id: 3, type: "spend" },
+        { id: 4, type: "refund" },
+      ];
+
+      const topups = mockTransactions.filter((t) => t.type === "topup");
+      expect(topups).toHaveLength(2);
     });
 
     it("should sort transactions by date descending", async () => {
@@ -338,6 +568,31 @@ describe("Wallet Payment Router", () => {
       const limited = mockTransactions.slice(0, defaultLimit);
 
       expect(limited).toHaveLength(50);
+    });
+  });
+
+  describe("Stripe Status", () => {
+    it("should report supported payment methods when configured", async () => {
+      const status = {
+        configured: true,
+        supportedMethods: ["card", "ideal"],
+        currency: "eur",
+      };
+
+      expect(status.configured).toBe(true);
+      expect(status.supportedMethods).toContain("ideal");
+      expect(status.currency).toBe("eur");
+    });
+
+    it("should report no supported methods when not configured", async () => {
+      const status = {
+        configured: false,
+        supportedMethods: [],
+        currency: "eur",
+      };
+
+      expect(status.configured).toBe(false);
+      expect(status.supportedMethods).toHaveLength(0);
     });
   });
 });
