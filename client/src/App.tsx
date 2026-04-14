@@ -47,6 +47,7 @@ import AppSupport from "./pages/app/AppSupport";
 import AppParking from "./pages/app/AppParking";
 import ParkingVisitor from "./pages/app/ParkingVisitor";
 import SignageDisplay from "./pages/SignageDisplay";
+import WayfindingDisplay from "./pages/WayfindingDisplay";
 import MenuDashboard from "./pages/MenuDashboard";
 import KitchenPrepDisplay from "./pages/KitchenPrepDisplay";
 import UserRolesPage from "./pages/UserRolesPage";
@@ -114,6 +115,7 @@ function Router() {
       <Route path="/butler">{() => <ButlerKiosk />}</Route>
       <Route path="/kiosk/display" component={KioskDisplay} />
       <Route path="/signage/display" component={SignageDisplay} />
+      <Route path="/wayfinding" component={WayfindingDisplay} />
       {/* Public parking visitor page */}
       <Route path="/parking/visitor/:qrToken" component={ParkingVisitor} />
       <Route path="/kitchen/prep" component={KitchenPrepDisplay} />
