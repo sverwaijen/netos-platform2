@@ -154,6 +154,7 @@ const navCategories: NavCategory[] = [
       { icon: Ticket, label: "Operations", path: "/operations", permission: "operations.view" },
       { icon: Car, label: "Parking", path: "/parking", permission: "parking.view" },
       { icon: Coffee, label: "Butler Kiosk", path: "/butler/admin", permission: "butler.view" },
+      { icon: Users, label: "Visitor Parking", path: "/parking/visitors", permission: "parking.manage" },
       { icon: ChefHat, label: "Menukaart", path: "/menu", permission: "menu.view" },
       { icon: Monitor, label: "Signage", path: "/signing", permission: "signage.view" },
     ],

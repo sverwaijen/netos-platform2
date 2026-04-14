@@ -54,6 +54,7 @@ import BudgetControlsPage from "./pages/BudgetControlsPage";
 import CommitContractsPage from "./pages/CommitContractsPage";
 import CreditAdminDashboard from "./pages/CreditAdminDashboard";
 
+import VisitorParkingAdmin from "./pages/VisitorParkingAdmin";
 function WrappedPage({ component: Component }: { component: React.ComponentType }) {
   return (
     <DashboardLayout>
@@ -102,6 +103,7 @@ function Router() {
       <Route path="/resources">{() => <WrappedPage component={ResourceManagement} />}</Route>
       <Route path="/butler/admin">{() => <WrappedPage component={ButlerAdmin} />}</Route>
       <Route path="/parking">{() => <WrappedPage component={ParkingAdmin} />}</Route>
+      <Route path="/parking/visitors">{() => <WrappedPage component={VisitorParkingAdmin} />}</Route>
       <Route path="/operations">{() => <WrappedPage component={OperationsDashboard} />}</Route>
       <Route path="/room-control">{() => <WrappedPage component={RoomControl} />}</Route>
       <Route path="/budget-controls">{() => <WrappedPage component={BudgetControlsPage} />}</Route>
