@@ -67,6 +67,7 @@ import {
   Shield,
   FileSignature,
   BarChart3,
+  TrendingUp,
   type LucideIcon,
 } from "lucide-react";
 import { CSSProperties, useEffect, useRef, useState } from "react";
@@ -99,6 +100,7 @@ const navCategories: NavCategory[] = [
     icon: LayoutDashboard,
     items: [
       { icon: LayoutDashboard, label: "Dashboard", path: "/dashboard", permission: "dashboard.view" },
+      { icon: TrendingUp, label: "Executive Dashboard", path: "/executive", permission: "executive.view" },
     ],
   },
   {
