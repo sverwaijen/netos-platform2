@@ -51,6 +51,7 @@ import {
 } from "./routers/creditRouter";
 import { walletPaymentRouter } from "./routers/walletPaymentRouter";
 import { visitorTrackingRouter } from "./routers/visitorTrackingRouter";
+import { accessControlRouter, parkingAccessControlRouter } from "./routers/accessControlRouter";
 
 // TODO: #36 - No Database Transactions
 // Critical mutations involve multiple DB writes (bookings, wallet updates, etc.)
@@ -1002,6 +1003,9 @@ Return JSON with "subject" and "body" fields. The body should be HTML formatted.
   parkingAccess: parkingAccessRouter,
   parkingVisitorPermits: parkingVisitorPermitsRouter,
   parkingSla: parkingSlaRouter,
+  // ─── Access Control (Salto KS) ───
+  accessControl: accessControlRouter,
+  parkingAccessControl: parkingAccessControlRouter,
   // ─── Operations ───
   tickets: ticketsRouter,
   cannedResponses: cannedResponsesRouter,
