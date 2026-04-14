@@ -53,6 +53,7 @@ import UserRolesPage from "./pages/UserRolesPage";
 import BudgetControlsPage from "./pages/BudgetControlsPage";
 import CommitContractsPage from "./pages/CommitContractsPage";
 import CreditAdminDashboard from "./pages/CreditAdminDashboard";
+import GuestCheckin from "./pages/GuestCheckin";
 
 function WrappedPage({ component: Component }: { component: React.ComponentType }) {
   return (
@@ -110,6 +111,7 @@ function Router() {
       <Route path="/menu">{() => <WrappedPage component={MenuDashboard} />}</Route>
       {/* Standalone kiosk routes */}
       <Route path="/butler">{() => <ButlerKiosk />}</Route>
+      <Route path="/guest/checkin" component={GuestCheckin} />
       <Route path="/kiosk/display" component={KioskDisplay} />
       <Route path="/signage/display" component={SignageDisplay} />
       {/* Public parking visitor page */}
