@@ -47,6 +47,7 @@ import AppSupport from "./pages/app/AppSupport";
 import AppParking from "./pages/app/AppParking";
 import ParkingVisitor from "./pages/app/ParkingVisitor";
 import SignageDisplay from "./pages/SignageDisplay";
+import WayfindingDisplay from "./pages/WayfindingDisplay";
 import MenuDashboard from "./pages/MenuDashboard";
 import KitchenPrepDisplay from "./pages/KitchenPrepDisplay";
 import UserRolesPage from "./pages/UserRolesPage";
@@ -57,6 +58,7 @@ import CommunityEvents from "./pages/CommunityEvents";
 import NotificationPreferences from "./pages/NotificationPreferences";
 import CateringBooking from "./pages/CateringBooking";
 
+import VisitorParkingAdmin from "./pages/VisitorParkingAdmin";
 function WrappedPage({ component: Component }: { component: React.ComponentType }) {
   return (
     <DashboardLayout>
@@ -108,6 +110,7 @@ function Router() {
       <Route path="/resources">{() => <WrappedPage component={ResourceManagement} />}</Route>
       <Route path="/butler/admin">{() => <WrappedPage component={ButlerAdmin} />}</Route>
       <Route path="/parking">{() => <WrappedPage component={ParkingAdmin} />}</Route>
+      <Route path="/parking/visitors">{() => <WrappedPage component={VisitorParkingAdmin} />}</Route>
       <Route path="/operations">{() => <WrappedPage component={OperationsDashboard} />}</Route>
       <Route path="/room-control">{() => <WrappedPage component={RoomControl} />}</Route>
       <Route path="/budget-controls">{() => <WrappedPage component={BudgetControlsPage} />}</Route>
@@ -118,6 +121,7 @@ function Router() {
       <Route path="/butler">{() => <ButlerKiosk />}</Route>
       <Route path="/kiosk/display" component={KioskDisplay} />
       <Route path="/signage/display" component={SignageDisplay} />
+      <Route path="/wayfinding" component={WayfindingDisplay} />
       {/* Public parking visitor page */}
       <Route path="/parking/visitor/:qrToken" component={ParkingVisitor} />
       <Route path="/kitchen/prep" component={KitchenPrepDisplay} />
