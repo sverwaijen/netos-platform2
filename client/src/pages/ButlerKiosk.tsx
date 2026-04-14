@@ -1,5 +1,5 @@
 import { trpc } from "@/lib/trpc";
-import { useState, useMemo, useRef } from "react";
+import { useState, useMemo, useRef, useCallback } from "react";
 import { useAuth } from "@/_core/hooks/useAuth";
 import {
   Coffee, ShoppingCart, CreditCard, Wallet, Building2, X, Plus, Minus,
@@ -41,12 +41,13 @@ export default function ButlerKiosk() {
   const [showQRScanner, setShowQRScanner] = useState(false);
   const [qrInput, setQrInput] = useState("");
   const [scannedMember, setScannedMember] = useState<MemberInfo | null>(null);
+  const [qrScanMode, setQrScanMode] = useState(false);
+  const [isScanning, setIsScanning] = useState(false);
   const qrInputRef = useRef<HTMLInputElement>(null);
 
   const { data: categories } = trpc.products.categories.useQuery();
   const { data: allProducts } = trpc.products.list.useQuery({});
   const createOrder = trpc.kioskOrders.create.useMutation();
-  const verifyQR = trpc.kioskQr.verifyMemberQR.useMutation();
   const createOrderWithMember = trpc.kioskQr.createOrderWithMember.useMutation();
 
   const filteredProducts = useMemo(() => {
@@ -99,19 +100,21 @@ export default function ButlerKiosk() {
     try {
       // If using member QR, use special endpoint
       if (scannedMember && method === "personal_credits") {
+        const token = qrInput.includes("/") ? qrInput.split("/").pop() || "" : qrInput;
         const result = await createOrderWithMember.mutateAsync({
+          token,
           locationId: 1,
-          qrData: `${scannedMember.userId}:${qrInput}`,
-          paymentMethod: method,
           items: cart.map((i) => ({ productId: i.productId, quantity: i.quantity })),
         });
-        setLastOrder({ orderNumber: result.orderNumber, totalCredits: result.totalCredits, totalEur: result.totalEur });
-        setCart([]);
-        setShowPayment(false);
-        setShowSuccess(true);
-        setScannedMember(null);
-        setQrInput("");
-        setTimeout(() => setShowSuccess(false), 5000);
+        if (result.success && result.order) {
+          setLastOrder({ orderNumber: result.order.orderNumber, totalCredits: result.order.totalCredits, totalEur: result.order.totalEur });
+          setCart([]);
+          setShowPayment(false);
+          setShowSuccess(true);
+          setScannedMember(null);
+          setQrInput("");
+          setTimeout(() => setShowSuccess(false), 5000);
+        }
       } else {
         const result = await createOrder.mutateAsync({
           locationId: 1,
@@ -137,55 +140,41 @@ export default function ButlerKiosk() {
     }
   };
 
-  const handleQRScan = async (qrData: string) => {
-    try {
-      const member = await verifyQR.mutateAsync({ qrData });
-      setScannedMember({
-        userId: member.userId,
-        name: member.name,
-        email: member.email,
-        phone: member.phone,
-        walletBalance: member.walletBalance,
-        walletId: member.walletId,
-      });
-      setQrInput(qrData);
-      setShowQRScanner(false);
-      toast.success(`Welcome, ${member.name}!`);
-    } catch (err: unknown) {
-      const msg = err instanceof Error ? err.message : "QR scan failed";
-      toast.error(msg);
-      setQrInput("");
-    }
-  };
-
   const handleQRScan = async () => {
     if (!qrInput.trim()) return;
 
+    setIsScanning(true);
     try {
       // Extract token from QR code (format: kiosk://member/TOKEN or just TOKEN)
       const token = qrInput.includes("/") ? qrInput.split("/").pop() : qrInput;
       if (!token) {
         toast.error("Invalid QR code format");
+        setIsScanning(false);
         return;
       }
 
-      const result = await verifyQR.mutateAsync({ token });
+      // Verify token by querying with trpc client
+      const utils = trpc.useUtils();
+      const result = await utils.client.kioskQr.verifyMemberQR.query({ token });
+
       if (result.success && result.user && result.wallet) {
         setScannedMember({
-          id: result.user.id,
+          userId: result.user.id,
           name: result.user.name,
-          email: result.user.email,
-          avatarUrl: result.user.avatarUrl,
-          balance: result.wallet.balance,
+          email: result.user.email || undefined,
+          avatarUrl: result.user.avatarUrl || undefined,
+          walletBalance: parseFloat(result.wallet.balance),
         });
         setQrInput("");
       } else {
-        toast.error(result.reason || "Invalid QR code");
+        toast.error((result as any).reason || "Invalid QR code");
         setQrInput("");
       }
     } catch (err: unknown) {
       toast.error(err instanceof Error ? err.message : "QR scan failed");
       setQrInput("");
+    } finally {
+      setIsScanning(false);
     }
   };
 
@@ -193,14 +182,14 @@ export default function ButlerKiosk() {
     if (!scannedMember || cart.length === 0) return;
 
     try {
-      const token = qrInput || scannedMember.name; // Would need actual token stored
+      const token = qrInput.includes("/") ? qrInput.split("/").pop() || "" : qrInput;
       const result = await createOrderWithMember.mutateAsync({
-        token: qrInput.includes("/") ? qrInput.split("/").pop() || "" : qrInput,
+        token,
         locationId: 1,
         items: cart.map((i) => ({ productId: i.productId, quantity: i.quantity })),
       });
 
-      if (result.success) {
+      if (result.success && result.order) {
         setLastOrder({
           orderNumber: result.order.orderNumber,
           totalCredits: result.order.totalCredits,
@@ -212,7 +201,7 @@ export default function ButlerKiosk() {
         setShowSuccess(true);
         setTimeout(() => setShowSuccess(false), 5000);
       } else {
-        toast.error(result.reason || "Order failed");
+        toast.error((result as any).reason || "Order failed");
       }
     } catch (err: unknown) {
       toast.error(err instanceof Error ? err.message : "Payment failed");
@@ -290,10 +279,10 @@ export default function ButlerKiosk() {
 
               <button
                 onClick={handleQRScan}
-                disabled={verifyQR.isPending || !qrInput.trim()}
+                disabled={isScanning || !qrInput.trim()}
                 className="w-full px-6 py-3 bg-[#627653] text-white rounded-lg font-medium hover:bg-[#4a5a3f] disabled:opacity-50 transition-all"
               >
-                {verifyQR.isPending ? "Scanning..." : "Scan"}
+                {isScanning ? "Scanning..." : "Scan"}
               </button>
             </div>
           ) : (
@@ -481,7 +470,7 @@ export default function ButlerKiosk() {
               onChange={(e) => setQrInput(e.target.value)}
               onKeyDown={(e) => {
                 if (e.key === "Enter" && qrInput) {
-                  handleQRScan(qrInput);
+                  handleQRScan();
                 }
               }}
               autoFocus
@@ -511,7 +500,7 @@ export default function ButlerKiosk() {
             </div>
             <div className="bg-white/[0.02] rounded-lg p-2">
               <p className="text-xs text-white/50 mb-1">Wallet Balance</p>
-              <p className="text-[#627653] font-semibold">{scannedMember.walletBalance.toFixed(2)} credits</p>
+              <p className="text-[#627653] font-semibold">{scannedMember.walletBalance?.toFixed(2) || "0.00"} credits</p>
             </div>
           </div>
         )}
@@ -619,7 +608,7 @@ export default function ButlerKiosk() {
                     <User className="w-5 h-5 text-[#627653]" />
                     <div className="text-left flex-1">
                       <p className="font-medium">{scannedMember.name}</p>
-                      <p className="text-xs text-white/40">{scannedMember.walletBalance.toFixed(2)}c available</p>
+                      <p className="text-xs text-white/40">{scannedMember.walletBalance?.toFixed(2) || "0.00"}c available</p>
                     </div>
                   </button>
                 )}

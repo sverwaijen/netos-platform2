@@ -26,23 +26,28 @@ export default function KitchenPrepDisplay() {
     refetchInterval: 120000,
   });
 
-  const { data: selectedPrep } = trpc.menuPreparations.byItem.useQuery(
+  const { data: selectedPrepRaw } = trpc.menuPreparations.byItem.useQuery(
     { menuItemId: selectedItemId! },
     { enabled: !!selectedItemId }
   );
 
+  // Enrich selectedPrepRaw with item data from preparations list
+  const selectedPrep = selectedPrepRaw && preparations
+    ? preparations.find(p => p.id === selectedPrepRaw.id)
+    : selectedPrepRaw as any;
+
   // Real-time orders polling every 3 seconds
-  const { data: activeOrders, refetch: refetchOrders } = trpc.kioskOrder.getActiveOrders.useQuery(
+  const { data: activeOrders, refetch: refetchOrders } = trpc.kioskOrders.getActiveOrders.useQuery(
     { locationId },
     { refetchInterval: 3000 }
   );
 
-  const { data: orderStats } = trpc.kioskOrder.getOrderStats.useQuery(
+  const { data: orderStats } = trpc.kioskOrders.getOrderStats.useQuery(
     { locationId },
     { refetchInterval: 5000 }
   );
 
-  const updateKitchenStatus = trpc.kioskOrder.updateKitchenStatus.useMutation({
+  const updateKitchenStatus = trpc.kioskOrders.updateKitchenStatus.useMutation({
     onSuccess: () => {
       refetchOrders();
     },
@@ -162,9 +167,9 @@ export default function KitchenPrepDisplay() {
             <span className="text-lg">Terug</span>
           </button>
           <div className="text-center">
-            <h1 className="text-3xl font-light text-white">{(selectedPrep as any).itemName || "Bereiding"}</h1>
-            {(selectedPrep as any).itemSubtitle && (
-              <p className="text-sm text-white/30 mt-1">{(selectedPrep as any).itemSubtitle}</p>
+            <h1 className="text-3xl font-light text-white">{selectedPrep.itemName || "Bereiding"}</h1>
+            {selectedPrep.itemSubtitle && (
+              <p className="text-sm text-white/30 mt-1">{selectedPrep.itemSubtitle}</p>
             )}
           </div>
           <div className="flex items-center gap-4">
@@ -271,7 +276,7 @@ export default function KitchenPrepDisplay() {
             <h2 className="text-lg font-semibold text-[#dc2626]">Nieuw ({grouped.new.length})</h2>
           </div>
           <div className="flex-1 overflow-y-auto space-y-3 pr-4">
-            {grouped.new.map((order) => (
+            {grouped.new.map((order: any) => (
               <button
                 key={order.id}
                 onClick={() => bumpOrderStatus(order.id, "new")}

@@ -463,7 +463,7 @@ describe("invites", () => {
 
     const result = await caller.invites.create({
       email: "invite@example.com",
-      role: "user",
+      role: "member",
     });
 
     expect(result.success).toBe(true);
@@ -476,7 +476,7 @@ describe("invites", () => {
     const { ctx } = createAuthContext();
     const caller = appRouter.createCaller(ctx);
 
-    const created = await caller.invites.create({ email: "lookup@example.com" });
+    const created = await caller.invites.create({ email: "lookup@example.com", role: "member" });
     const invite = await appRouter.createCaller(createPublicContext()).invites.byToken({ token: created.token });
     expect(invite).toBeDefined();
   });

@@ -1,5 +1,5 @@
 import { trpc } from "@/lib/trpc";
-import { useParams } from "react-router-dom";
+import { useParams } from "wouter";
 import { QrCode, Car, Clock, CheckCircle2, XCircle, MapPin } from "lucide-react";
 
 /**
@@ -8,7 +8,8 @@ import { QrCode, Car, Clock, CheckCircle2, XCircle, MapPin } from "lucide-react"
  * Shows QR code, validity status, and parking instructions.
  */
 export default function ParkingVisitor() {
-  const { qrToken } = useParams<{ qrToken: string }>();
+  const params = useParams<{ qrToken: string }>();
+  const qrToken = params?.qrToken;
   const { data: permit, isLoading } = trpc.parkingVisitorPermits.validate.useQuery(
     { qrToken: qrToken || "" },
     { enabled: !!qrToken }

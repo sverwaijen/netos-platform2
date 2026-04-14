@@ -138,7 +138,7 @@ export const campaignRouter = router({
 
   // Track email open (called by tracking pixel)
   trackEmailOpen: publicProcedure
-    .input(z.object({ sendId: string }))
+    .input(z.object({ sendId: z.string() }))
     .mutation(async ({ input }) => {
       const db = await getDb();
       if (!db) return { success: false };
@@ -161,7 +161,7 @@ export const campaignRouter = router({
 
   // Track email click
   trackEmailClick: publicProcedure
-    .input(z.object({ sendId: string, url: z.string() }))
+    .input(z.object({ sendId: z.string(), url: z.string() }))
     .mutation(async ({ input }) => {
       const db = await getDb();
       if (!db) return { success: false, redirectUrl: input.url };

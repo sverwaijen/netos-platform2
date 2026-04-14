@@ -22,7 +22,7 @@ export default function AppBookingNew() {
   const [notes, setNotes] = useState("");
 
   const { data: locations = [] } = trpc.locations.list.useQuery();
-  const { data: resources = [] } = trpc.resources.list.useQuery(
+  const { data: resources = [] } = trpc.resources.byLocation.useQuery(
     { locationId: selectedLocation! },
     { enabled: !!selectedLocation && step === "resource" }
   );
@@ -108,7 +108,7 @@ export default function AppBookingNew() {
         <div>
           <h2 className="text-white/60 text-xs tracking-[0.15em] uppercase font-medium mb-3">Kies een locatie</h2>
           <div className="space-y-2">
-            {locations.map(location => (
+            {locations.map((location: any) => (
               <button
                 key={location.id}
                 onClick={() => {
@@ -152,12 +152,12 @@ export default function AppBookingNew() {
           <h2 className="text-white/60 text-xs tracking-[0.15em] uppercase font-medium mb-3">Beschikbare Ruimtes</h2>
           <div className="space-y-2">
             {resources
-              .filter(r => r.isActive)
-              .sort((a, b) => {
+              .filter((r: any) => r.isActive)
+              .sort((a: any, b: any) => {
                 const typeOrder = ["desk", "meeting_room", "private_office", "phone_booth"];
                 return typeOrder.indexOf(a.type) - typeOrder.indexOf(b.type);
               })
-              .map(resource => (
+              .map((resource: any) => (
                 <button
                   key={resource.id}
                   onClick={() => {

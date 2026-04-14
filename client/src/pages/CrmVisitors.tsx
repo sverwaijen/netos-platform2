@@ -160,7 +160,7 @@ export default function CrmVisitors() {
               </div>
 
               {/* AI Analysis Result */}
-              {analysisResult && analyzingId === null && analyzeMut.variables?.id === visitor.id && (
+              {analysisResult && analyzingId === null && analyzeMut.variables?.id === (visitor as any).id && (
                 <div className="mt-4 pt-4 border-t border-zinc-800">
                   <h4 className="text-sm font-medium text-white flex items-center gap-2 mb-3">
                     <Brain className="h-4 w-4 text-green-400" /> AI Analyse Resultaat

@@ -1,5 +1,5 @@
 import { z } from "zod";
-import { eq, and } from "drizzle-orm";
+import { eq, and, inArray } from "drizzle-orm";
 import { publicProcedure, protectedProcedure, router } from "../_core/trpc";
 import { getDb } from "../db";
 import {
@@ -72,7 +72,7 @@ export const kioskQrRouter = router({
         .from(wallets)
         .where(
           and(
-            eq(wallets.userId, user.id),
+            eq(wallets.ownerId, user.id),
             eq(wallets.type, "personal")
           )
         )
@@ -140,7 +140,7 @@ export const kioskQrRouter = router({
         .from(wallets)
         .where(
           and(
-            eq(wallets.userId, user.id),
+            eq(wallets.ownerId, user.id),
             eq(wallets.type, "personal")
           )
         )
@@ -162,7 +162,7 @@ export const kioskQrRouter = router({
         .select()
         .from(products)
         .where(
-          products.id.inArray(productIds)
+          inArray(products.id, productIds)
         );
 
       // Build product map
@@ -196,14 +196,14 @@ export const kioskQrRouter = router({
       // Create order
       const orderNumber = `ORD-${nanoid(8).toUpperCase()}`;
 
-      const insertResult = await db.insert(kioskOrders).values({
+      const [insertResult] = await db.insert(kioskOrders).values({
         locationId: input.locationId,
         userId: user.id,
         orderNumber,
         totalCredits,
         totalEur,
         status: "completed",
-        paymentMethod: "wallet",
+        paymentMethod: "personal_credits",
       });
 
       const orderId = insertResult.insertId;
@@ -212,12 +212,17 @@ export const kioskQrRouter = router({
       for (const item of input.items) {
         const product = productMap.get(item.productId);
         if (product) {
+          const itemCredits = parseFloat(product.priceCredits as string) * item.quantity;
+          const itemEur = parseFloat(product.priceEur as string) * item.quantity;
           await db.insert(kioskOrderItems).values({
             orderId: Number(orderId),
             productId: item.productId,
+            productName: product.name,
             quantity: item.quantity,
-            priceCreditsEach: product.priceCredits as string,
-            priceEurEach: product.priceEur as string,
+            unitPriceCredits: product.priceCredits as string,
+            unitPriceEur: product.priceEur as string,
+            totalCredits: itemCredits.toString(),
+            totalEur: itemEur.toString(),
           });
         }
       }
@@ -231,7 +236,7 @@ export const kioskQrRouter = router({
       // Create ledger entry
       await db.insert(creditLedger).values({
         walletId: wallet.id,
-        type: "debit",
+        type: "spend",
         amount: totalCredits,
         balanceAfter: newBalance,
         description: `Kiosk order: ${orderNumber}`,

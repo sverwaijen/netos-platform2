@@ -1673,13 +1673,13 @@ export async function getBundleBySlug(slug: string) {
   return result[0];
 }
 
-export async function createBundle(data: Partial<InsertCreditBundle> & { name: string; slug: string; creditsPerMonth: number; priceEur: string }) {
+export async function createBundle(data: Partial<InsertCreditBonus> & { name: string; slug: string; creditsPerMonth: number; priceEur: string }) {
   const db = await getDb();
   if (!db) return;
   await db.insert(creditBundles).values(data as any);
 }
 
-export async function updateBundle(id: number, data: Partial<InsertCreditBundle>) {
+export async function updateBundle(id: number, data: Partial<InsertCreditBonus>) {
   const db = await getDb();
   if (!db) return;
   const updateSet: Record<string, unknown> = {};

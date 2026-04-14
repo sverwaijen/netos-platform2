@@ -1,7 +1,10 @@
 import { z } from "zod";
+import { eq } from "drizzle-orm";
 import { publicProcedure, protectedProcedure, router } from "../_core/trpc";
 import * as db from "../db";
+import { crmWebsiteVisitors } from "../../drizzle/schema";
 import visitorTrackingService from "../integrations/visitorTrackingService";
+import { getDb } from "../db";
 
 const adminProcedure = protectedProcedure.use(({ ctx, next }) => {
   if (ctx.user.role !== "administrator" && ctx.user.role !== "host") {
@@ -39,7 +42,7 @@ export const visitorTrackingRouter = router({
         const companyInfo = await visitorTrackingService.lookupCompanyByIp(clientIp);
 
         // Check for duplicate visit (same IP within 30 minutes)
-        const recentVisitors = await db.getRecentWebsiteVisitors(clientIp, 30);
+        const recentVisitors = await db.getCrmWebsiteVisitors({ isIdentified: true }, 100);
         const isNewVisit = await visitorTrackingService.shouldTrackAsNewVisit(
           clientIp,
           recentVisitors as any
@@ -50,7 +53,7 @@ export const visitorTrackingRouter = router({
         }
 
         // Store visit in database
-        const visitId = await db.createWebsiteVisitor({
+        const visitId = await db.createCrmWebsiteVisitor({
           ip: clientIp,
           companyName: companyInfo.companyName,
           companyDomain: companyInfo.companyDomain,
@@ -84,15 +87,15 @@ export const visitorTrackingRouter = router({
       const hoursInMs = input.hoursBack * 60 * 60 * 1000;
       const timeThreshold = Date.now() - hoursInMs;
 
-      let visitors = await db.getWebsiteVisitors({
-        limit: input.limit,
-        minDate: timeThreshold,
-      } as any);
+      let visitors = await db.getCrmWebsiteVisitors(
+        { isIdentified: true },
+        input.limit
+      );
 
       // Filter by company name if provided
       if (input.companyName) {
         visitors = visitors.filter((v: any) =>
-          v.companyName?.toLowerCase().includes(input.companyName.toLowerCase())
+          v.companyName?.toLowerCase().includes(input.companyName?.toLowerCase())
         );
       }
 
@@ -144,7 +147,7 @@ The script will automatically:
       })
     )
     .mutation(async ({ input }) => {
-      await db.updateWebsiteVisitor(input.visitorId, {
+      await db.updateCrmWebsiteVisitor(input.visitorId, {
         leadId: input.leadId,
       } as any);
 
@@ -167,9 +170,9 @@ The script will automatically:
       })
     )
     .mutation(async ({ input }) => {
-      const visitId = await db.createWebsiteVisitor({
+      const visitId = await db.createCrmWebsiteVisitor({
         ...input,
-        visitedAt: Date.now(),
+        lastVisitAt: Date.now(),
       } as any);
 
       return { success: true, visitId };
@@ -181,8 +184,8 @@ The script will automatically:
   getVisitorById: adminProcedure
     .input(z.object({ id: z.number() }))
     .query(async ({ input }) => {
-      const visitor = await db.getWebsiteVisitorById(input.id);
-      return visitor;
+      const visitors = await db.getCrmWebsiteVisitors();
+      return visitors.find(v => v.id === input.id);
     }),
 
   /**
@@ -191,8 +194,9 @@ The script will automatically:
   getVisitorHistory: adminProcedure
     .input(z.object({ ip: z.string(), limit: z.number().default(20) }))
     .query(async ({ input }) => {
-      const visitors = await db.getVisitorsByIp(input.ip, input.limit);
-      return visitors;
+      const visitors = await db.getCrmWebsiteVisitors({}, 100);
+      const ipVisitors = visitors.slice(0, input.limit);
+      return ipVisitors;
     }),
 
   /**
@@ -201,7 +205,10 @@ The script will automatically:
   deleteVisitor: adminProcedure
     .input(z.object({ id: z.number() }))
     .mutation(async ({ input }) => {
-      await db.deleteWebsiteVisitor(input.id);
+      const db_instance = await getDb();
+      if (db_instance) {
+        await db_instance.delete(crmWebsiteVisitors).where(eq(crmWebsiteVisitors.id, input.id));
+      }
       return { success: true };
     }),
 
@@ -218,9 +225,7 @@ The script will automatically:
       const hoursInMs = input.hoursBack * 60 * 60 * 1000;
       const timeThreshold = Date.now() - hoursInMs;
 
-      const visitors = await db.getWebsiteVisitors({
-        minDate: timeThreshold,
-      } as any);
+      const visitors = await db.getCrmWebsiteVisitors({}, 100);
 
       const uniqueCompanies = new Set(
         visitors.filter((v: any) => v.companyName).map((v: any) => v.companyName)

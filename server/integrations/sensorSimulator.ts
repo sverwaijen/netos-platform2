@@ -227,7 +227,7 @@ export class SensorSimulator {
    * Update all zone simulations with natural drift
    */
   private updateAllSimulations(): void {
-    for (const [zoneId, sim] of this.simulations.entries()) {
+    for (const [zoneId, sim] of Array.from(this.simulations.entries())) {
       this.updateZoneSimulation(sim);
     }
   }

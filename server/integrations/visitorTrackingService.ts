@@ -159,21 +159,9 @@ export class VisitorTrackingService {
         page,
         referrer: referrer || document.referrer,
         ${trackPageViews ? "userAgent: navigator.userAgent," : ""}
-        ${
-          utm.source
-            ? `utmSource: '${utm.source}',`
-            : ""
-        }
-        ${
-          utm.medium
-            ? `utmMedium: '${utm.medium}',`
-            : ""
-        }
-        ${
-          utm.campaign
-            ? `utmCampaign: '${utm.campaign}',`
-            : ""
-        }
+        ${trackPageViews ? `utmSource: utm && utm.source ? utm.source : undefined,
+        utmMedium: utm && utm.medium ? utm.medium : undefined,
+        utmCampaign: utm && utm.campaign ? utm.campaign : undefined,` : ""}
       };
 
       await fetch('/api/tracking/visit', {

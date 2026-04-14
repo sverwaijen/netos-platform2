@@ -230,7 +230,7 @@ export const creditBonusesRouter = router({
     return { success: true };
   }),
 
-  apply: protectedProcedure.input(z.object({ bonusId: z.number() })).mutation(async ({ input }) => {
+  applyBonus: protectedProcedure.input(z.object({ bonusId: z.number() })).mutation(async ({ input }) => {
     const result = await db.applyBonus(input.bonusId);
     return { success: true, ...result };
   }),

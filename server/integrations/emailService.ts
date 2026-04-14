@@ -2,7 +2,6 @@
  * Email Service Abstraction
  * Supports Resend API (primary) with fallback patterns for SendGrid
  */
-import fetch from "node-fetch";
 
 const RESEND_API_KEY = process.env.RESEND_API_KEY;
 const RESEND_BASE_URL = "https://api.resend.com";

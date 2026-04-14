@@ -91,7 +91,7 @@ export const walletPaymentRouter = router({
       let walletId = userWallets[0]?.id;
       if (!walletId) {
         // Create a personal wallet if it doesn't exist
-        const result = await db
+        const [result] = await db
           .insert(wallets)
           .values({
             type: "personal",
@@ -106,7 +106,7 @@ export const walletPaymentRouter = router({
       const user = userRecords[0];
 
       // Create a pending wallet transaction record
-      const txResult = await db.insert(walletTransactions).values({
+      const [txResult] = await db.insert(walletTransactions).values({
         userId: ctx.user.id,
         walletId,
         bundleId: input.bundleId,
