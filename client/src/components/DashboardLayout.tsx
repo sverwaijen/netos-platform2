@@ -67,6 +67,9 @@ import {
   Shield,
   FileSignature,
   BarChart3,
+  Sparkles,
+  Wrench,
+  AlertTriangle,
   type LucideIcon,
 } from "lucide-react";
 import { CSSProperties, useEffect, useRef, useState } from "react";
@@ -152,6 +155,9 @@ const navCategories: NavCategory[] = [
     permission: "operations.view",
     items: [
       { icon: Ticket, label: "Operations", path: "/operations", permission: "operations.view" },
+      { icon: Sparkles, label: "Cleaning", path: "/cleaning", permission: "operations.view" },
+      { icon: Wrench, label: "Maintenance", path: "/maintenance", permission: "operations.manage" },
+      { icon: AlertTriangle, label: "Incidents", path: "/incidents", permission: "operations.manage" },
       { icon: Car, label: "Parking", path: "/parking", permission: "parking.view" },
       { icon: Coffee, label: "Butler Kiosk", path: "/butler/admin", permission: "butler.view" },
       { icon: ChefHat, label: "Menukaart", path: "/menu", permission: "menu.view" },
