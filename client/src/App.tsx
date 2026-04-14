@@ -53,7 +53,7 @@ import UserRolesPage from "./pages/UserRolesPage";
 import BudgetControlsPage from "./pages/BudgetControlsPage";
 import CommitContractsPage from "./pages/CommitContractsPage";
 import CreditAdminDashboard from "./pages/CreditAdminDashboard";
-import OnboardingPage from "./pages/OnboardingPage";
+import BookingCalendar from "./pages/BookingCalendar";
 
 function WrappedPage({ component: Component }: { component: React.ComponentType }) {
   return (
@@ -79,6 +79,7 @@ function Router() {
       <Route path="/dashboard">{() => <WrappedPage component={Dashboard} />}</Route>
       <Route path="/locations/:slug">{() => <DashboardLayout><LocationDetail /></DashboardLayout>}</Route>
       <Route path="/locations">{() => <WrappedPage component={Locations} />}</Route>
+      <Route path="/bookings/calendar">{() => <WrappedPage component={BookingCalendar} />}</Route>
       <Route path="/bookings">{() => <WrappedPage component={Bookings} />}</Route>
       <Route path="/wallet">{() => <WrappedPage component={WalletPage} />}</Route>
       <Route path="/bundles">{() => <WrappedPage component={BundlesPage} />}</Route>
@@ -111,7 +112,6 @@ function Router() {
       <Route path="/menu">{() => <WrappedPage component={MenuDashboard} />}</Route>
       {/* Standalone kiosk routes */}
       <Route path="/butler">{() => <ButlerKiosk />}</Route>
-      <Route path="/onboarding" component={OnboardingPage} />
       <Route path="/kiosk/display" component={KioskDisplay} />
       <Route path="/signage/display" component={SignageDisplay} />
       {/* Public parking visitor page */}
