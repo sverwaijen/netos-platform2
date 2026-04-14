@@ -50,9 +50,11 @@ import SignageDisplay from "./pages/SignageDisplay";
 import MenuDashboard from "./pages/MenuDashboard";
 import KitchenPrepDisplay from "./pages/KitchenPrepDisplay";
 import UserRolesPage from "./pages/UserRolesPage";
+import AuditTrailPage from "./pages/AuditTrailPage";
 import BudgetControlsPage from "./pages/BudgetControlsPage";
 import CommitContractsPage from "./pages/CommitContractsPage";
 import CreditAdminDashboard from "./pages/CreditAdminDashboard";
+import CommunityEvents from "./pages/CommunityEvents";
 
 function WrappedPage({ component: Component }: { component: React.ComponentType }) {
   return (
@@ -87,6 +89,7 @@ function Router() {
       <Route path="/devices">{() => <WrappedPage component={DevicesPage} />}</Route>
       <Route path="/notifications">{() => <WrappedPage component={NotificationsPage} />}</Route>
       <Route path="/invites">{() => <WrappedPage component={InvitesPage} />}</Route>
+      <Route path="/audit">{() => <WrappedPage component={AuditTrailPage} />}</Route>
       <Route path="/settings/roles">{() => <WrappedPage component={UserRolesPage} />}</Route>
       <Route path="/settings">{() => <WrappedPage component={SettingsPage} />}</Route>
       <Route path="/crm/leads/:id">{() => <DashboardLayout><CrmLeadDetail /></DashboardLayout>}</Route>
