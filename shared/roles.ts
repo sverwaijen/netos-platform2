@@ -10,7 +10,7 @@
  */
 
 // ── Role definitions ────────────────────────────────────────────────
-export const ROLES = ["administrator", "host", "teamadmin", "member", "guest"] as const;
+export const ROLES = ["administrator", "host", "company_owner", "teamadmin", "member", "guest"] as const;
 export type UserRole = (typeof ROLES)[number];
 
 // ── Permission keys ─────────────────────────────────────────────────
@@ -37,6 +37,9 @@ export const PERMISSIONS = [
   // Members
   "members.view",
   "members.manage",
+  // Company
+  "company.billing.manage",
+  "company.settings.manage",
   // Visitors
   "visitors.view",
   "visitors.manage",
@@ -123,6 +126,27 @@ export const ROLE_PERMISSIONS: Record<UserRole, readonly Permission[]> = {
     "commit_contracts.view", "commit_contracts.manage",
   ],
 
+  company_owner: [
+    "dashboard.view",
+    "locations.view",
+    "resources.view",
+    "bookings.view", "bookings.create", "bookings.manage",
+    "wallet.view", "wallet.manage",
+    "bundles.view", "bundles.manage",
+    "companies.view", "companies.manage",
+    "members.view", "members.manage",
+    "visitors.view", "visitors.manage",
+    "invites.view", "invites.manage",
+    "parking.view",
+    "notifications.view",
+    "settings.view",
+    "credits.view", "credits.manage", "credits.purchase",
+    "budget_controls.view", "budget_controls.manage",
+    "commit_contracts.view", "commit_contracts.manage",
+    "company.billing.manage",
+    "company.settings.manage",
+  ],
+
   teamadmin: [
     "dashboard.view",
     "locations.view",
@@ -203,6 +227,7 @@ export function migrateRole(oldRole: string): UserRole {
 export const ROLE_LABELS: Record<UserRole, string> = {
   administrator: "Administrator",
   host: "Host (Boss)",
+  company_owner: "Company Owner",
   teamadmin: "Team Admin",
   member: "Member",
   guest: "Guest",
@@ -212,6 +237,7 @@ export const ROLE_LABELS: Record<UserRole, string> = {
 export const ROLE_HIERARCHY: Record<UserRole, number> = {
   administrator: 100,
   host: 80,
+  company_owner: 70,
   teamadmin: 60,
   member: 40,
   guest: 10,
