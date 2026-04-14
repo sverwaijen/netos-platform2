@@ -18,7 +18,6 @@ import DevicesPage from "./pages/DevicesPage";
 import NotificationsPage from "./pages/NotificationsPage";
 import InvitesPage from "./pages/InvitesPage";
 import SettingsPage from "./pages/SettingsPage";
-import SsoSettings from "./pages/SsoSettings";
 import CrmPipeline from "./pages/CrmPipeline";
 import CrmLeadDetail from "./pages/CrmLeadDetail";
 import CrmCampaigns from "./pages/CrmCampaigns";
@@ -51,13 +50,13 @@ import SignageDisplay from "./pages/SignageDisplay";
 import MenuDashboard from "./pages/MenuDashboard";
 import KitchenPrepDisplay from "./pages/KitchenPrepDisplay";
 import UserRolesPage from "./pages/UserRolesPage";
-import AuditTrailPage from "./pages/AuditTrailPage";
 import BudgetControlsPage from "./pages/BudgetControlsPage";
 import CommitContractsPage from "./pages/CommitContractsPage";
 import CreditAdminDashboard from "./pages/CreditAdminDashboard";
 import CommunityEvents from "./pages/CommunityEvents";
+import NotificationPreferences from "./pages/NotificationPreferences";
+import CateringBooking from "./pages/CateringBooking";
 
-import InvoiceDashboard from "./pages/InvoiceDashboard";
 function WrappedPage({ component: Component }: { component: React.ComponentType }) {
   return (
     <DashboardLayout>
@@ -84,7 +83,6 @@ function Router() {
       <Route path="/locations">{() => <WrappedPage component={Locations} />}</Route>
       <Route path="/bookings">{() => <WrappedPage component={Bookings} />}</Route>
       <Route path="/wallet">{() => <WrappedPage component={WalletPage} />}</Route>
-      <Route path="/invoices">{() => <WrappedPage component={InvoiceDashboard} />}</Route>
       <Route path="/bundles">{() => <WrappedPage component={BundlesPage} />}</Route>
       <Route path="/companies">{() => <WrappedPage component={Companies} />}</Route>
       <Route path="/visitors">{() => <WrappedPage component={Visitors} />}</Route>
@@ -92,9 +90,7 @@ function Router() {
       <Route path="/devices">{() => <WrappedPage component={DevicesPage} />}</Route>
       <Route path="/notifications">{() => <WrappedPage component={NotificationsPage} />}</Route>
       <Route path="/invites">{() => <WrappedPage component={InvitesPage} />}</Route>
-      <Route path="/audit">{() => <WrappedPage component={AuditTrailPage} />}</Route>
       <Route path="/settings/roles">{() => <WrappedPage component={UserRolesPage} />}</Route>
-      <Route path="/settings/sso">{() => <WrappedPage component={SsoSettings} />}</Route>
       <Route path="/settings">{() => <WrappedPage component={SettingsPage} />}</Route>
       <Route path="/crm/leads/:id">{() => <DashboardLayout><CrmLeadDetail /></DashboardLayout>}</Route>
       <Route path="/crm/campaigns">{() => <WrappedPage component={CrmCampaigns} />}</Route>
@@ -105,6 +101,9 @@ function Router() {
       <Route path="/crm/visitors">{() => <WrappedPage component={CrmVisitors} />}</Route>
       <Route path="/crm">{() => <WrappedPage component={CrmPipeline} />}</Route>
       <Route path="/members">{() => <WrappedPage component={MemberDatabase} />}</Route>
+      <Route path="/community">{() => <WrappedPage component={CommunityEvents} />}</Route>
+      <Route path="/notifications/preferences">{() => <WrappedPage component={NotificationPreferences} />}</Route>
+      <Route path="/butler/catering">{() => <WrappedPage component={CateringBooking} />}</Route>
       <Route path="/re-engagement">{() => <WrappedPage component={ReEngagementFunnel} />}</Route>
       <Route path="/resources">{() => <WrappedPage component={ResourceManagement} />}</Route>
       <Route path="/butler/admin">{() => <WrappedPage component={ButlerAdmin} />}</Route>
