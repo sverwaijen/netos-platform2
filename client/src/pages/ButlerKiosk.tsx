@@ -6,6 +6,7 @@ import {
   ChevronLeft, Search, Leaf, Check, QrCode, User
 } from "lucide-react";
 import { toast } from "sonner";
+import { getProductImageUrl } from "@/lib/imageUtils";
 
 type CartItem = {
   productId: number;
@@ -426,15 +427,17 @@ export default function ButlerKiosk() {
                       {inCart.quantity}
                     </div>
                   )}
-                  {product.imageUrl ? (
-                    <div className="w-full aspect-square rounded-lg bg-white/[0.04] mb-3 overflow-hidden">
-                      <img src={product.imageUrl} alt={product.name} className="w-full h-full object-cover" />
-                    </div>
-                  ) : (
-                    <div className="w-full aspect-square rounded-lg bg-white/[0.04] mb-3 flex items-center justify-center">
-                      <Coffee className="w-8 h-8 text-white/20" />
-                    </div>
-                  )}
+                  <div className="w-full aspect-square rounded-lg bg-white/[0.04] mb-3 overflow-hidden">
+                    <img
+                      src={getProductImageUrl(product.imageUrl, product.name, product.category)}
+                      alt={product.name}
+                      className="w-full h-full object-cover"
+                      onError={(e) => {
+                        const img = e.target as HTMLImageElement;
+                        img.src = getProductImageUrl(null, product.name, product.category);
+                      }}
+                    />
+                  </div>
                   <h3 className="text-white text-sm font-medium mb-1 line-clamp-2">{product.name}</h3>
                   {product.description && (
                     <p className="text-white/30 text-xs mb-2 line-clamp-1">{product.description}</p>

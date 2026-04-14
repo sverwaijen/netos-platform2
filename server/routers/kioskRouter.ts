@@ -338,6 +338,8 @@ export const kioskOrderRouter = router({
         ))
         .orderBy(kioskOrders.createdAt);
 
+      // TODO: #30 - N+1 Query: This loads items one-by-one
+      // Instead, fetch all items in a single query and group by orderId
       // Get items for each order
       const enriched = await Promise.all(orders.map(async (order) => {
         const items = await db.select().from(kioskOrderItems).where(eq(kioskOrderItems.orderId, order.id));
