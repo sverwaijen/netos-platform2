@@ -10,7 +10,7 @@
  */
 
 // ── Role definitions ────────────────────────────────────────────────
-export const ROLES = ["administrator", "ceo", "host", "teamadmin", "member", "guest"] as const;
+export const ROLES = ["administrator", "host", "teamadmin", "member", "facility", "cleaner", "guest"] as const;
 export type UserRole = (typeof ROLES)[number];
 
 // ── Permission keys ─────────────────────────────────────────────────
@@ -52,6 +52,11 @@ export const PERMISSIONS = [
   // Parking
   "parking.view",
   "parking.manage",
+  // Cleaning & Maintenance
+  "cleaning.view",
+  "cleaning.manage",
+  "maintenance.view",
+  "maintenance.manage",
   // Room Control
   "roomcontrol.view",
   "roomcontrol.manage",
@@ -87,9 +92,6 @@ export const PERMISSIONS = [
   "budget_controls.manage",
   "commit_contracts.view",
   "commit_contracts.manage",
-  // Executive
-  "executive.view",
-  "executive.reports",
 ] as const;
 
 export type Permission = (typeof PERMISSIONS)[number];
@@ -97,23 +99,6 @@ export type Permission = (typeof PERMISSIONS)[number];
 // ── Role → Permission matrix ────────────────────────────────────────
 export const ROLE_PERMISSIONS: Record<UserRole, readonly Permission[]> = {
   administrator: [...PERMISSIONS], // Full access
-
-  ceo: [
-    "dashboard.view",
-    "locations.view",
-    "resources.view",
-    "bookings.view",
-    "wallet.view", "wallet.manage",
-    "bundles.view", "bundles.manage",
-    "companies.view",
-    "members.view",
-    "parking.view",
-    "notifications.view",
-    "executive.view",
-    "executive.reports",
-    "credits.view", "credits.manage",
-    "budget_controls.view", "budget_controls.manage",
-  ],
 
   host: [
     "dashboard.view",
@@ -175,6 +160,27 @@ export const ROLE_PERMISSIONS: Record<UserRole, readonly Permission[]> = {
     "credits.view", "credits.purchase",
   ],
 
+  facility: [
+    "dashboard.view",
+    "operations.view",
+    "operations.manage",
+    "parking.view",
+    "notifications.view",
+    "settings.view",
+    "cleaning.view",
+    "cleaning.manage",
+    "maintenance.view",
+    "maintenance.manage",
+  ],
+
+  cleaner: [
+    "dashboard.view",
+    "operations.view",
+    "notifications.view",
+    "cleaning.view",
+    "cleaning.manage",
+  ],
+
   guest: [
     "locations.view",
     "resources.view",
@@ -222,20 +228,22 @@ export function migrateRole(oldRole: string): UserRole {
 /** Role display labels */
 export const ROLE_LABELS: Record<UserRole, string> = {
   administrator: "Administrator",
-  ceo: "CEO/Executive",
   host: "Host (Boss)",
   teamadmin: "Team Admin",
   member: "Member",
+  facility: "Facilitymedewerker",
+  cleaner: "Schoonmaakster",
   guest: "Guest",
 };
 
 /** Role hierarchy level (higher = more powerful) */
 export const ROLE_HIERARCHY: Record<UserRole, number> = {
   administrator: 100,
-  ceo: 95,
   host: 80,
   teamadmin: 60,
   member: 40,
+  facility: 35,
+  cleaner: 25,
   guest: 10,
 };
 
