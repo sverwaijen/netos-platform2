@@ -53,7 +53,7 @@ import UserRolesPage from "./pages/UserRolesPage";
 import BudgetControlsPage from "./pages/BudgetControlsPage";
 import CommitContractsPage from "./pages/CommitContractsPage";
 import CreditAdminDashboard from "./pages/CreditAdminDashboard";
-import GuestCheckin from "./pages/GuestCheckin";
+import GuestConversion from "./pages/GuestConversion";
 
 function WrappedPage({ component: Component }: { component: React.ComponentType }) {
   return (
@@ -97,6 +97,7 @@ function Router() {
       <Route path="/crm/triggers">{() => <WrappedPage component={CrmTriggers} />}</Route>
       <Route path="/crm/new-lead">{() => <WrappedPage component={CrmLeadEntry} />}</Route>
       <Route path="/crm/visitors">{() => <WrappedPage component={CrmVisitors} />}</Route>
+      <Route path="/crm/conversion">{() => <WrappedPage component={GuestConversion} />}</Route>
       <Route path="/crm">{() => <WrappedPage component={CrmPipeline} />}</Route>
       <Route path="/members">{() => <WrappedPage component={MemberDatabase} />}</Route>
       <Route path="/re-engagement">{() => <WrappedPage component={ReEngagementFunnel} />}</Route>
@@ -111,7 +112,6 @@ function Router() {
       <Route path="/menu">{() => <WrappedPage component={MenuDashboard} />}</Route>
       {/* Standalone kiosk routes */}
       <Route path="/butler">{() => <ButlerKiosk />}</Route>
-      <Route path="/guest/checkin" component={GuestCheckin} />
       <Route path="/kiosk/display" component={KioskDisplay} />
       <Route path="/signage/display" component={SignageDisplay} />
       {/* Public parking visitor page */}

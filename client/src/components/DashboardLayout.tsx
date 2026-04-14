@@ -67,7 +67,8 @@ import {
   Shield,
   FileSignature,
   BarChart3,
-  Star,
+  TrendingUp,
+  Leaf,
   type LucideIcon,
 } from "lucide-react";
 import { CSSProperties, useEffect, useRef, useState } from "react";
@@ -100,7 +101,6 @@ const navCategories: NavCategory[] = [
     icon: LayoutDashboard,
     items: [
       { icon: LayoutDashboard, label: "Dashboard", path: "/dashboard", permission: "dashboard.view" },
-      { icon: Star, label: "My Dashboard", path: "/my-dashboard", permission: "dashboard.view" },
     ],
   },
   {
@@ -140,6 +140,7 @@ const navCategories: NavCategory[] = [
     permission: "crm.view",
     items: [
       { icon: Target, label: "Pipeline", path: "/crm", permission: "crm.view" },
+      { icon: TrendingUp, label: "Guest Conversion", path: "/crm/conversion", permission: "crm.view" },
       { icon: Zap, label: "Marketing Flow", path: "/crm/flow", permission: "crm.manage" },
       { icon: Crosshair, label: "Triggers", path: "/crm/triggers", permission: "crm.manage" },
       { icon: Eye, label: "Website Bezoekers", path: "/crm/visitors", permission: "crm.view" },
