@@ -53,7 +53,7 @@ import UserRolesPage from "./pages/UserRolesPage";
 import BudgetControlsPage from "./pages/BudgetControlsPage";
 import CommitContractsPage from "./pages/CommitContractsPage";
 import CreditAdminDashboard from "./pages/CreditAdminDashboard";
-import SpendingAnalyticsPage from "./pages/SpendingAnalyticsPage";
+import EnergyDashboard from "./pages/EnergyDashboard";
 
 function WrappedPage({ component: Component }: { component: React.ComponentType }) {
   return (
@@ -104,11 +104,11 @@ function Router() {
       <Route path="/butler/admin">{() => <WrappedPage component={ButlerAdmin} />}</Route>
       <Route path="/parking">{() => <WrappedPage component={ParkingAdmin} />}</Route>
       <Route path="/operations">{() => <WrappedPage component={OperationsDashboard} />}</Route>
+      <Route path="/energy">{() => <WrappedPage component={EnergyDashboard} />}</Route>
       <Route path="/room-control">{() => <WrappedPage component={RoomControl} />}</Route>
       <Route path="/budget-controls">{() => <WrappedPage component={BudgetControlsPage} />}</Route>
       <Route path="/commit-contracts">{() => <WrappedPage component={CommitContractsPage} />}</Route>
       <Route path="/credits/admin">{() => <WrappedPage component={CreditAdminDashboard} />}</Route>
-      <Route path="/spending-analytics">{() => <WrappedPage component={SpendingAnalyticsPage} />}</Route>
       <Route path="/menu">{() => <WrappedPage component={MenuDashboard} />}</Route>
       {/* Standalone kiosk routes */}
       <Route path="/butler">{() => <ButlerKiosk />}</Route>

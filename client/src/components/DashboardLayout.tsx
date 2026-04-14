@@ -37,7 +37,6 @@ import {
   LogOut,
   PanelLeft,
   MapPin,
-  Euro,
   Calendar,
   Wallet,
   Building2,
@@ -68,7 +67,7 @@ import {
   Shield,
   FileSignature,
   BarChart3,
-  TrendingUp,
+  Leaf,
   type LucideIcon,
 } from "lucide-react";
 import { CSSProperties, useEffect, useRef, useState } from "react";
@@ -101,7 +100,6 @@ const navCategories: NavCategory[] = [
     icon: LayoutDashboard,
     items: [
       { icon: LayoutDashboard, label: "Dashboard", path: "/dashboard", permission: "dashboard.view" },
-      { icon: TrendingUp, label: "Executive Dashboard", path: "/executive", permission: "executive.view" },
     ],
   },
   {
@@ -132,9 +130,7 @@ const navCategories: NavCategory[] = [
       { icon: CreditCard, label: "Plans & Packages", path: "/bundles", permission: "bundles.view" },
       { icon: Shield, label: "Budget Controls", path: "/budget-controls", permission: "budget_controls.view" },
       { icon: FileSignature, label: "Commit Contracts", path: "/commit-contracts", permission: "commit_contracts.view" },
-      { icon: TrendingUp, label: "Spending Analytics", path: "/spending-analytics", permission: "credits.manage" },
       { icon: BarChart3, label: "Credit Admin", path: "/credits/admin", permission: "credits.manage" },
-      { icon: Euro, label: "CFO Dashboard", path: "/finance", permission: "finance.view" },
     ],
   },
   {
@@ -157,6 +153,7 @@ const navCategories: NavCategory[] = [
     permission: "operations.view",
     items: [
       { icon: Ticket, label: "Operations", path: "/operations", permission: "operations.view" },
+      { icon: Leaf, label: "Energy & Sustainability", path: "/energy", permission: "operations.view" },
       { icon: Car, label: "Parking", path: "/parking", permission: "parking.view" },
       { icon: Coffee, label: "Butler Kiosk", path: "/butler/admin", permission: "butler.view" },
       { icon: ChefHat, label: "Menukaart", path: "/menu", permission: "menu.view" },
