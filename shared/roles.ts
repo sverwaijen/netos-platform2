@@ -5,12 +5,13 @@
  *   administrator – Full platform access, can manage roles, settings, billing
  *   host          – Building owner / boss, full operational access, cannot manage platform settings
  *   teamadmin     – Team/company admin, manages own team members and bookings
+ *   tenant        – Contract-based space renter, invoicing, contracts, SLA visibility
  *   member        – Regular coworking member
  *   guest         – Visitor / limited access
  */
 
 // ── Role definitions ────────────────────────────────────────────────
-export const ROLES = ["administrator", "host", "teamadmin", "member", "guest"] as const;
+export const ROLES = ["administrator", "host", "teamadmin", "tenant", "member", "guest"] as const;
 export type UserRole = (typeof ROLES)[number];
 
 // ── Permission keys ─────────────────────────────────────────────────
@@ -87,6 +88,11 @@ export const PERMISSIONS = [
   "budget_controls.manage",
   "commit_contracts.view",
   "commit_contracts.manage",
+  // Contracts & Invoices (tenant-facing)
+  "contracts.view",
+  "invoices.view",
+  "sla.view",
+  "company.billing.view",
 ] as const;
 
 export type Permission = (typeof PERMISSIONS)[number];
@@ -141,6 +147,28 @@ export const ROLE_PERMISSIONS: Record<UserRole, readonly Permission[]> = {
     "budget_controls.view", "budget_controls.manage",
   ],
 
+  tenant: [
+    "dashboard.view",
+    "locations.view",
+    "resources.view",
+    "bookings.view", "bookings.create", "bookings.manage",
+    "wallet.view",
+    "bundles.view",
+    "companies.view",
+    "members.view",
+    "visitors.view", "visitors.manage",
+    "invites.view", "invites.manage",
+    "parking.view",
+    "notifications.view",
+    "settings.view",
+    "credits.view", "credits.purchase",
+    "budget_controls.view",
+    "contracts.view",
+    "invoices.view",
+    "sla.view",
+    "company.billing.view",
+  ],
+
   member: [
     "dashboard.view",
     "locations.view",
@@ -192,6 +220,9 @@ export function migrateRole(oldRole: string): UserRole {
       return "administrator";
     case "user":
       return "member";
+    case "tenant":
+    case "klant":
+      return "tenant";
     case "guest":
       return "guest";
     default:
@@ -204,6 +235,7 @@ export const ROLE_LABELS: Record<UserRole, string> = {
   administrator: "Administrator",
   host: "Host (Boss)",
   teamadmin: "Team Admin",
+  tenant: "Tenant (Klant)",
   member: "Member",
   guest: "Guest",
 };
@@ -213,6 +245,7 @@ export const ROLE_HIERARCHY: Record<UserRole, number> = {
   administrator: 100,
   host: 80,
   teamadmin: 60,
+  tenant: 50,
   member: 40,
   guest: 10,
 };
