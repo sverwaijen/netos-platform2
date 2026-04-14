@@ -53,7 +53,7 @@ import UserRolesPage from "./pages/UserRolesPage";
 import BudgetControlsPage from "./pages/BudgetControlsPage";
 import CommitContractsPage from "./pages/CommitContractsPage";
 import CreditAdminDashboard from "./pages/CreditAdminDashboard";
-import PersonalDashboard from "./pages/PersonalDashboard";
+import GuestCheckin from "./pages/GuestCheckin";
 
 function WrappedPage({ component: Component }: { component: React.ComponentType }) {
   return (
@@ -77,7 +77,6 @@ function Router() {
       <Route path="/" component={Home} />
       {/* Admin / Dashboard routes */}
       <Route path="/dashboard">{() => <WrappedPage component={Dashboard} />}</Route>
-      <Route path="/my-dashboard">{() => <WrappedPage component={PersonalDashboard} />}</Route>
       <Route path="/locations/:slug">{() => <DashboardLayout><LocationDetail /></DashboardLayout>}</Route>
       <Route path="/locations">{() => <WrappedPage component={Locations} />}</Route>
       <Route path="/bookings">{() => <WrappedPage component={Bookings} />}</Route>
@@ -112,6 +111,7 @@ function Router() {
       <Route path="/menu">{() => <WrappedPage component={MenuDashboard} />}</Route>
       {/* Standalone kiosk routes */}
       <Route path="/butler">{() => <ButlerKiosk />}</Route>
+      <Route path="/guest/checkin" component={GuestCheckin} />
       <Route path="/kiosk/display" component={KioskDisplay} />
       <Route path="/signage/display" component={SignageDisplay} />
       {/* Public parking visitor page */}
