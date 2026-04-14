@@ -18,7 +18,6 @@ import DevicesPage from "./pages/DevicesPage";
 import NotificationsPage from "./pages/NotificationsPage";
 import InvitesPage from "./pages/InvitesPage";
 import SettingsPage from "./pages/SettingsPage";
-import MfaSettings from "./pages/MfaSettings";
 import CrmPipeline from "./pages/CrmPipeline";
 import CrmLeadDetail from "./pages/CrmLeadDetail";
 import CrmCampaigns from "./pages/CrmCampaigns";
@@ -51,10 +50,11 @@ import SignageDisplay from "./pages/SignageDisplay";
 import MenuDashboard from "./pages/MenuDashboard";
 import KitchenPrepDisplay from "./pages/KitchenPrepDisplay";
 import UserRolesPage from "./pages/UserRolesPage";
+import AuditTrailPage from "./pages/AuditTrailPage";
 import BudgetControlsPage from "./pages/BudgetControlsPage";
 import CommitContractsPage from "./pages/CommitContractsPage";
 import CreditAdminDashboard from "./pages/CreditAdminDashboard";
-import BookingApprovalPage from "./pages/BookingApprovalPage";
+import CommunityEvents from "./pages/CommunityEvents";
 
 function WrappedPage({ component: Component }: { component: React.ComponentType }) {
   return (
@@ -80,7 +80,6 @@ function Router() {
       <Route path="/dashboard">{() => <WrappedPage component={Dashboard} />}</Route>
       <Route path="/locations/:slug">{() => <DashboardLayout><LocationDetail /></DashboardLayout>}</Route>
       <Route path="/locations">{() => <WrappedPage component={Locations} />}</Route>
-      <Route path="/bookings/approvals">{() => <WrappedPage component={BookingApprovalPage} />}</Route>
       <Route path="/bookings">{() => <WrappedPage component={Bookings} />}</Route>
       <Route path="/wallet">{() => <WrappedPage component={WalletPage} />}</Route>
       <Route path="/bundles">{() => <WrappedPage component={BundlesPage} />}</Route>
@@ -90,8 +89,8 @@ function Router() {
       <Route path="/devices">{() => <WrappedPage component={DevicesPage} />}</Route>
       <Route path="/notifications">{() => <WrappedPage component={NotificationsPage} />}</Route>
       <Route path="/invites">{() => <WrappedPage component={InvitesPage} />}</Route>
+      <Route path="/audit">{() => <WrappedPage component={AuditTrailPage} />}</Route>
       <Route path="/settings/roles">{() => <WrappedPage component={UserRolesPage} />}</Route>
-      <Route path="/settings/mfa">{() => <WrappedPage component={MfaSettings} />}</Route>
       <Route path="/settings">{() => <WrappedPage component={SettingsPage} />}</Route>
       <Route path="/crm/leads/:id">{() => <DashboardLayout><CrmLeadDetail /></DashboardLayout>}</Route>
       <Route path="/crm/campaigns">{() => <WrappedPage component={CrmCampaigns} />}</Route>

@@ -1,5 +1,8 @@
 import { useAuth } from "@/_core/hooks/useAuth";
+<<<<<<< HEAD
 import { trpc } from "@/lib/trpc";
+=======
+>>>>>>> origin/claude/audit-trail-issue-65
 import { useState } from "react";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -10,7 +13,11 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { toast } from "sonner";
 import {
   Plus, QrCode, Car, Clock, Users, AlertCircle, Mail, Check, X,
+<<<<<<< HEAD
   ChevronRight, Search, Filter, Download
+=======
+  Search, Filter,
+>>>>>>> origin/claude/audit-trail-issue-65
 } from "lucide-react";
 import {
   Table,
@@ -30,15 +37,20 @@ interface VisitorParkingPermit {
   status: "pending" | "active" | "verified" | "expired" | "cancelled";
   createdAt: Date;
   expiresAt: Date;
+<<<<<<< HEAD
   timeSlot: {
     startTime: string;
     endTime: string;
   };
+=======
+  timeSlot: { startTime: string; endTime: string; };
+>>>>>>> origin/claude/audit-trail-issue-65
   spotAssigned?: string;
   verifiedAt?: Date;
   emailSent: boolean;
 }
 
+<<<<<<< HEAD
 interface ParkingSpot {
   id: string;
   number: string;
@@ -46,6 +58,8 @@ interface ParkingSpot {
   type: "visitor" | "standard" | "premium";
 }
 
+=======
+>>>>>>> origin/claude/audit-trail-issue-65
 const MOCK_PERMITS: VisitorParkingPermit[] = [
   {
     id: "permit_001",
@@ -61,6 +75,7 @@ const MOCK_PERMITS: VisitorParkingPermit[] = [
     verifiedAt: new Date(2026, 3, 10, 9, 15),
     emailSent: true,
   },
+<<<<<<< HEAD
   {
     id: "permit_002",
     visitorName: "Jane Smith",
@@ -89,6 +104,11 @@ const MOCK_PERMITS: VisitorParkingPermit[] = [
 ];
 
 const MOCK_SPOTS: ParkingSpot[] = [
+=======
+];
+
+const MOCK_SPOTS = [
+>>>>>>> origin/claude/audit-trail-issue-65
   { id: "v1", number: "V-01", status: "occupied", type: "visitor" },
   { id: "v2", number: "V-02", status: "occupied", type: "visitor" },
   { id: "v3", number: "V-03", status: "available", type: "visitor" },
@@ -96,7 +116,11 @@ const MOCK_SPOTS: ParkingSpot[] = [
   { id: "v5", number: "V-05", status: "reserved", type: "visitor" },
 ];
 
+<<<<<<< HEAD
 function StatusBadge({ status }: { status: VisitorParkingPermit["status"] }) {
+=======
+function StatusBadge({ status }: { status: string }) {
+>>>>>>> origin/claude/audit-trail-issue-65
   const variants: Record<string, { bg: string; text: string; icon: React.ReactNode }> = {
     pending: { bg: "bg-yellow-100", text: "text-yellow-700", icon: <Clock className="w-3 h-3" /> },
     active: { bg: "bg-blue-100", text: "text-blue-700", icon: <Car className="w-3 h-3" /> },
@@ -113,6 +137,7 @@ function StatusBadge({ status }: { status: VisitorParkingPermit["status"] }) {
   );
 }
 
+<<<<<<< HEAD
 function QRPreviewModal({ permit }: { permit: VisitorParkingPermit }) {
   return (
     <Dialog>
@@ -220,6 +245,12 @@ function ParkingAvailabilityGauge() {
   const occupied = MOCK_SPOTS.filter(s => s.status === "occupied").length;
   const available = MOCK_SPOTS.filter(s => s.status === "available").length;
   const reserved = MOCK_SPOTS.filter(s => s.status === "reserved").length;
+=======
+function ParkingAvailabilityGauge() {
+  const occupied = MOCK_SPOTS.filter((s: any) => s.status === "occupied").length;
+  const available = MOCK_SPOTS.filter((s: any) => s.status === "available").length;
+  const reserved = MOCK_SPOTS.filter((s: any) => s.status === "reserved").length;
+>>>>>>> origin/claude/audit-trail-issue-65
   const percent = Math.round((occupied / MOCK_SPOTS.length) * 100);
 
   return (
@@ -292,6 +323,7 @@ function CreatePermitDialog() {
           <DialogTitle>Nieuwe bezoekervergunning</DialogTitle>
         </DialogHeader>
         <div className="space-y-4">
+<<<<<<< HEAD
           <div>
             <label className="text-xs font-semibold uppercase tracking-wide text-[#627653]">Bezoekernaam</label>
             <Input
@@ -339,6 +371,11 @@ function CreatePermitDialog() {
               />
             </div>
           </div>
+=======
+          <Input placeholder="Volledige naam" value={formData.visitorName} onChange={(e) => setFormData(p => ({ ...p, visitorName: e.target.value }))} />
+          <Input placeholder="AB-12-CD" value={formData.licensePlate} onChange={(e) => setFormData(p => ({ ...p, licensePlate: e.target.value }))} />
+          <Input placeholder="inv_XXXXX" value={formData.invitationId} onChange={(e) => setFormData(p => ({ ...p, invitationId: e.target.value }))} />
+>>>>>>> origin/claude/audit-trail-issue-65
           <Button onClick={handleCreate} className="w-full">Aanmaken</Button>
         </div>
       </DialogContent>
@@ -347,6 +384,7 @@ function CreatePermitDialog() {
 }
 
 export default function VisitorParkingAdmin() {
+<<<<<<< HEAD
   const { user } = useAuth();
   const [activeTab, setActiveTab] = useState("permits");
   const [searchTerm, setSearchTerm] = useState("");
@@ -362,6 +400,26 @@ export default function VisitorParkingAdmin() {
   return (
     <div className="space-y-6">
       {/* Header */}
+=======
+  const [activeTab, setActiveTab] = useState("permits");
+  const [searchTerm, setSearchTerm] = useState("");
+  const [licensePlate, setLicensePlate] = useState("");
+  const [verificationResult, setVerificationResult] = useState<any>(null);
+
+  const handleVerify = () => {
+    if (!licensePlate.trim()) return;
+    const found = MOCK_PERMITS.find(p => p.licensePlate.toUpperCase() === licensePlate.toUpperCase());
+    setVerificationResult({
+      matched: !!found,
+      permitId: found?.id,
+      visitor: found?.visitorName,
+      plate: found?.licensePlate,
+    });
+  };
+
+  return (
+    <div className="space-y-6">
+>>>>>>> origin/claude/audit-trail-issue-65
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
         <div>
           <h1 className="text-xl md:text-2xl font-light tracking-tight">Bezoekerparkeerpermits</h1>
@@ -370,6 +428,7 @@ export default function VisitorParkingAdmin() {
         <CreatePermitDialog />
       </div>
 
+<<<<<<< HEAD
       {/* Tabs */}
       <Tabs value={activeTab} onValueChange={setActiveTab}>
         <TabsList className="grid w-full grid-cols-3">
@@ -379,10 +438,20 @@ export default function VisitorParkingAdmin() {
         </TabsList>
 
         {/* Permits Tab */}
+=======
+      <Tabs value={activeTab} onValueChange={setActiveTab}>
+        <TabsList className="grid w-full grid-cols-3">
+          <TabsTrigger value="permits">Vergunningen</TabsTrigger>
+          <TabsTrigger value="anpr">ANPR</TabsTrigger>
+          <TabsTrigger value="spots">Beschikbaarheid</TabsTrigger>
+        </TabsList>
+
+>>>>>>> origin/claude/audit-trail-issue-65
         <TabsContent value="permits" className="space-y-4 mt-4">
           <Card>
             <CardHeader>
               <CardTitle className="text-sm">Actieve Vergunningen</CardTitle>
+<<<<<<< HEAD
               <CardDescription>{filteredPermits.length} vergunningen</CardDescription>
             </CardHeader>
             <CardContent className="space-y-4">
@@ -396,11 +465,21 @@ export default function VisitorParkingAdmin() {
                     onChange={(e) => setSearchTerm(e.target.value)}
                     className="pl-8"
                   />
+=======
+              <CardDescription>{MOCK_PERMITS.length} vergunningen</CardDescription>
+            </CardHeader>
+            <CardContent className="space-y-4">
+              <div className="flex gap-2">
+                <div className="relative flex-1">
+                  <Search className="absolute left-2 top-2.5 h-4 w-4 text-muted-foreground" />
+                  <Input placeholder="Zoeken op naam of kenteken..." value={searchTerm} onChange={(e) => setSearchTerm(e.target.value)} className="pl-8" />
+>>>>>>> origin/claude/audit-trail-issue-65
                 </div>
                 <Button variant="outline" size="sm">
                   <Filter className="w-4 h-4" />
                 </Button>
               </div>
+<<<<<<< HEAD
 
               {/* Status filter buttons */}
               <div className="flex gap-2 flex-wrap">
@@ -424,6 +503,8 @@ export default function VisitorParkingAdmin() {
               </div>
 
               {/* Table */}
+=======
+>>>>>>> origin/claude/audit-trail-issue-65
               <div className="border rounded-lg overflow-hidden">
                 <Table>
                   <TableHeader>
@@ -433,11 +514,15 @@ export default function VisitorParkingAdmin() {
                       <TableHead className="text-xs">Tijdslot</TableHead>
                       <TableHead className="text-xs">Status</TableHead>
                       <TableHead className="text-xs">Plek</TableHead>
+<<<<<<< HEAD
                       <TableHead className="text-xs">Email</TableHead>
+=======
+>>>>>>> origin/claude/audit-trail-issue-65
                       <TableHead className="text-xs text-right">Acties</TableHead>
                     </TableRow>
                   </TableHeader>
                   <TableBody>
+<<<<<<< HEAD
                     {filteredPermits.map(permit => (
                       <TableRow key={permit.id}>
                         <TableCell className="text-xs">{permit.visitorName}</TableCell>
@@ -477,6 +562,16 @@ export default function VisitorParkingAdmin() {
                             </Button>
                           </div>
                         </TableCell>
+=======
+                    {MOCK_PERMITS.map(permit => (
+                      <TableRow key={permit.id}>
+                        <TableCell className="text-xs">{permit.visitorName}</TableCell>
+                        <TableCell className="text-xs font-mono">{permit.licensePlate}</TableCell>
+                        <TableCell className="text-xs flex items-center gap-1"><Clock className="w-3 h-3" />{permit.timeSlot.startTime} - {permit.timeSlot.endTime}</TableCell>
+                        <TableCell className="text-xs"><StatusBadge status={permit.status} /></TableCell>
+                        <TableCell className="text-xs">{permit.spotAssigned && <Badge variant="secondary">{permit.spotAssigned}</Badge>}</TableCell>
+                        <TableCell className="text-right"><Button variant="outline" size="sm"><QrCode className="w-4 h-4 mr-1" />QR</Button></TableCell>
+>>>>>>> origin/claude/audit-trail-issue-65
                       </TableRow>
                     ))}
                   </TableBody>
@@ -486,6 +581,7 @@ export default function VisitorParkingAdmin() {
           </Card>
         </TabsContent>
 
+<<<<<<< HEAD
         {/* ANPR Tab */}
         <TabsContent value="anpr" className="space-y-4 mt-4">
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
@@ -546,6 +642,39 @@ export default function VisitorParkingAdmin() {
               </CardContent>
             </Card>
           </div>
+=======
+        <TabsContent value="anpr" className="space-y-4 mt-4">
+          <Card>
+            <CardHeader>
+              <CardTitle className="text-sm">ANPR Verificatie</CardTitle>
+            </CardHeader>
+            <CardContent className="space-y-4">
+              <div className="flex gap-2">
+                <Input placeholder="Kenteken (bijv. AB-12-CD)" value={licensePlate} onChange={(e) => setLicensePlate(e.target.value.toUpperCase())} onKeyDown={(e) => e.key === "Enter" && handleVerify()} className="flex-1" />
+                <Button onClick={handleVerify} size="sm">Verifiëer</Button>
+              </div>
+              {verificationResult && (
+                <div className={`p-3 rounded-lg border ${verificationResult.matched ? "bg-green-50 border-green-200" : "bg-red-50 border-red-200"}`}>
+                  {verificationResult.matched ? (
+                    <div className="flex items-center gap-2 text-green-700">
+                      <Check className="w-4 h-4" />
+                      <span className="text-sm font-medium">Vergunning gevonden: {verificationResult.visitor}</span>
+                    </div>
+                  ) : (
+                    <div className="flex items-center gap-2 text-red-700">
+                      <AlertCircle className="w-4 h-4" />
+                      <span className="text-sm font-medium">Geen geldige vergunning</span>
+                    </div>
+                  )}
+                </div>
+              )}
+            </CardContent>
+          </Card>
+        </TabsContent>
+
+        <TabsContent value="spots" className="space-y-4 mt-4">
+          <ParkingAvailabilityGauge />
+>>>>>>> origin/claude/audit-trail-issue-65
         </TabsContent>
       </Tabs>
     </div>
