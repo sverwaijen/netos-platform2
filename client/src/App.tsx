@@ -30,6 +30,7 @@ import ButlerAdmin from "./pages/ButlerAdmin";
 import DashboardLayout from "./components/DashboardLayout";
 import ParkingAdmin from "./pages/ParkingAdmin";
 import OperationsDashboard from "./pages/OperationsDashboard";
+import EscalationDashboard from "./pages/EscalationDashboard";
 import RoomControl from "./pages/RoomControl";
 import CrmTriggers from "./pages/CrmTriggers";
 import CrmLeadEntry from "./pages/CrmLeadEntry";
@@ -103,6 +104,7 @@ function Router() {
       <Route path="/butler/admin">{() => <WrappedPage component={ButlerAdmin} />}</Route>
       <Route path="/parking">{() => <WrappedPage component={ParkingAdmin} />}</Route>
       <Route path="/operations">{() => <WrappedPage component={OperationsDashboard} />}</Route>
+      <Route path="/escalations">{() => <WrappedPage component={EscalationDashboard} />}</Route>
       <Route path="/room-control">{() => <WrappedPage component={RoomControl} />}</Route>
       <Route path="/budget-controls">{() => <WrappedPage component={BudgetControlsPage} />}</Route>
       <Route path="/commit-contracts">{() => <WrappedPage component={CommitContractsPage} />}</Route>
