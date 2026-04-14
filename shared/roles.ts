@@ -3,6 +3,7 @@
  *
  * Roles:
  *   administrator – Full platform access, can manage roles, settings, billing
+ *   cfo           – Chief Financial Officer, full financial visibility, reports, invoicing
  *   host          – Building owner / boss, full operational access, cannot manage platform settings
  *   teamadmin     – Team/company admin, manages own team members and bookings
  *   member        – Regular coworking member
@@ -10,7 +11,7 @@
  */
 
 // ── Role definitions ────────────────────────────────────────────────
-export const ROLES = ["administrator", "host", "teamadmin", "member", "guest"] as const;
+export const ROLES = ["administrator", "cfo", "host", "teamadmin", "member", "guest"] as const;
 export type UserRole = (typeof ROLES)[number];
 
 // ── Permission keys ─────────────────────────────────────────────────
@@ -87,6 +88,11 @@ export const PERMISSIONS = [
   "budget_controls.manage",
   "commit_contracts.view",
   "commit_contracts.manage",
+  // Finance (CFO-level)
+  "finance.view",
+  "finance.reports",
+  "invoices.view",
+  "invoices.manage",
 ] as const;
 
 export type Permission = (typeof PERMISSIONS)[number];
@@ -94,6 +100,25 @@ export type Permission = (typeof PERMISSIONS)[number];
 // ── Role → Permission matrix ────────────────────────────────────────
 export const ROLE_PERMISSIONS: Record<UserRole, readonly Permission[]> = {
   administrator: [...PERMISSIONS], // Full access
+
+  cfo: [
+    "dashboard.view",
+    "locations.view",
+    "resources.view",
+    "bookings.view",
+    "wallet.view", "wallet.manage",
+    "bundles.view", "bundles.manage",
+    "companies.view",
+    "members.view",
+    "parking.view",
+    "notifications.view",
+    "settings.view",
+    "credits.view", "credits.manage",
+    "budget_controls.view", "budget_controls.manage",
+    "commit_contracts.view", "commit_contracts.manage",
+    "finance.view", "finance.reports",
+    "invoices.view", "invoices.manage",
+  ],
 
   host: [
     "dashboard.view",
@@ -202,6 +227,7 @@ export function migrateRole(oldRole: string): UserRole {
 /** Role display labels */
 export const ROLE_LABELS: Record<UserRole, string> = {
   administrator: "Administrator",
+  cfo: "CFO",
   host: "Host (Boss)",
   teamadmin: "Team Admin",
   member: "Member",
@@ -211,6 +237,7 @@ export const ROLE_LABELS: Record<UserRole, string> = {
 /** Role hierarchy level (higher = more powerful) */
 export const ROLE_HIERARCHY: Record<UserRole, number> = {
   administrator: 100,
+  cfo: 90,
   host: 80,
   teamadmin: 60,
   member: 40,

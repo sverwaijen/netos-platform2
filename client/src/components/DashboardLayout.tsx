@@ -37,6 +37,7 @@ import {
   LogOut,
   PanelLeft,
   MapPin,
+  Euro,
   Calendar,
   Wallet,
   Building2,
@@ -130,6 +131,7 @@ const navCategories: NavCategory[] = [
       { icon: Shield, label: "Budget Controls", path: "/budget-controls", permission: "budget_controls.view" },
       { icon: FileSignature, label: "Commit Contracts", path: "/commit-contracts", permission: "commit_contracts.view" },
       { icon: BarChart3, label: "Credit Admin", path: "/credits/admin", permission: "credits.manage" },
+      { icon: Euro, label: "CFO Dashboard", path: "/finance", permission: "finance.view" },
     ],
   },
   {
