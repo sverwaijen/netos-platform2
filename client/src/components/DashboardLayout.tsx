@@ -67,6 +67,7 @@ import {
   Shield,
   FileSignature,
   BarChart3,
+  CheckCircle,
   type LucideIcon,
 } from "lucide-react";
 import { CSSProperties, useEffect, useRef, useState } from "react";
@@ -108,6 +109,9 @@ const navCategories: NavCategory[] = [
       { icon: MapPin, label: "Locations", path: "/locations", permission: "locations.view" },
       { icon: Layers, label: "Resources", path: "/resources", permission: "resources.view" },
       { icon: Calendar, label: "Bookings", path: "/bookings", permission: "bookings.view" },
+      { icon: Calendar, label: "Calendar", path: "/bookings/calendar", permission: "bookings.view" },
+      { icon: Layers, label: "Recurring", path: "/bookings/recurring", permission: "bookings.create" },
+      { icon: CheckCircle, label: "Approvals", path: "/bookings/approvals", permission: "bookings.manage" },
       { icon: Thermometer, label: "Room Control", path: "/room-control", permission: "roomcontrol.view" },
     ],
   },
