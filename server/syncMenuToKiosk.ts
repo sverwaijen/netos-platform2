@@ -12,6 +12,9 @@
 
 import { eq, and, sql } from "drizzle-orm";
 import { getDb } from "./db";
+import { createLogger } from "./_core/logger";
+
+const log = createLogger("SyncMenuToKiosk");
 import {
   menuSeasons,
   menuCategories,

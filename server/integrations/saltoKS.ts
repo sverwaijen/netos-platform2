@@ -1,4 +1,7 @@
 /**
+import { createLogger } from "../_core/logger";
+
+const log = createLogger("SaltoKS");
  * Salto KS Connect API Integration
  * 
  * Provides server-side access to Salto KS for:
@@ -27,7 +30,7 @@ let tokenExpiresAt = 0;
 
 export function initSaltoKS(cfg: SaltoKSConfig) {
   config = cfg;
-  console.log("[SaltoKS] Initialized with site:", cfg.siteId);
+  log.info("Initialized", { siteId });
 }
 
 async function getAccessToken(): Promise<string> {

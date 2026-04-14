@@ -11,7 +11,10 @@
  * - menu_arrangements (deals)
  */
 
-import { getDb } from "./db";
+import {
+import { createLogger } from "./_core/logger";
+
+const log = createLogger("SeedMenu"); getDb } from "./db";
 import {
   menuSeasons,
   menuCategories,
@@ -256,7 +259,7 @@ const Q2_PREPS: Record<string, string[]> = {
 async function seed() {
   const db = await getDb();
   if (!db) {
-    console.error("Database not available");
+    log.error("Database not available");
     process.exit(1);
   }
 

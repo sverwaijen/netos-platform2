@@ -4,7 +4,13 @@ import { publicProcedure, protectedProcedure, router } from "../_core/trpc";
 import * as db from "../db";
 import { crmWebsiteVisitors } from "../../drizzle/schema";
 import visitorTrackingService from "../integrations/visitorTrackingService";
+<<<<<<< HEAD
 import { getDb } from "../db";
+=======
+import { createLogger } from "../_core/logger";
+
+const log = createLogger("VisitorTracking");
+>>>>>>> origin/claude/structured-logger-issue-34
 
 const adminProcedure = protectedProcedure.use(({ ctx, next }) => {
   if (ctx.user.role !== "administrator" && ctx.user.role !== "host") {
@@ -67,7 +73,7 @@ export const visitorTrackingRouter = router({
 
         return { success: true, visitId, isDuplicate: false };
       } catch (error) {
-        console.error("Visitor tracking error:", error);
+        log.error("Visitor tracking error", error);
         return { success: false, error: (error as any).message };
       }
     }),

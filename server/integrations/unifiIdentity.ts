@@ -1,4 +1,7 @@
 /**
+import { createLogger } from "../_core/logger";
+
+const log = createLogger("UniFi");
  * UniFi Identity / UniFi Network Integration
  * 
  * Provides server-side WiFi provisioning for coworking members:
@@ -27,7 +30,7 @@ let sessionExpiresAt = 0;
 
 export function initUniFi(cfg: UniFiConfig) {
   config = cfg;
-  console.log("[UniFi] Initialized with controller:", cfg.controllerUrl);
+  log.info("Initialized", { controllerUrl });
 }
 
 async function authenticate(): Promise<string> {
