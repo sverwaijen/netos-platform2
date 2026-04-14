@@ -53,6 +53,9 @@ import UserRolesPage from "./pages/UserRolesPage";
 import BudgetControlsPage from "./pages/BudgetControlsPage";
 import CommitContractsPage from "./pages/CommitContractsPage";
 import CreditAdminDashboard from "./pages/CreditAdminDashboard";
+import CommunityEvents from "./pages/CommunityEvents";
+import NotificationPreferences from "./pages/NotificationPreferences";
+import CateringBooking from "./pages/CateringBooking";
 
 function WrappedPage({ component: Component }: { component: React.ComponentType }) {
   return (
@@ -98,6 +101,9 @@ function Router() {
       <Route path="/crm/visitors">{() => <WrappedPage component={CrmVisitors} />}</Route>
       <Route path="/crm">{() => <WrappedPage component={CrmPipeline} />}</Route>
       <Route path="/members">{() => <WrappedPage component={MemberDatabase} />}</Route>
+      <Route path="/community">{() => <WrappedPage component={CommunityEvents} />}</Route>
+      <Route path="/notifications/preferences">{() => <WrappedPage component={NotificationPreferences} />}</Route>
+      <Route path="/butler/catering">{() => <WrappedPage component={CateringBooking} />}</Route>
       <Route path="/re-engagement">{() => <WrappedPage component={ReEngagementFunnel} />}</Route>
       <Route path="/resources">{() => <WrappedPage component={ResourceManagement} />}</Route>
       <Route path="/butler/admin">{() => <WrappedPage component={ButlerAdmin} />}</Route>

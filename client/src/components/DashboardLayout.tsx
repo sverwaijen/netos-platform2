@@ -116,6 +116,7 @@ const navCategories: NavCategory[] = [
     icon: Users,
     items: [
       { icon: UsersRound, label: "Members", path: "/members", permission: "members.view" },
+      { icon: Calendar, label: "Community Events", path: "/community", permission: "members.view" },
       { icon: Building2, label: "Companies", path: "/companies", permission: "companies.view" },
       { icon: Users, label: "Visitors", path: "/visitors", permission: "visitors.view" },
       { icon: UserPlus, label: "Invites", path: "/invites", permission: "invites.view" },
@@ -154,6 +155,7 @@ const navCategories: NavCategory[] = [
       { icon: Ticket, label: "Operations", path: "/operations", permission: "operations.view" },
       { icon: Car, label: "Parking", path: "/parking", permission: "parking.view" },
       { icon: Coffee, label: "Butler Kiosk", path: "/butler/admin", permission: "butler.view" },
+      { icon: Coffee, label: "Catering Booking", path: "/butler/catering", permission: "butler.view" },
       { icon: ChefHat, label: "Menukaart", path: "/menu", permission: "menu.view" },
       { icon: Monitor, label: "Signage", path: "/signing", permission: "signage.view" },
     ],
@@ -165,6 +167,7 @@ const navCategories: NavCategory[] = [
     items: [
       { icon: Cpu, label: "Devices & IoT", path: "/devices", permission: "devices.view" },
       { icon: Bell, label: "Notifications", path: "/notifications", permission: "notifications.view" },
+      { icon: Bell, label: "Notification Prefs", path: "/notifications/preferences", permission: "notifications.view" },
       { icon: Shield, label: "User Roles", path: "/settings/roles", permission: "roles.view" },
       { icon: Settings, label: "Settings", path: "/settings", permission: "settings.view" },
     ],
