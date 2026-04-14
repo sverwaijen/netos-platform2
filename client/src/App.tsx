@@ -18,6 +18,7 @@ import DevicesPage from "./pages/DevicesPage";
 import NotificationsPage from "./pages/NotificationsPage";
 import InvitesPage from "./pages/InvitesPage";
 import SettingsPage from "./pages/SettingsPage";
+import SsoSettings from "./pages/SsoSettings";
 import CrmPipeline from "./pages/CrmPipeline";
 import CrmLeadDetail from "./pages/CrmLeadDetail";
 import CrmCampaigns from "./pages/CrmCampaigns";
@@ -91,6 +92,7 @@ function Router() {
       <Route path="/invites">{() => <WrappedPage component={InvitesPage} />}</Route>
       <Route path="/audit">{() => <WrappedPage component={AuditTrailPage} />}</Route>
       <Route path="/settings/roles">{() => <WrappedPage component={UserRolesPage} />}</Route>
+      <Route path="/settings/sso">{() => <WrappedPage component={SsoSettings} />}</Route>
       <Route path="/settings">{() => <WrappedPage component={SettingsPage} />}</Route>
       <Route path="/crm/leads/:id">{() => <DashboardLayout><CrmLeadDetail /></DashboardLayout>}</Route>
       <Route path="/crm/campaigns">{() => <WrappedPage component={CrmCampaigns} />}</Route>

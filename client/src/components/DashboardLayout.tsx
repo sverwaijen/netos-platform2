@@ -67,7 +67,6 @@ import {
   Shield,
   FileSignature,
   BarChart3,
-  CheckCircle,
   type LucideIcon,
 } from "lucide-react";
 import { CSSProperties, useEffect, useRef, useState } from "react";
@@ -109,9 +108,6 @@ const navCategories: NavCategory[] = [
       { icon: MapPin, label: "Locations", path: "/locations", permission: "locations.view" },
       { icon: Layers, label: "Resources", path: "/resources", permission: "resources.view" },
       { icon: Calendar, label: "Bookings", path: "/bookings", permission: "bookings.view" },
-      { icon: Calendar, label: "Calendar", path: "/bookings/calendar", permission: "bookings.view" },
-      { icon: Layers, label: "Recurring", path: "/bookings/recurring", permission: "bookings.create" },
-      { icon: CheckCircle, label: "Approvals", path: "/bookings/approvals", permission: "bookings.manage" },
       { icon: Thermometer, label: "Room Control", path: "/room-control", permission: "roomcontrol.view" },
     ],
   },
@@ -157,7 +153,6 @@ const navCategories: NavCategory[] = [
     items: [
       { icon: Ticket, label: "Operations", path: "/operations", permission: "operations.view" },
       { icon: Car, label: "Parking", path: "/parking", permission: "parking.view" },
-      { icon: Users, label: "Visitor Parking", path: "/parking/visitors", permission: "parking.manage" },
       { icon: Coffee, label: "Butler Kiosk", path: "/butler/admin", permission: "butler.view" },
       { icon: ChefHat, label: "Menukaart", path: "/menu", permission: "menu.view" },
       { icon: Monitor, label: "Signage", path: "/signing", permission: "signage.view" },
@@ -172,7 +167,7 @@ const navCategories: NavCategory[] = [
       { icon: Bell, label: "Notifications", path: "/notifications", permission: "notifications.view" },
       { icon: Shield, label: "User Roles", path: "/settings/roles", permission: "roles.view" },
       { icon: Settings, label: "Settings", path: "/settings", permission: "settings.view" },
-      { icon: Key, label: "MFA Settings", path: "/settings/mfa", permission: "settings.view" },
+      { icon: Shield, label: "SSO Config", path: "/settings/sso", permission: "settings.manage" },
     ],
   },
 ];
