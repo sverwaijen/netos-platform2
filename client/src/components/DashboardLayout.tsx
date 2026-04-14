@@ -67,6 +67,7 @@ import {
   Shield,
   FileSignature,
   BarChart3,
+  TrendingUp,
   type LucideIcon,
 } from "lucide-react";
 import { CSSProperties, useEffect, useRef, useState } from "react";
@@ -129,6 +130,7 @@ const navCategories: NavCategory[] = [
       { icon: CreditCard, label: "Plans & Packages", path: "/bundles", permission: "bundles.view" },
       { icon: Shield, label: "Budget Controls", path: "/budget-controls", permission: "budget_controls.view" },
       { icon: FileSignature, label: "Commit Contracts", path: "/commit-contracts", permission: "commit_contracts.view" },
+      { icon: TrendingUp, label: "Spending Analytics", path: "/spending-analytics", permission: "credits.manage" },
       { icon: BarChart3, label: "Credit Admin", path: "/credits/admin", permission: "credits.manage" },
     ],
   },

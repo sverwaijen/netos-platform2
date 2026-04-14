@@ -53,6 +53,7 @@ import UserRolesPage from "./pages/UserRolesPage";
 import BudgetControlsPage from "./pages/BudgetControlsPage";
 import CommitContractsPage from "./pages/CommitContractsPage";
 import CreditAdminDashboard from "./pages/CreditAdminDashboard";
+import SpendingAnalyticsPage from "./pages/SpendingAnalyticsPage";
 
 function WrappedPage({ component: Component }: { component: React.ComponentType }) {
   return (
@@ -107,6 +108,7 @@ function Router() {
       <Route path="/budget-controls">{() => <WrappedPage component={BudgetControlsPage} />}</Route>
       <Route path="/commit-contracts">{() => <WrappedPage component={CommitContractsPage} />}</Route>
       <Route path="/credits/admin">{() => <WrappedPage component={CreditAdminDashboard} />}</Route>
+      <Route path="/spending-analytics">{() => <WrappedPage component={SpendingAnalyticsPage} />}</Route>
       <Route path="/menu">{() => <WrappedPage component={MenuDashboard} />}</Route>
       {/* Standalone kiosk routes */}
       <Route path="/butler">{() => <ButlerKiosk />}</Route>
