@@ -1,17 +1,18 @@
-/**
 import { createLogger } from "../_core/logger";
 
 const log = createLogger("Supabase");
+
+/**
  * Supabase Integration Module for NET OS Platform
- * 
+ *
  * This module provides a bridge between the NET OS Platform and Supabase,
  * enabling realtime sync, external database access, and Supabase Auth integration.
- * 
+ *
  * Configuration:
  * - SUPABASE_URL: Your Supabase project URL
  * - SUPABASE_ANON_KEY: Public anon key for client-side access
  * - SUPABASE_SERVICE_KEY: Service role key for server-side operations
- * 
+ *
  * Features:
  * - Realtime event broadcasting (parking, tickets, presence)
  * - External data sync (push NET OS data to Supabase for mobile app)
@@ -28,7 +29,7 @@ let config: SupabaseConfig | null = null;
 
 export function initSupabase(cfg: SupabaseConfig) {
   config = cfg;
-  log.info("Initialized", { url: ENV.supabaseUrl });
+  log.info("Initialized", { url: cfg.url });
 }
 
 export function getSupabaseConfig(): SupabaseConfig | null {
@@ -116,9 +117,9 @@ export async function supabaseBroadcast(channel: string, event: string, payload:
         }],
       }),
     });
-    if (!res.ok) log.warn("Broadcast failed:", res.status);
+    if (!res.ok) log.warn("Broadcast failed:", { status: res.status });
   } catch (e) {
-    log.warn("Broadcast error:", e);
+    log.warn("Broadcast error:", { error: String(e) });
   }
 }
 
@@ -146,7 +147,7 @@ export async function syncUserToSupabase(user: {
       synced_at: new Date().toISOString(),
     }], "skynet_id");
   } catch (e) {
-    log.warn("User sync failed:", e);
+    log.warn("User sync failed:", { error: String(e) });
   }
 }
 

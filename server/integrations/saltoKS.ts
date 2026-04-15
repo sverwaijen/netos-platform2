@@ -1,15 +1,16 @@
-/**
 import { createLogger } from "../_core/logger";
 
 const log = createLogger("SaltoKS");
+
+/**
  * Salto KS Connect API Integration
- * 
+ *
  * Provides server-side access to Salto KS for:
  * - Creating/managing users in Salto KS
  * - Issuing and revoking mobile keys
  * - Listing access points (doors/locks)
  * - Remote door opening
- * 
+ *
  * Requires:
  * - SALTO_KS_API_URL
  * - SALTO_KS_CLIENT_ID
@@ -30,7 +31,7 @@ let tokenExpiresAt = 0;
 
 export function initSaltoKS(cfg: SaltoKSConfig) {
   config = cfg;
-  log.info("Initialized", { siteId });
+  log.info("Initialized", { siteId: cfg.siteId });
 }
 
 async function getAccessToken(): Promise<string> {

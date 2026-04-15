@@ -2,13 +2,9 @@
  * Email Service Abstraction
  * Supports Resend API (primary) with fallback patterns for SendGrid
  */
-<<<<<<< HEAD
-=======
-import fetch from "node-fetch";
 import { createLogger } from "../_core/logger";
 
 const log = createLogger("Email");
->>>>>>> origin/claude/structured-logger-issue-34
 
 const RESEND_API_KEY = process.env.RESEND_API_KEY;
 const RESEND_BASE_URL = "https://api.resend.com";

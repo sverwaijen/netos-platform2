@@ -10,7 +10,7 @@
  */
 
 // ── Role definitions ────────────────────────────────────────────────
-export const ROLES = ["administrator", "host", "company_owner", "teamadmin", "member", "guest"] as const;
+export const ROLES = ["administrator", "host", "company_owner", "teamadmin", "tenant", "member", "facility", "cleaner", "guest", "ceo", "cfo", "developer"] as const;
 export type UserRole = (typeof ROLES)[number];
 
 // ── Permission keys ─────────────────────────────────────────────────
@@ -38,6 +38,7 @@ export const PERMISSIONS = [
   "members.view",
   "members.manage",
   // Company
+  "company.billing.view",
   "company.billing.manage",
   "company.settings.manage",
   // Visitors
@@ -90,6 +91,23 @@ export const PERMISSIONS = [
   "budget_controls.manage",
   "commit_contracts.view",
   "commit_contracts.manage",
+  // Finance & Contracts (CFO)
+  "finance.view",
+  "finance.reports",
+  "invoices.view",
+  "invoices.manage",
+  "contracts.view",
+  "contracts.manage",
+  // Cleaning & Maintenance
+  "cleaning.view",
+  "cleaning.manage",
+  "maintenance.view",
+  "maintenance.manage",
+  // Executive / CEO
+  "executive.view",
+  "executive.reports",
+  // SLA
+  "sla.view",
 ] as const;
 
 export type Permission = (typeof PERMISSIONS)[number];
@@ -185,6 +203,82 @@ export const ROLE_PERMISSIONS: Record<UserRole, readonly Permission[]> = {
     "bookings.view",
     "parking.view",
   ],
+
+  facility: [
+    "dashboard.view",
+    "locations.view", "locations.manage",
+    "resources.view", "resources.manage",
+    "roomcontrol.view", "roomcontrol.manage",
+    "parking.view", "parking.manage",
+    "signage.view", "signage.manage",
+    "devices.view", "devices.manage",
+    "operations.view", "operations.manage",
+    "notifications.view",
+    "settings.view",
+    "cleaning.view", "cleaning.manage",
+    "maintenance.view", "maintenance.manage",
+  ],
+
+  cleaner: [
+    "dashboard.view",
+    "operations.view",
+    "notifications.view",
+    "cleaning.view", "cleaning.manage",
+  ],
+
+  tenant: [
+    "dashboard.view",
+    "locations.view",
+    "resources.view",
+    "bookings.view", "bookings.create", "bookings.manage",
+    "wallet.view",
+    "bundles.view",
+    "visitors.view", "visitors.manage",
+    "invites.view", "invites.manage",
+    "parking.view",
+    "notifications.view",
+    "settings.view",
+    "credits.view", "credits.purchase",
+    "contracts.view",
+    "invoices.view",
+    "sla.view",
+    "company.billing.view",
+  ],
+
+  ceo: [
+    "dashboard.view",
+    "wallet.view", "wallet.manage",
+    "bundles.view", "bundles.manage",
+    "credits.view", "credits.manage",
+    "budget_controls.view", "budget_controls.manage",
+    "companies.view",
+    "members.view",
+    "locations.view",
+    "resources.view",
+    "bookings.view",
+    "parking.view",
+    "notifications.view",
+    "executive.view", "executive.reports",
+  ],
+
+  cfo: [
+    "dashboard.view",
+    "wallet.view", "wallet.manage",
+    "bundles.view", "bundles.manage",
+    "credits.view", "credits.manage",
+    "budget_controls.view", "budget_controls.manage",
+    "commit_contracts.view", "commit_contracts.manage",
+    "locations.view",
+    "resources.view",
+    "bookings.view",
+    "parking.view",
+    "notifications.view",
+    "settings.view",
+    "finance.view", "finance.reports",
+    "invoices.view", "invoices.manage",
+  ],
+
+  developer: [...PERMISSIONS], // Full access for development/testing
 };
 
 // ── Helper functions ────────────────────────────────────────────────
@@ -218,6 +312,10 @@ export function migrateRole(oldRole: string): UserRole {
       return "member";
     case "guest":
       return "guest";
+    case "tenant":
+      return "tenant";
+    case "klant":
+      return "tenant";
     default:
       return "guest";
   }
@@ -229,17 +327,29 @@ export const ROLE_LABELS: Record<UserRole, string> = {
   host: "Host (Boss)",
   company_owner: "Company Owner",
   teamadmin: "Team Admin",
+  tenant: "Tenant (Klant)",
   member: "Member",
+  facility: "Facilitymedewerker",
+  cleaner: "Schoonmaakster",
   guest: "Guest",
+  ceo: "CEO/Executive",
+  cfo: "CFO",
+  developer: "Developer",
 };
 
 /** Role hierarchy level (higher = more powerful) */
 export const ROLE_HIERARCHY: Record<UserRole, number> = {
   administrator: 100,
+  ceo: 95,
+  developer: 95,
+  cfo: 90,
   host: 80,
   company_owner: 70,
   teamadmin: 60,
+  tenant: 50,
+  facility: 35,
   member: 40,
+  cleaner: 25,
   guest: 10,
 };
 

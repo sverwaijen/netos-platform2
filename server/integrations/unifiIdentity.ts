@@ -1,15 +1,16 @@
-/**
 import { createLogger } from "../_core/logger";
 
 const log = createLogger("UniFi");
+
+/**
  * UniFi Identity / UniFi Network Integration
- * 
+ *
  * Provides server-side WiFi provisioning for coworking members:
  * - Create WiFi user accounts
  * - Generate WiFi profiles for auto-connect
  * - Manage bandwidth and VLAN assignments
  * - Authorize/deauthorize devices
- * 
+ *
  * Requires:
  * - UNIFI_CONTROLLER_URL
  * - UNIFI_USERNAME
@@ -30,7 +31,7 @@ let sessionExpiresAt = 0;
 
 export function initUniFi(cfg: UniFiConfig) {
   config = cfg;
-  log.info("Initialized", { controllerUrl });
+  log.info("Initialized", { controllerUrl: cfg.controllerUrl });
 }
 
 async function authenticate(): Promise<string> {

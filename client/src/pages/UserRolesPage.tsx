@@ -37,9 +37,16 @@ import { toast } from "sonner";
 const ROLE_COLORS: Record<UserRole, string> = {
   administrator: "bg-red-500/10 text-red-500 border-red-500/20",
   host: "bg-amber-500/10 text-amber-500 border-amber-500/20",
+  company_owner: "bg-purple-500/10 text-purple-500 border-purple-500/20",
   teamadmin: "bg-blue-500/10 text-blue-500 border-blue-500/20",
+  tenant: "bg-indigo-500/10 text-indigo-500 border-indigo-500/20",
   member: "bg-green-500/10 text-green-500 border-green-500/20",
+  facility: "bg-teal-500/10 text-teal-500 border-teal-500/20",
+  cleaner: "bg-cyan-500/10 text-cyan-500 border-cyan-500/20",
   guest: "bg-gray-500/10 text-gray-400 border-gray-500/20",
+  ceo: "bg-orange-500/10 text-orange-500 border-orange-500/20",
+  cfo: "bg-rose-500/10 text-rose-500 border-rose-500/20",
+  developer: "bg-pink-500/10 text-pink-500 border-pink-500/20",
 };
 
 export default function UserRolesPage() {

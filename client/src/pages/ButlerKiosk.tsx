@@ -418,12 +418,12 @@ export default function ButlerKiosk() {
                   )}
                   <div className="w-full aspect-square rounded-lg bg-white/[0.04] mb-3 overflow-hidden">
                     <img
-                      src={getProductImageUrl(product.imageUrl, product.name, product.category)}
+                      src={getProductImageUrl(product.imageUrl, product.name, String(product.categoryId))}
                       alt={product.name}
                       className="w-full h-full object-cover"
                       onError={(e) => {
                         const img = e.target as HTMLImageElement;
-                        img.src = getProductImageUrl(null, product.name, product.category);
+                        img.src = getProductImageUrl(null, product.name, String(product.categoryId));
                       }}
                     />
                   </div>

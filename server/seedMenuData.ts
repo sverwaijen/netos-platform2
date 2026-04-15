@@ -11,10 +11,10 @@
  * - menu_arrangements (deals)
  */
 
-import {
+import { getDb } from "./db";
 import { createLogger } from "./_core/logger";
 
-const log = createLogger("SeedMenu"); getDb } from "./db";
+const log = createLogger("SeedMenu");
 import {
   menuSeasons,
   menuCategories,

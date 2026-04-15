@@ -1,16 +1,12 @@
 import { z } from "zod";
 import { eq } from "drizzle-orm";
 import { publicProcedure, protectedProcedure, router } from "../_core/trpc";
-import * as db from "../db";
+import { getDb, getCrmWebsiteVisitors, createCrmWebsiteVisitor, updateCrmWebsiteVisitor } from "../db";
 import { crmWebsiteVisitors } from "../../drizzle/schema";
 import visitorTrackingService from "../integrations/visitorTrackingService";
-<<<<<<< HEAD
-import { getDb } from "../db";
-=======
 import { createLogger } from "../_core/logger";
 
 const log = createLogger("VisitorTracking");
->>>>>>> origin/claude/structured-logger-issue-34
 
 const adminProcedure = protectedProcedure.use(({ ctx, next }) => {
   if (ctx.user.role !== "administrator" && ctx.user.role !== "host") {
@@ -48,7 +44,7 @@ export const visitorTrackingRouter = router({
         const companyInfo = await visitorTrackingService.lookupCompanyByIp(clientIp);
 
         // Check for duplicate visit (same IP within 30 minutes)
-        const recentVisitors = await db.getCrmWebsiteVisitors({ isIdentified: true }, 100);
+        const recentVisitors = await getCrmWebsiteVisitors({ isIdentified: true }, 100);
         const isNewVisit = await visitorTrackingService.shouldTrackAsNewVisit(
           clientIp,
           recentVisitors as any
@@ -59,7 +55,7 @@ export const visitorTrackingRouter = router({
         }
 
         // Store visit in database
-        const visitId = await db.createCrmWebsiteVisitor({
+        const visitId = await createCrmWebsiteVisitor({
           ip: clientIp,
           companyName: companyInfo.companyName,
           companyDomain: companyInfo.companyDomain,
@@ -93,7 +89,7 @@ export const visitorTrackingRouter = router({
       const hoursInMs = input.hoursBack * 60 * 60 * 1000;
       const timeThreshold = Date.now() - hoursInMs;
 
-      let visitors = await db.getCrmWebsiteVisitors(
+      let visitors = await getCrmWebsiteVisitors(
         { isIdentified: true },
         input.limit
       );
@@ -153,7 +149,7 @@ The script will automatically:
       })
     )
     .mutation(async ({ input }) => {
-      await db.updateCrmWebsiteVisitor(input.visitorId, {
+      await updateCrmWebsiteVisitor(input.visitorId, {
         leadId: input.leadId,
       } as any);
 
@@ -176,7 +172,7 @@ The script will automatically:
       })
     )
     .mutation(async ({ input }) => {
-      const visitId = await db.createCrmWebsiteVisitor({
+      const visitId = await createCrmWebsiteVisitor({
         ...input,
         lastVisitAt: Date.now(),
       } as any);
@@ -190,8 +186,8 @@ The script will automatically:
   getVisitorById: adminProcedure
     .input(z.object({ id: z.number() }))
     .query(async ({ input }) => {
-      const visitors = await db.getCrmWebsiteVisitors();
-      return visitors.find(v => v.id === input.id);
+      const visitors = await getCrmWebsiteVisitors();
+      return visitors.find((v: any) => v.id === input.id);
     }),
 
   /**
@@ -200,7 +196,7 @@ The script will automatically:
   getVisitorHistory: adminProcedure
     .input(z.object({ ip: z.string(), limit: z.number().default(20) }))
     .query(async ({ input }) => {
-      const visitors = await db.getCrmWebsiteVisitors({}, 100);
+      const visitors = await getCrmWebsiteVisitors({}, 100);
       const ipVisitors = visitors.slice(0, input.limit);
       return ipVisitors;
     }),
@@ -231,7 +227,7 @@ The script will automatically:
       const hoursInMs = input.hoursBack * 60 * 60 * 1000;
       const timeThreshold = Date.now() - hoursInMs;
 
-      const visitors = await db.getCrmWebsiteVisitors({}, 100);
+      const visitors = await getCrmWebsiteVisitors({}, 100);
 
       const uniqueCompanies = new Set(
         visitors.filter((v: any) => v.companyName).map((v: any) => v.companyName)

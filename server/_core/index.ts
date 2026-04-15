@@ -8,13 +8,9 @@ import { registerStripeWebhook } from "../routers/stripeWebhook";
 import { appRouter } from "../routers";
 import { createContext } from "./context";
 import { serveStatic, setupVite } from "./vite";
-<<<<<<< HEAD
-import { logger } from "./logger";
-=======
 import { createLogger } from "./logger";
 
 const log = createLogger("Server");
->>>>>>> origin/claude/structured-logger-issue-34
 
 function isPortAvailable(port: number): Promise<boolean> {
   return new Promise(resolve => {
@@ -65,19 +61,11 @@ async function startServer() {
   const port = await findAvailablePort(preferredPort);
 
   if (port !== preferredPort) {
-<<<<<<< HEAD
-    logger.info(`Port ${preferredPort} is busy, using port ${port} instead`);
-  }
-
-  server.listen(port, () => {
-    logger.info(`Server running on http://localhost:${port}/`);
-=======
     log.info(`Port ${preferredPort} is busy, using port ${port} instead`);
   }
 
   server.listen(port, () => {
     log.info(`Server running on http://localhost:${port}/`);
->>>>>>> origin/claude/structured-logger-issue-34
   });
 }
 

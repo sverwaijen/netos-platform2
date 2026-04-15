@@ -69,7 +69,7 @@ export const escalationRulesRouter = router({
         autoPriorityBump: input.autoPriorityBump ?? false,
       });
 
-      return { success: true, id: result.insertId };
+      return { success: true, id: (result as any).insertId };
     }),
 
   // Update escalation rule

@@ -5,10 +5,6 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Switch } from "@/components/ui/switch";
 import { Bell, Clock, Zap } from "lucide-react";
 
-<<<<<<< HEAD
-export default function NotificationPreferences() {
-  const [prefs, setPrefs] = useState({ booking: true, wallet: true, parking: true, operations: true, community: true, system: true });
-=======
 interface NotificationPrefs {
   booking: boolean;
   wallet: boolean;
@@ -28,43 +24,24 @@ interface RecentNotif {
 
 export default function NotificationPreferences() {
   const [prefs, setPrefs] = useState<NotificationPrefs>({ booking: true, wallet: true, parking: true, operations: true, community: true, system: true });
->>>>>>> origin/claude/visitor-parking-issue-48-v2
   const [pushEnabled, setPushEnabled] = useState(false);
   const [emailDigest, setEmailDigest] = useState<"daily" | "weekly" | "off">("daily");
   const [quietStart, setQuietStart] = useState("22:00");
   const [quietEnd, setQuietEnd] = useState("08:00");
   const [bypassQuiet, setBypassQuiet] = useState(true);
 
-<<<<<<< HEAD
-  const recentNotifs = [
-=======
   const recentNotifs: RecentNotif[] = [
->>>>>>> origin/claude/visitor-parking-issue-48-v2
     { id: "1", title: "Booking Confirmed", message: "Your room booking confirmed", timestamp: "2 hours ago", read: false },
     { id: "2", title: "Credits Low", message: "Wallet balance below 50 credits", timestamp: "5 hours ago", read: false },
     { id: "3", title: "Parking Reminder", message: "Active parking session", timestamp: "1 day ago", read: true },
     { id: "4", title: "Community Event", message: "Monthly Team Gathering on April 20th", timestamp: "2 days ago", read: true },
   ];
 
-<<<<<<< HEAD
-  const handlePrefChange = (key: keyof typeof prefs) => {
-=======
   const handlePrefChange = (key: keyof NotificationPrefs) => {
->>>>>>> origin/claude/visitor-parking-issue-48-v2
     setPrefs((prev) => ({ ...prev, [key]: !prev[key] }));
   };
 
   const handleRequestPushPermission = async () => {
-<<<<<<< HEAD
-    if ("Notification" in window) {
-      const permission = await Notification.requestPermission();
-      if (permission === "granted") {
-        setPushEnabled(true);
-        toast.success("Push notifications enabled");
-      } else {
-        toast.error("Push notification permission denied");
-      }
-=======
     try {
       if ("Notification" in window) {
         const permission = await Notification.requestPermission();
@@ -77,7 +54,6 @@ export default function NotificationPreferences() {
       }
     } catch (error) {
       toast.error("Failed to request push permissions");
->>>>>>> origin/claude/visitor-parking-issue-48-v2
     }
   };
 
@@ -93,9 +69,6 @@ export default function NotificationPreferences() {
       <Card className="bg-[#111] border-white/[0.06]">
         <CardHeader><CardTitle className="text-sm text-[#627653]">Notification Categories</CardTitle></CardHeader>
         <CardContent className="space-y-4">
-<<<<<<< HEAD
-          {[{ key: "booking" as const, label: "Booking Updates" }, { key: "wallet" as const, label: "Wallet & Credits" }, { key: "parking" as const, label: "Parking Alerts" }, { key: "operations" as const, label: "Operations" }, { key: "community" as const, label: "Community Events" }, { key: "system" as const, label: "System Messages" }].map(({ key, label }) => (
-=======
           {[
             { key: "booking" as const, label: "Booking Updates" },
             { key: "wallet" as const, label: "Wallet & Credits" },
@@ -104,7 +77,6 @@ export default function NotificationPreferences() {
             { key: "community" as const, label: "Community Events" },
             { key: "system" as const, label: "System Messages" },
           ].map(({ key, label }) => (
->>>>>>> origin/claude/visitor-parking-issue-48-v2
             <div key={key} className="flex items-center justify-between p-3 rounded bg-white/[0.02] border border-white/[0.06]">
               <span className="text-sm">{label}</span>
               <Switch checked={prefs[key]} onCheckedChange={() => handlePrefChange(key)} />
@@ -115,11 +87,7 @@ export default function NotificationPreferences() {
 
       <Card className="bg-[#111] border-white/[0.06]">
         <CardHeader><CardTitle className="text-sm text-[#627653] flex items-center gap-2"><Zap className="w-4 h-4" /> Push Notifications</CardTitle></CardHeader>
-<<<<<<< HEAD
-        <CardContent>
-=======
         <CardContent className="space-y-4">
->>>>>>> origin/claude/visitor-parking-issue-48-v2
           <div className="flex items-center justify-between p-4 rounded bg-white/[0.02] border border-white/[0.06]">
             <div><p className="text-sm font-semibold mb-1">Browser Notifications</p><p className="text-xs text-[#888]">Receive real-time alerts</p></div>
             {!pushEnabled ? (
@@ -133,11 +101,7 @@ export default function NotificationPreferences() {
 
       <Card className="bg-[#111] border-white/[0.06]">
         <CardHeader><CardTitle className="text-sm text-[#627653]">Email Digest</CardTitle></CardHeader>
-<<<<<<< HEAD
-        <CardContent>
-=======
         <CardContent className="space-y-4">
->>>>>>> origin/claude/visitor-parking-issue-48-v2
           <div>
             <p className="text-xs font-semibold text-[#888] mb-3 uppercase">Frequency</p>
             <div className="grid grid-cols-3 gap-2">
@@ -154,10 +118,6 @@ export default function NotificationPreferences() {
         <CardContent className="space-y-4">
           <p className="text-xs text-[#888]">Pause non-urgent notifications during these hours</p>
           <div className="grid grid-cols-2 gap-4">
-<<<<<<< HEAD
-            <div><label className="text-xs font-semibold text-[#888] mb-2 block uppercase">Start Time</label><input type="time" value={quietStart} onChange={(e) => setQuietStart(e.target.value)} className="w-full bg-white/[0.04] border border-white/[0.06] rounded px-3 py-2 text-sm" /></div>
-            <div><label className="text-xs font-semibold text-[#888] mb-2 block uppercase">End Time</label><input type="time" value={quietEnd} onChange={(e) => setQuietEnd(e.target.value)} className="w-full bg-white/[0.04] border border-white/[0.06] rounded px-3 py-2 text-sm" /></div>
-=======
             <div>
               <label className="text-xs font-semibold text-[#888] mb-2 block uppercase">Start Time</label>
               <input type="time" value={quietStart} onChange={(e) => setQuietStart(e.target.value)} className="w-full bg-white/[0.04] border border-white/[0.06] rounded px-3 py-2 text-sm" />
@@ -166,7 +126,6 @@ export default function NotificationPreferences() {
               <label className="text-xs font-semibold text-[#888] mb-2 block uppercase">End Time</label>
               <input type="time" value={quietEnd} onChange={(e) => setQuietEnd(e.target.value)} className="w-full bg-white/[0.04] border border-white/[0.06] rounded px-3 py-2 text-sm" />
             </div>
->>>>>>> origin/claude/visitor-parking-issue-48-v2
           </div>
           <div className="flex items-center justify-between p-3 rounded bg-white/[0.02] border border-white/[0.06] mt-4">
             <div><p className="text-xs font-semibold mb-1">Bypass for Urgent</p><p className="text-xs text-[#888]">Critical alerts still come through</p></div>

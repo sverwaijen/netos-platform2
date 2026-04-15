@@ -54,7 +54,7 @@ describe("CI Configuration", () => {
     const packagePath = join(process.cwd(), "package.json");
     const packageJson = JSON.parse(readFileSync(packagePath, "utf-8"));
     expect(packageJson.scripts).toHaveProperty("test:e2e");
-    expect(packageJson.scripts.test:e2e).toBe("playwright test");
+    expect(packageJson.scripts["test:e2e"]).toBe("playwright test");
   });
 
   it("should have Playwright dependency", () => {

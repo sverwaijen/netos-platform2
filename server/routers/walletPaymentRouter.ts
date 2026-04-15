@@ -4,7 +4,9 @@ import { protectedProcedure, publicProcedure, router } from "../_core/trpc";
 import { getDb } from "../db";
 import { walletTransactions, wallets, creditBundles, creditLedger, users } from "../../drizzle/schema";
 import { ENV } from "../_core/env";
-import { logger } from "../_core/logger";
+import { createLogger } from "../_core/logger";
+
+const logger = createLogger("WalletPayment");
 
 // Initialize Stripe client if secret key is available
 const stripe = ENV.STRIPE_SECRET_KEY
@@ -249,19 +251,15 @@ export const walletPaymentRouter = router({
 
       let walletId = userWallets[0]?.id;
       if (!walletId) {
-<<<<<<< HEAD
         // Create a personal wallet if it doesn't exist
-        const [result] = await db
-=======
         const result = await db
->>>>>>> origin/claude/stripe-checkout-issue-54
           .insert(wallets)
           .values({
             type: "personal",
             ownerId: ctx.user.id,
             balance: "0",
           });
-        walletId = result.insertId;
+        walletId = (result as any).insertId;
       }
 
       // Get user details
@@ -288,7 +286,7 @@ export const walletPaymentRouter = router({
         status: "pending",
       });
 
-      const transactionId = txResult.insertId;
+      const transactionId = (txResult as any).insertId;
 
       // Configure payment method types based on user selection
       // iDEAL is the dominant payment method in the Netherlands
@@ -370,7 +368,7 @@ export const walletPaymentRouter = router({
         const result = await db
           .insert(wallets)
           .values({ type: "personal", ownerId: ctx.user.id, balance: "0" });
-        walletId = result.insertId;
+        walletId = (result as any).insertId;
       }
 
       const userRecords = await db.select().from(users).where(eq(users.id, ctx.user.id));
@@ -396,7 +394,7 @@ export const walletPaymentRouter = router({
         status: "pending",
       });
 
-      const transactionId = txResult.insertId;
+      const transactionId = (txResult as any).insertId;
 
       const paymentMethodTypes: string[] = input.paymentMethod === "ideal"
         ? ["ideal"]

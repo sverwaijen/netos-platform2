@@ -104,7 +104,7 @@ export default function BookingCalendar() {
   const [selectedLocation, setSelectedLocation] = useState<string>("all");
   const [selectedFloor, setSelectedFloor] = useState<string>("all");
   const [selectedResourceTypes, setSelectedResourceTypes] = useState<Set<ResourceType>>(
-    new Set(["desk", "meeting_room", "parking"])
+    new Set(["desk", "meeting_room", "parking"] as ResourceType[])
   );
   const [showBookingModal, setShowBookingModal] = useState(false);
   const [selectedSlot, setSelectedSlot] = useState<any>(null);
@@ -228,8 +228,8 @@ export default function BookingCalendar() {
                 >
                   <div className="text-xs font-semibold mb-1 text-foreground">{dayData.date.getDate()}</div>
                   <div className="space-y-0.5">
-                    {dayData.dayBookings.slice(0, 2).map((booking) => {
-                      const color = RESOURCE_COLORS[booking.resourceType];
+                    {dayData.dayBookings.slice(0, 2).map((booking: BookingData) => {
+                      const color = RESOURCE_COLORS[booking.resourceType as ResourceType];
                       return (
                         <div
                           key={booking.id}

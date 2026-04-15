@@ -7,7 +7,7 @@ export default function ExecutiveDashboard() {
   const { user } = useAuth();
   const permissions = usePermissions();
 
-  if (!permissions.has("executive.view")) {
+  if (!permissions.can("dashboard.view")) {
     return (
       <div className="flex items-center justify-center min-h-screen">
         <div className="text-center">

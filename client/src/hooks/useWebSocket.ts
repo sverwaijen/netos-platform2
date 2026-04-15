@@ -22,16 +22,14 @@ export interface WebSocketStatus {
   reconnectAttempts: number;
 }
 
-interface ChannelMessages {
-  [key in WebSocketChannel]?: WebSocketMessage | null;
-}
+type ChannelMessages = Partial<Record<WebSocketChannel, WebSocketMessage | null>>;
 
 const RECONNECT_DELAY = 3000;
 const MAX_RECONNECT_ATTEMPTS = 5;
 
 export function useWebSocket(
   channels: WebSocketChannel[] = []
-): WebSocketStatus & { lastMessagesByChannel: ChannelMessages } {
+): WebSocketStatus & { lastMessagesByChannel: ChannelMessages; subscribe: (channel: WebSocketChannel) => void; unsubscribe: (channel: WebSocketChannel) => void } {
   const wsRef = useRef<WebSocket | null>(null);
   const reconnectTimeoutRef = useRef<NodeJS.Timeout | null>(null);
   const pingIntervalRef = useRef<NodeJS.Timeout | null>(null);
@@ -104,7 +102,7 @@ export function useWebSocket(
             }));
             setLastMessagesByChannel((prev) => ({
               ...prev,
-              [message.channel]: message,
+              [message.channel as WebSocketChannel]: message,
             }));
           }
         } catch (error) {
@@ -195,7 +193,7 @@ export function useWebSocket(
   return {
     ...status,
     lastMessagesByChannel,
-    subscribe: subscribe as any,
-    unsubscribe: unsubscribe as any,
+    subscribe,
+    unsubscribe,
   };
 }

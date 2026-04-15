@@ -1,7 +1,9 @@
 import type { Express, Request, Response } from "express";
 import { ENV } from "../_core/env";
-import { logger } from "../_core/logger";
+import { createLogger } from "../_core/logger";
 import { fulfillCheckoutSession } from "./walletPaymentRouter";
+
+const logger = createLogger("StripeWebhook");
 
 /**
  * Register the Stripe webhook endpoint on the Express app.

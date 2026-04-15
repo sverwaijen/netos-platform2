@@ -585,7 +585,7 @@ export const appRouter = router({
       email: z.string().optional(),
       phone: z.string().optional(),
       companyId: z.number().optional(),
-      role: z.enum(["administrator", "host", "teamadmin", "member", "guest"]).optional(),
+      role: z.enum(["administrator", "host", "company_owner", "teamadmin", "tenant", "member", "facility", "cleaner", "guest", "ceo", "cfo", "developer"]).optional(),
     })).mutation(async ({ ctx, input }) => {
       const token = nanoid(32);
       const expiresAt = new Date(Date.now() + 7 * 24 * 60 * 60 * 1000);
@@ -615,7 +615,7 @@ export const appRouter = router({
     }),
     updateRole: adminProcedure.input(z.object({
       userId: z.number(),
-      role: z.enum(["administrator", "host", "teamadmin", "member", "guest"]),
+      role: z.enum(["administrator", "host", "company_owner", "teamadmin", "tenant", "member", "facility", "cleaner", "guest", "ceo", "cfo", "developer"]),
     })).mutation(async ({ ctx, input }) => {
       // Prevent self-demotion for safety
       if (ctx.user.id === input.userId && input.role !== "administrator") {

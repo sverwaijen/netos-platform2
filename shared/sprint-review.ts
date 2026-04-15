@@ -127,6 +127,10 @@ export const reviewerRoles: Record<UserRole, { label: string; focus: string }> =
     label: "Receptionist / Community Host",
     focus: "Dagelijkse operatie: bezoekers, kiosk, signing, ticketing",
   },
+  company_owner: {
+    label: "Company Owner",
+    focus: "Bedrijfsbeheer, teamleden, boekingen, contracten",
+  },
   teamadmin: {
     label: "Boss / Bedrijfsleider",
     focus: "Boekingen, wallet, contracten, teamleden beheren",

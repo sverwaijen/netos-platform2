@@ -102,7 +102,7 @@ export async function notifyOwner(
     if (!response.ok) {
       const detail = await response.text().catch(() => "");
       log.warn(
-        "Failed to notify owner (${response.status} ${response.statusText})${
+        `Failed to notify owner (${response.status} ${response.statusText})${
           detail ? `: ${detail}` : ""
         }`
       );
@@ -111,7 +111,7 @@ export async function notifyOwner(
 
     return true;
   } catch (error) {
-    log.warn("Error calling notification service:", error);
+    log.warn("Error calling notification service:", (error as any) as Record<string, unknown>);
     return false;
   }
 }
