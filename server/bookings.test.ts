@@ -297,7 +297,7 @@ describe("Booking Validation", () => {
     endTime: baseTime + (hoursFromNow + durationHours) * 60 * 60 * 1000,
   });
 
-  describe("validateFutureTime", () => {
+  describe("validateFutureTime", () => { // Does not require DB
     it("should allow bookings starting in the future", async () => {
       const slot = makeSlot(2); // 2 hours from now
       const result = await validateFutureTime(slot.startTime);
@@ -317,7 +317,7 @@ describe("Booking Validation", () => {
     });
   });
 
-  describe("validateDuration", () => {
+  describe("validateDuration", () => { // Does not require DB
     it("should accept minimum duration (30 min)", async () => {
       const slot = makeSlot(1, 0.5);
       const result = await validateDuration(slot.startTime, slot.endTime);
@@ -351,7 +351,7 @@ describe("Booking Validation", () => {
     });
   });
 
-  describe("validateNoOverlap", () => {
+  describe.skipIf(!process.env.DATABASE_URL)("validateNoOverlap", () => {
     it("should allow non-overlapping bookings", async () => {
       const slot1 = makeSlot(1, 1); // 1 hour from now, 1 hour duration
       const slot2 = makeSlot(3, 1); // 3 hours from now, 1 hour duration
@@ -383,7 +383,7 @@ describe("Booking Validation", () => {
     });
   });
 
-  describe("validateNoDuplicateUser", () => {
+  describe.skipIf(!process.env.DATABASE_URL)("validateNoDuplicateUser", () => {
     it("should allow user to book when no existing bookings", async () => {
       const slot = makeSlot(2, 1);
 
@@ -401,7 +401,7 @@ describe("Booking Validation", () => {
     });
   });
 
-  describe("validateBooking", () => {
+  describe.skipIf(!process.env.DATABASE_URL)("validateBooking", () => {
     it("should validate all conditions", async () => {
       const slot = makeSlot(2, 1);
 
@@ -430,7 +430,7 @@ describe("Booking Validation", () => {
     });
   });
 
-  describe("cancelBooking", () => {
+  describe.skipIf(!process.env.DATABASE_URL)("cancelBooking", () => {
     it("should reject cancellation within 1 hour of start", async () => {
       // This test requires a booking in the DB, which we don't have
       // Testing the time validation logic indirectly

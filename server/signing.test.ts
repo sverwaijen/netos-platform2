@@ -19,13 +19,12 @@ vi.mock("./scraper", () => ({
   ),
 }));
 
-describe("Signing/Branding Auto-Scrape", () => {
+describe.skipIf(!process.env.DATABASE_URL)("Signing/Branding Auto-Scrape", () => {
   let db: any;
   let testCompanyId: number;
 
   beforeAll(async () => {
     db = await getDb();
-    if (!db) throw new Error("DB unavailable");
 
     // Create a test company
     const [company] = await db.insert(companies).values({

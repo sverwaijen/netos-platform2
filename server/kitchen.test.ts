@@ -4,7 +4,7 @@ import { kioskOrders, kioskOrderItems, products, productCategories } from "../dr
 import { eq, and } from "drizzle-orm";
 import { nanoid } from "nanoid";
 
-describe("Kitchen Order Lifecycle", () => {
+describe.skipIf(!process.env.DATABASE_URL)("Kitchen Order Lifecycle", () => {
   let db: any;
   let testOrderId: number;
   let testLocationId: number = 1;
@@ -12,7 +12,6 @@ describe("Kitchen Order Lifecycle", () => {
 
   beforeAll(async () => {
     db = await getDb();
-    if (!db) throw new Error("DB unavailable");
 
     // Create a test category
     const [categoryResult] = await db.insert(productCategories).values({

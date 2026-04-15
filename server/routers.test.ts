@@ -1,7 +1,8 @@
-import { describe, expect, it, beforeAll } from "vitest";
+import { describe, expect, it, beforeAll, vi } from "vitest";
 import { appRouter } from "./routers";
 import { COOKIE_NAME } from "../shared/const";
 import type { TrpcContext } from "./_core/context";
+import { getDb } from "./db";
 
 type AuthenticatedUser = NonNullable<TrpcContext["user"]>;
 
@@ -62,7 +63,7 @@ describe("auth.me", () => {
 });
 
 // ─── Locations ───
-describe("locations", () => {
+describe.skipIf(!process.env.DATABASE_URL)("locations", () => {
   it("list returns all 7 locations", async () => {
     const ctx = createPublicContext();
     const caller = appRouter.createCaller(ctx);
@@ -108,7 +109,7 @@ describe("locations", () => {
 });
 
 // ─── Resources ───
-describe("resources", () => {
+describe.skipIf(!process.env.DATABASE_URL)("resources", () => {
   it("byLocation returns resources for Amsterdam", async () => {
     const ctx = createPublicContext();
     const caller = appRouter.createCaller(ctx);
@@ -171,7 +172,7 @@ describe("resources", () => {
 });
 
 // ─── Credit Bundles ───
-describe("bundles", () => {
+describe.skipIf(!process.env.DATABASE_URL)("bundles", () => {
   it("list returns all 6 bundles with correct pricing", async () => {
     const ctx = createPublicContext();
     const caller = appRouter.createCaller(ctx);
@@ -197,7 +198,7 @@ describe("bundles", () => {
 });
 
 // ─── Multipliers ───
-describe("multipliers", () => {
+describe.skipIf(!process.env.DATABASE_URL)("multipliers", () => {
   it("byLocation returns 7 day multipliers", async () => {
     const ctx = createPublicContext();
     const caller = appRouter.createCaller(ctx);
@@ -225,7 +226,7 @@ describe("multipliers", () => {
 });
 
 // ─── Companies ───
-describe("companies", () => {
+describe.skipIf(!process.env.DATABASE_URL)("companies", () => {
   it("list returns seeded companies", async () => {
     const { ctx } = createAuthContext();
     const caller = appRouter.createCaller(ctx);
@@ -254,7 +255,7 @@ describe("companies", () => {
 });
 
 // ─── Dashboard ───
-describe("dashboard", () => {
+describe.skipIf(!process.env.DATABASE_URL)("dashboard", () => {
   it("stats returns all required fields", async () => {
     const { ctx } = createAuthContext();
     const caller = appRouter.createCaller(ctx);
@@ -285,7 +286,7 @@ describe("dashboard", () => {
 });
 
 // ─── Devices ───
-describe("devices", () => {
+describe.skipIf(!process.env.DATABASE_URL)("devices", () => {
   it("stats returns device counts", async () => {
     const { ctx } = createAuthContext();
     const caller = appRouter.createCaller(ctx);
@@ -307,7 +308,7 @@ describe("devices", () => {
 });
 
 // ─── Wallets ───
-describe("wallets", () => {
+describe.skipIf(!process.env.DATABASE_URL)("wallets", () => {
   it("mine creates personal wallet if not exists", async () => {
     const { ctx } = createAuthContext();
     const caller = appRouter.createCaller(ctx);
@@ -353,7 +354,7 @@ describe("wallets", () => {
 });
 
 // ─── Bookings ───
-describe("bookings", () => {
+describe.skipIf(!process.env.DATABASE_URL)("bookings", () => {
   it("create booking deducts credits and records in ledger", async () => {
     const { ctx } = createAuthContext();
     const caller = appRouter.createCaller(ctx);
@@ -425,7 +426,7 @@ describe("bookings", () => {
 });
 
 // ─── Visitors ───
-describe("visitors", () => {
+describe.skipIf(!process.env.DATABASE_URL)("visitors", () => {
   it("create visitor returns access token and deep link", async () => {
     const { ctx } = createAuthContext();
     const caller = appRouter.createCaller(ctx);
@@ -456,7 +457,7 @@ describe("visitors", () => {
 });
 
 // ─── Invites ───
-describe("invites", () => {
+describe.skipIf(!process.env.DATABASE_URL)("invites", () => {
   it("create invite returns token and link", async () => {
     const { ctx } = createAuthContext();
     const caller = appRouter.createCaller(ctx);
@@ -483,7 +484,7 @@ describe("invites", () => {
 });
 
 // ─── Notifications ───
-describe("notifications", () => {
+describe.skipIf(!process.env.DATABASE_URL)("notifications", () => {
   it("mine returns notifications array", async () => {
     const { ctx } = createAuthContext();
     const caller = appRouter.createCaller(ctx);
@@ -500,7 +501,7 @@ describe("notifications", () => {
 });
 
 // ─── Access Log ───
-describe("access", () => {
+describe.skipIf(!process.env.DATABASE_URL)("access", () => {
   it("logEntry creates access log entry", async () => {
     const { ctx } = createAuthContext();
     const caller = appRouter.createCaller(ctx);
@@ -524,7 +525,7 @@ describe("access", () => {
 });
 
 // ─── Profile ───
-describe("profile", () => {
+describe.skipIf(!process.env.DATABASE_URL)("profile", () => {
   it("get returns user profile", async () => {
     const { ctx } = createAuthContext();
     const caller = appRouter.createCaller(ctx);
@@ -541,7 +542,7 @@ describe("profile", () => {
 });
 
 // ─── CRM Leads ───
-describe("crmLeads", () => {
+describe.skipIf(!process.env.DATABASE_URL)("crmLeads", () => {
   let createdLeadId: number;
 
   it("create lead returns success", async () => {
@@ -665,7 +666,7 @@ describe("crmLeads", () => {
 });
 
 // ─── CRM Campaigns ───
-describe("crmCampaigns", () => {
+describe.skipIf(!process.env.DATABASE_URL)("crmCampaigns", () => {
   let campaignId: number;
 
   it("create campaign returns success", async () => {
@@ -726,7 +727,7 @@ describe("crmCampaigns", () => {
 });
 
 // ─── CRM Templates ───
-describe("crmTemplates", () => {
+describe.skipIf(!process.env.DATABASE_URL)("crmTemplates", () => {
   it("create and list templates", async () => {
     const { ctx } = createAuthContext();
     const caller = appRouter.createCaller(ctx);
@@ -762,7 +763,7 @@ describe("crmTemplates", () => {
 
 
 // ── Resource Management Tests ──────────────────────────────────────────
-describe("resourceTypes", () => {
+describe.skipIf(!process.env.DATABASE_URL)("resourceTypes", () => {
   it("lists all resource types", async () => {
     const { ctx } = createAuthContext();
     const caller = appRouter.createCaller(ctx);
@@ -786,7 +787,7 @@ describe("resourceTypes", () => {
   });
 });
 
-describe("resourceRates", () => {
+describe.skipIf(!process.env.DATABASE_URL)("resourceRates", () => {
   it("lists all pricing rates", async () => {
     const { ctx } = createAuthContext();
     const caller = appRouter.createCaller(ctx);
@@ -808,7 +809,7 @@ describe("resourceRates", () => {
   });
 });
 
-describe("resourceRules", () => {
+describe.skipIf(!process.env.DATABASE_URL)("resourceRules", () => {
   it("lists all booking rules", async () => {
     const { ctx } = createAuthContext();
     const caller = appRouter.createCaller(ctx);
@@ -821,7 +822,7 @@ describe("resourceRules", () => {
   });
 });
 
-describe("bookingPolicies", () => {
+describe.skipIf(!process.env.DATABASE_URL)("bookingPolicies", () => {
   it("lists all booking policies", async () => {
     const { ctx } = createAuthContext();
     const caller = appRouter.createCaller(ctx);
@@ -833,7 +834,7 @@ describe("bookingPolicies", () => {
   });
 });
 
-describe("resourceAmenities", () => {
+describe.skipIf(!process.env.DATABASE_URL)("resourceAmenities", () => {
   it("lists all amenities", async () => {
     const { ctx } = createAuthContext();
     const caller = appRouter.createCaller(ctx);
@@ -845,7 +846,7 @@ describe("resourceAmenities", () => {
   });
 });
 
-describe("resourceSchedules", () => {
+describe.skipIf(!process.env.DATABASE_URL)("resourceSchedules", () => {
   it("lists all schedules", async () => {
     const { ctx } = createAuthContext();
     const caller = appRouter.createCaller(ctx);
