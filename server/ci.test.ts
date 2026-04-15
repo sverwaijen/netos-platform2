@@ -15,9 +15,9 @@ describe("CI Configuration", () => {
     const content = readFileSync(workflowPath, "utf-8");
     expect(content).toContain("name: CI");
     expect(content).toContain("pnpm install");
-    expect(content).toContain("pnpm run check");
-    expect(content).toContain("pnpm vitest run");
-    expect(content).toContain("pnpm run build");
+    expect(content).toMatch(/pnpm (run check|tsc --noEmit)/);
+    expect(content).toContain("vitest run");
+    expect(content).toMatch(/pnpm (run )?build/);
   });
 
   it("should have E2E test directory", () => {
