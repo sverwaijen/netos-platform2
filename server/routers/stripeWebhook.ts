@@ -18,7 +18,8 @@ export function registerStripeWebhook(app: Express) {
     return;
   }
 
-  const stripe = require("stripe").default(ENV.STRIPE_SECRET_KEY, {
+  const Stripe = require("stripe");
+  const stripe = (Stripe.default || Stripe)(ENV.STRIPE_SECRET_KEY, {
     apiVersion: "2024-06-20",
     maxNetworkRetries: 3,
   });
