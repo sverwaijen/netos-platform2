@@ -1,4 +1,7 @@
 import { Server as HTTPServer } from "http";
+import { createLogger } from "./_core/logger";
+
+const log = createLogger("WebSocket");
 
 // WebSocket types - using any since ws package is not installed
 const WebSocket: any = null;
@@ -84,7 +87,7 @@ export class WebSocketServerManager {
       });
 
       ws.on("error", (error: any) => {
-        console.error(`WebSocket error for client ${clientId}:`, error);
+        log.error("WebSocket error for client", error, { clientId });
         this.handleDisconnection(clientId);
       });
 
@@ -136,7 +139,7 @@ export class WebSocketServerManager {
         }
       }
     } catch (error) {
-      console.error(`Error handling message from client ${clientId}:`, error);
+      log.error("Error handling message from client", error, { clientId });
     }
   }
 
@@ -165,7 +168,7 @@ export class WebSocketServerManager {
     data: unknown
   ): void {
     if (!this.isValidChannel(channel)) {
-      console.warn(`Invalid channel: ${channel}`);
+      log.warn("Invalid channel attempted", { channel });
       return;
     }
 
