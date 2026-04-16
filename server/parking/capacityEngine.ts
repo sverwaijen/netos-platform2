@@ -11,6 +11,8 @@
  *   Co = cost of denying entry (overbooking/compensation)
  */
 
+export type SlaTier = "platinum" | "gold" | "silver" | "bronze";
+
 import { getDb } from "../db";
 import {
   parkingZones, parkingSpots, parkingSessions, parkingPermits,
@@ -56,7 +58,7 @@ export interface AccessDecision {
   sessionId?: number;
   pricePerHour?: number;
   priceDayCap?: number;
-  slaTier?: string;
+  slaTier?: SlaTier;
   fallbackZoneId?: number;
   fallbackZoneName?: string;
 }
@@ -533,7 +535,7 @@ export async function handleSlaViolation(
   userId: number,
   permitId: number | undefined,
   poolId: number | undefined,
-  slaTier: string,
+  slaTier: SlaTier,
 ): Promise<void> {
   const db = await getDb();
   if (!db) return;
@@ -563,7 +565,7 @@ export async function handleSlaViolation(
     userId,
     permitId,
     poolId,
-    slaTier: slaTier as any,
+    slaTier,
     violationType: "denied_entry",
     compensationEur,
     compensationCredits,
