@@ -3,6 +3,21 @@ import { publicProcedure, protectedProcedure, router } from "../_core/trpc";
 import * as db from "../db";
 import { invokeLLM } from "../_core/llm";
 import { createLogger } from "../_core/logger";
+import type { CrmLead, CrmWebsiteVisitor, InsertCrmTrigger, InsertCrmWebsiteVisitor, InsertMemberProfile, InsertReengagementEntry, ReengagementEntry } from "../../drizzle/schema";
+
+/** Shape of an action within a CRM trigger */
+interface TriggerAction {
+  type: "ai_enrich" | "ai_score" | "ai_outreach" | "assign_user" | "change_stage" | "add_tag" | "send_email" | "notify_owner" | "create_task" | "ai_analyze";
+  config: Record<string, string>;
+}
+
+/** Result of executing a single trigger action */
+interface ActionResult {
+  type: string;
+  status: "success" | "failed" | "skipped";
+  result?: Record<string, unknown>;
+  error?: string;
+}
 
 const log = createLogger("CRM");
 
@@ -35,7 +50,7 @@ export const crmTriggersRouter = router({
     })),
     isActive: z.boolean().optional(),
   })).mutation(async ({ ctx, input }) => {
-    const id = await db.createCrmTrigger({ ...input, createdByUserId: ctx.user.id } as any);
+    const id = await db.createCrmTrigger({ ...input, createdByUserId: ctx.user.id } as InsertCrmTrigger);
     return { success: true, id };
   }),
 
@@ -51,7 +66,7 @@ export const crmTriggersRouter = router({
     })).optional(),
   })).mutation(async ({ input }) => {
     const { id, ...data } = input;
-    await db.updateCrmTrigger(id, data as any);
+    await db.updateCrmTrigger(id, data as Partial<InsertCrmTrigger>);
     return { success: true };
   }),
 
@@ -75,9 +90,9 @@ export const crmTriggersRouter = router({
     const trigger = await db.getCrmTriggerById(input.triggerId);
     if (!trigger) throw new Error("Trigger not found");
 
-    const results: Array<{ type: string; status: string; result?: any; error?: string }> = [];
+    const results: ActionResult[] = [];
 
-    for (const action of (trigger.actions || []) as any[]) {
+    for (const action of (trigger.actions || []) as TriggerAction[]) {
       try {
         if (action.type === "ai_enrich" && input.leadId) {
           const lead = await db.getCrmLeadById(input.leadId);
@@ -106,7 +121,7 @@ export const crmTriggersRouter = router({
             results.push({ type: "ai_analyze", status: "success", result: analysis });
           }
         } else if (action.type === "change_stage" && input.leadId) {
-          await db.updateCrmLead(input.leadId, { stage: action.config.stage });
+          await db.updateCrmLead(input.leadId, { stage: action.config.stage as CrmLead["stage"] });
           results.push({ type: "change_stage", status: "success" });
         } else if (action.type === "add_tag" && input.leadId) {
           const lead = await db.getCrmLeadById(input.leadId);
@@ -118,8 +133,8 @@ export const crmTriggersRouter = router({
         } else {
           results.push({ type: action.type, status: "skipped" });
         }
-      } catch (e: any) {
-        results.push({ type: action.type, status: "failed", error: e.message });
+      } catch (e: unknown) {
+        results.push({ type: action.type, status: "failed", error: e instanceof Error ? e.message : String(e) });
       }
     }
 
@@ -161,7 +176,7 @@ export const crmVisitorsRouter = router({
       utmSource: input.utmSource,
       utmMedium: input.utmMedium,
       utmCampaign: input.utmCampaign,
-    } as any);
+    } as InsertCrmWebsiteVisitor);
     return { success: true };
   }),
 
@@ -185,7 +200,7 @@ export const crmVisitorsRouter = router({
       isIdentified: true,
       status: matchedLead ? "matched" : "identified",
       matchedLeadId: matchedLead?.id,
-    } as any);
+    } as Partial<InsertCrmWebsiteVisitor>);
 
     return { success: true, analysis, matchedLead: matchedLead ? { id: matchedLead.id, companyName: matchedLead.companyName, stage: matchedLead.stage } : null };
   }),
@@ -196,7 +211,7 @@ export const crmVisitorsRouter = router({
     if (!visitor) throw new Error("Visitor not found");
 
     const outreach = await aiGenerateVisitorOutreach(visitor);
-    await db.updateCrmWebsiteVisitor(input.id, { status: "outreach_sent" } as any);
+    await db.updateCrmWebsiteVisitor(input.id, { status: "outreach_sent" } as Partial<InsertCrmWebsiteVisitor>);
     return { success: true, outreach };
   }),
 });
@@ -234,7 +249,7 @@ export const memberProfilesRouter = router({
     notes: z.string().optional(),
     tags: z.array(z.string()).optional(),
   })).mutation(async ({ input }) => {
-    const id = await db.createMemberProfile(input as any);
+    const id = await db.createMemberProfile(input as InsertMemberProfile);
     return { success: true, id };
   }),
 
@@ -258,7 +273,7 @@ export const memberProfilesRouter = router({
     ballotSponsor: z.string().optional(),
   })).mutation(async ({ input }) => {
     const { id, ...data } = input;
-    await db.updateMemberProfile(id, data as any);
+    await db.updateMemberProfile(id, data as Partial<InsertMemberProfile>);
     return { success: true };
   }),
 
@@ -297,7 +312,7 @@ export const reengagementRouter = router({
     previousRelationship: z.string().optional(),
     notes: z.string().optional(),
   })).mutation(async ({ input }) => {
-    const id = await db.createReengagementEntry(input as any);
+    const id = await db.createReengagementEntry(input as InsertReengagementEntry);
     return { success: true, id };
   }),
 
@@ -308,7 +323,7 @@ export const reengagementRouter = router({
     notes: z.string().optional(),
   })).mutation(async ({ input }) => {
     const { id, ...data } = input;
-    const updateData: any = { ...data };
+    const updateData: Partial<InsertReengagementEntry> = { ...data };
     if (data.stage === "invited") updateData.inviteSentAt = new Date();
     if (data.stage === "opened") updateData.inviteOpenedAt = new Date();
     if (data.stage === "applied") updateData.applicationDate = new Date();
@@ -328,7 +343,7 @@ export const reengagementRouter = router({
 });
 
 // ─── AI Helper Functions ───
-async function aiEnrichLead(lead: any) {
+async function aiEnrichLead(lead: CrmLead) {
   try {
     const response = await invokeLLM({
       messages: [
@@ -364,7 +379,7 @@ async function aiEnrichLead(lead: any) {
   return {};
 }
 
-function calculateLeadScore(lead: any): number {
+function calculateLeadScore(lead: CrmLead): number {
   let score = 0;
   if (lead.contactEmail) score += 15;
   if (lead.contactPhone) score += 10;
@@ -388,7 +403,7 @@ function calculateLeadScore(lead: any): number {
   return Math.min(100, score);
 }
 
-async function aiGenerateOutreach(lead: any) {
+async function aiGenerateOutreach(lead: CrmLead) {
   try {
     const response = await invokeLLM({
       messages: [
@@ -421,7 +436,7 @@ async function aiGenerateOutreach(lead: any) {
   return { subject: "Uitnodiging Mr. Green", body: "Kon geen gepersonaliseerd bericht genereren.", followUpSuggestion: "Bel na 3 dagen op." };
 }
 
-async function aiAnalyzeLead(lead: any) {
+async function aiAnalyzeLead(lead: CrmLead) {
   try {
     const response = await invokeLLM({
       messages: [
@@ -456,7 +471,7 @@ async function aiAnalyzeLead(lead: any) {
   return { strengths: [], risks: [], recommendedApproach: "Neem contact op", estimatedCloseTime: "Onbekend", suggestedNextStep: "Bel op" };
 }
 
-async function aiAnalyzeVisitor(visitor: any) {
+async function aiAnalyzeVisitor(visitor: CrmWebsiteVisitor) {
   try {
     const response = await invokeLLM({
       messages: [
@@ -493,7 +508,7 @@ async function aiAnalyzeVisitor(visitor: any) {
   return { companyName: "Onbekend", industry: "Onbekend", companySize: "Onbekend", revenue: "Onbekend", intent: "medium", interestAreas: [], recommendedAction: "Monitor" };
 }
 
-async function aiGenerateVisitorOutreach(visitor: any) {
+async function aiGenerateVisitorOutreach(visitor: CrmWebsiteVisitor) {
   try {
     const response = await invokeLLM({
       messages: [
@@ -526,7 +541,7 @@ async function aiGenerateVisitorOutreach(visitor: any) {
   return { subject: "Welkom bij Mr. Green", body: "Kon geen gepersonaliseerd bericht genereren.", channel: "email" };
 }
 
-async function aiGenerateReengagementInvite(entry: any) {
+async function aiGenerateReengagementInvite(entry: ReengagementEntry) {
   try {
     const response = await invokeLLM({
       messages: [
