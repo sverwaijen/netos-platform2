@@ -1,5 +1,5 @@
 import { z } from "zod";
-import { eq, and, desc, sql, gte, lte, like, or, ne, inArray } from "drizzle-orm";
+import { eq, and, desc, sql, gte, lte, like, or, ne, inArray, type SQL } from "drizzle-orm";
 import { publicProcedure, protectedProcedure, router } from "../_core/trpc";
 import { getDb } from "../db";
 import {
@@ -29,6 +29,13 @@ const adminProcedure = protectedProcedure.use(({ ctx, next }) => {
   return next({ ctx });
 });
 
+// ─── Enum type aliases for signage columns ─────────────────────────
+type ScreenType = "reception" | "gym" | "kitchen" | "wayfinding" | "general" | "meeting_room" | "elevator" | "parking" | "menu";
+type ScreenStatus = "online" | "offline" | "provisioning" | "maintenance" | "error";
+type ContentType = "image" | "video" | "pdf" | "html" | "url" | "menu_card" | "wayfinding" | "gym_schedule" | "weather" | "clock" | "news_ticker" | "company_presence" | "welcome_screen" | "announcement";
+type KitchenCategory = "breakfast" | "lunch" | "dinner" | "snack" | "drink" | "soup" | "salad" | "sandwich" | "special";
+type GymCategory = "cardio" | "strength" | "yoga" | "pilates" | "hiit" | "cycling" | "boxing" | "stretching" | "meditation" | "egym";
+
 // ═══════════════════════════════════════════════════════════════════════
 // ─── SCREEN MANAGEMENT ──────────────────────────────────────────────
 // ═══════════════════════════════════════════════════════════════════════
@@ -42,10 +49,10 @@ export const signageScreensRouter = router({
   }).optional()).query(async ({ input }) => {
     const db = await getDb();
     if (!db) return [];
-    const conditions: any[] = [];
+    const conditions: (SQL | undefined)[] = [];
     if (input?.locationId) conditions.push(eq(signageScreens.locationId, input.locationId));
-    if (input?.screenType) conditions.push(eq(signageScreens.screenType, input.screenType as any));
-    if (input?.status) conditions.push(eq(signageScreens.status, input.status as any));
+    if (input?.screenType) conditions.push(eq(signageScreens.screenType, input.screenType as ScreenType));
+    if (input?.status) conditions.push(eq(signageScreens.status, input.status as ScreenStatus));
     if (input?.search) conditions.push(or(
       like(signageScreens.name, `%${input.search}%`),
       like(signageScreens.ipAddress, `%${input.search}%`),
@@ -197,7 +204,7 @@ export const signageScreensRouter = router({
   stats: protectedProcedure.input(z.object({ locationId: z.number().optional() }).optional()).query(async ({ input }) => {
     const db = await getDb();
     if (!db) return { total: 0, online: 0, offline: 0, provisioning: 0, error: 0, maintenance: 0 };
-    const conditions: any[] = [eq(signageScreens.isActive, true)];
+    const conditions: (SQL | undefined)[] = [eq(signageScreens.isActive, true)];
     if (input?.locationId) conditions.push(eq(signageScreens.locationId, input.locationId));
     const screens = await db.select().from(signageScreens).where(and(...conditions));
     return {
@@ -388,8 +395,8 @@ export const signageContentRouter = router({
   }).optional()).query(async ({ input }) => {
     const db = await getDb();
     if (!db) return [];
-    const conditions: any[] = [eq(signageContent.isActive, true)];
-    if (input?.contentType) conditions.push(eq(signageContent.contentType, input.contentType as any));
+    const conditions: (SQL | undefined)[] = [eq(signageContent.isActive, true)];
+    if (input?.contentType) conditions.push(eq(signageContent.contentType, input.contentType as ContentType));
     if (input?.locationId) conditions.push(or(
       eq(signageContent.locationId, input.locationId),
       sql`${signageContent.locationId} IS NULL`,
@@ -425,12 +432,12 @@ export const signageContentRouter = router({
   })).mutation(async ({ ctx, input }) => {
     const db = await getDb();
     if (!db) throw new Error("DB unavailable");
-    const values: any = {
+    const values = {
       ...input,
       createdByUserId: ctx.user.id,
       validFrom: input.validFrom ? new Date(input.validFrom) : null,
       validUntil: input.validUntil ? new Date(input.validUntil) : null,
-    };
+    } as typeof signageContent.$inferInsert;
     await db.insert(signageContent).values(values);
     return { success: true };
   }),
@@ -479,8 +486,8 @@ export const signagePlaylistsRouter = router({
   }).optional()).query(async ({ input }) => {
     const db = await getDb();
     if (!db) return [];
-    const conditions: any[] = [eq(signagePlaylists.isActive, true)];
-    if (input?.screenType) conditions.push(eq(signagePlaylists.screenType, input.screenType as any));
+    const conditions: (SQL | undefined)[] = [eq(signagePlaylists.isActive, true)];
+    if (input?.screenType) conditions.push(eq(signagePlaylists.screenType, input.screenType as typeof signagePlaylists.screenType.enumValues[number]));
     if (input?.locationId) conditions.push(or(
       eq(signagePlaylists.locationId, input.locationId),
       sql`${signagePlaylists.locationId} IS NULL`,
@@ -649,7 +656,7 @@ export const wayfindingRouter = router({
   }).optional()).query(async ({ input }) => {
     const db = await getDb();
     if (!db) return [];
-    const conditions: any[] = [eq(wayfindingBuildings.isActive, true)];
+    const conditions: (SQL | undefined)[] = [eq(wayfindingBuildings.isActive, true)];
     if (input?.locationId) conditions.push(eq(wayfindingBuildings.locationId, input.locationId));
     return db.select().from(wayfindingBuildings).where(and(...conditions)).orderBy(wayfindingBuildings.name);
   }),
@@ -695,7 +702,7 @@ export const wayfindingRouter = router({
   }).optional()).query(async ({ input }) => {
     const db = await getDb();
     if (!db) return [];
-    const conditions: any[] = [eq(wayfindingCompanyAssignments.isActive, true)];
+    const conditions: (SQL | undefined)[] = [eq(wayfindingCompanyAssignments.isActive, true)];
     if (input?.buildingId) conditions.push(eq(wayfindingCompanyAssignments.buildingId, input.buildingId));
     if (input?.companyId) conditions.push(eq(wayfindingCompanyAssignments.companyId, input.companyId));
     const assignments = await db.select().from(wayfindingCompanyAssignments).where(and(...conditions));
@@ -742,7 +749,7 @@ export const wayfindingRouter = router({
     const db = await getDb();
     if (!db) return [];
     const today = new Date().toISOString().split("T")[0];
-    const conditions: any[] = [
+    const conditions: (SQL | undefined)[] = [
       eq(wayfindingCompanyPresence.locationId, input.locationId),
       eq(wayfindingCompanyPresence.date, today),
       eq(wayfindingCompanyPresence.isPresent, true),
@@ -907,11 +914,11 @@ export const kitchenMenuRouter = router({
   })).query(async ({ input }) => {
     const db = await getDb();
     if (!db) return [];
-    const conditions: any[] = [
+    const conditions: (SQL | undefined)[] = [
       eq(kitchenMenuItems.locationId, input.locationId),
       eq(kitchenMenuItems.isAvailable, true),
     ];
-    if (input.category) conditions.push(eq(kitchenMenuItems.category, input.category as any));
+    if (input.category) conditions.push(eq(kitchenMenuItems.category, input.category as KitchenCategory));
     return db.select().from(kitchenMenuItems).where(and(...conditions)).orderBy(kitchenMenuItems.sortOrder);
   }),
 
@@ -976,12 +983,12 @@ export const gymScheduleRouter = router({
   })).query(async ({ input }) => {
     const db = await getDb();
     if (!db) return [];
-    const conditions: any[] = [
+    const conditions: (SQL | undefined)[] = [
       eq(gymSchedules.locationId, input.locationId),
       eq(gymSchedules.isActive, true),
     ];
     if (input.dayOfWeek !== undefined) conditions.push(eq(gymSchedules.dayOfWeek, input.dayOfWeek));
-    if (input.category) conditions.push(eq(gymSchedules.category, input.category as any));
+    if (input.category) conditions.push(eq(gymSchedules.category, input.category as GymCategory));
     return db.select().from(gymSchedules).where(and(...conditions)).orderBy(gymSchedules.startTime);
   }),
 
@@ -1045,7 +1052,7 @@ export const signageDisplayRouter = router({
       .where(eq(locations.id, screen.locationId)).limit(1);
 
     let playlist = null;
-    let playlistItems: any[] = [];
+    let playlistItems: Array<Record<string, unknown>> = [];
     if (screen.currentPlaylistId) {
       const [pl] = await db.select().from(signagePlaylists)
         .where(eq(signagePlaylists.id, screen.currentPlaylistId)).limit(1);
@@ -1092,7 +1099,7 @@ export const signageDisplayRouter = router({
     if (!db) return { buildings: [], presentCompanies: [], allAssignments: [] };
 
     // Get buildings
-    const buildingConditions: any[] = [
+    const buildingConditions: (SQL | undefined)[] = [
       eq(wayfindingBuildings.locationId, input.locationId),
       eq(wayfindingBuildings.isActive, true),
     ];
@@ -1101,7 +1108,7 @@ export const signageDisplayRouter = router({
 
     // Get today's presence
     const today = new Date().toISOString().split("T")[0];
-    const presenceConditions: any[] = [
+    const presenceConditions: (SQL | undefined)[] = [
       eq(wayfindingCompanyPresence.locationId, input.locationId),
       eq(wayfindingCompanyPresence.date, today),
       eq(wayfindingCompanyPresence.isPresent, true),
