@@ -5,7 +5,7 @@ import {
   roomControlZones, roomControlPoints, roomSensorReadings,
   roomAutomationRules, alertThresholds,
 } from "../../drizzle/schema";
-import { eq, and, desc, gte, lte } from "drizzle-orm";
+import { eq, and, desc, gte, lte, type SQL } from "drizzle-orm";
 import { getSensorSimulator } from "../integrations/sensorSimulator";
 
 const adminProcedure = protectedProcedure.use(({ ctx, next }) => {
@@ -165,7 +165,7 @@ export const sensorReadingsRouter = router({
 
   history: protectedProcedure.input(z.object({
     zoneId: z.number(),
-    sensorType: z.string(),
+    sensorType: z.enum(["temperature", "humidity", "co2", "noise", "light", "occupancy", "pm25", "voc"]),
     hours: z.number().optional(),
   })).query(async ({ input }) => {
     const db = await getDb();
@@ -174,7 +174,7 @@ export const sensorReadingsRouter = router({
     return db.select().from(roomSensorReadings)
       .where(and(
         eq(roomSensorReadings.zoneId, input.zoneId),
-        eq(roomSensorReadings.sensorType, input.sensorType as any),
+        eq(roomSensorReadings.sensorType, input.sensorType),
         gte(roomSensorReadings.recordedAt, since),
       ))
       .orderBy(roomSensorReadings.recordedAt)
@@ -250,7 +250,7 @@ export const automationRulesRouter = router({
   }).optional()).query(async ({ input }) => {
     const db = await getDb();
     if (!db) return [];
-    const conditions: any[] = [];
+    const conditions: SQL[] = [];
     if (input?.zoneId) conditions.push(eq(roomAutomationRules.zoneId, input.zoneId));
     if (input?.locationId) conditions.push(eq(roomAutomationRules.locationId, input.locationId));
     const q = conditions.length > 0
@@ -300,7 +300,7 @@ export const alertThresholdsRouter = router({
   }).optional()).query(async ({ input }) => {
     const db = await getDb();
     if (!db) return [];
-    const conditions: any[] = [];
+    const conditions: SQL[] = [];
     if (input?.zoneId) conditions.push(eq(alertThresholds.zoneId, input.zoneId));
     if (input?.locationId) conditions.push(eq(alertThresholds.locationId, input.locationId));
     const q = conditions.length > 0

@@ -6,7 +6,7 @@ import {
   tickets, ticketMessages, ticketSlaPolicies, cannedResponses,
   opsAgenda, accessLog, users,
 } from "../../drizzle/schema";
-import { eq, and, desc, sql, gte, lte, ne, like, or } from "drizzle-orm";
+import { eq, and, desc, sql, gte, lte, ne, like, or, type SQL } from "drizzle-orm";
 import { nanoid } from "nanoid";
 import { createLogger } from "../_core/logger";
 
@@ -30,13 +30,19 @@ export const ticketsRouter = router({
   }).optional()).query(async ({ ctx, input }) => {
     const db = await getDb();
     if (!db) return [];
-    const conditions: any[] = [];
-    if (input?.status && input.status !== "all") conditions.push(eq(tickets.status, input.status as any));
-    if (input?.priority) conditions.push(eq(tickets.priority, input.priority as any));
-    if (input?.category) conditions.push(eq(tickets.category, input.category as any));
+    type TicketStatus = "new" | "open" | "pending" | "on_hold" | "solved" | "closed";
+    type TicketPriority = "low" | "normal" | "high" | "urgent";
+    type TicketCategory = "general" | "billing" | "access" | "booking" | "parking" | "maintenance" | "wifi" | "catering" | "equipment" | "noise" | "cleaning" | "other";
+    const conditions: SQL[] = [];
+    if (input?.status && input.status !== "all") conditions.push(eq(tickets.status, input.status as TicketStatus));
+    if (input?.priority) conditions.push(eq(tickets.priority, input.priority as TicketPriority));
+    if (input?.category) conditions.push(eq(tickets.category, input.category as TicketCategory));
     if (input?.assignedToId) conditions.push(eq(tickets.assignedToId, input.assignedToId));
     if (input?.requesterId) conditions.push(eq(tickets.requesterId, input.requesterId));
-    if (input?.search) conditions.push(or(like(tickets.subject, `%${input.search}%`), like(tickets.ticketNumber, `%${input.search}%`)));
+    if (input?.search) {
+      const searchCondition = or(like(tickets.subject, `%${input.search}%`), like(tickets.ticketNumber, `%${input.search}%`));
+      if (searchCondition) conditions.push(searchCondition);
+    }
     // Non-admin users only see their own tickets
     if (ctx.user.role !== "administrator" && ctx.user.role !== "host") {
       conditions.push(eq(tickets.requesterId, ctx.user.id));
@@ -108,7 +114,7 @@ export const ticketsRouter = router({
       const parsed = JSON.parse(String(aiResponse.choices[0].message.content || "{}"));
       aiSuggestion = parsed.suggestedResponse || null;
       aiCategory = parsed.category || null;
-      aiSentiment = (["positive", "neutral", "negative"].includes(parsed.sentiment) ? parsed.sentiment : "neutral") as any;
+      aiSentiment = (["positive", "neutral", "negative"].includes(parsed.sentiment) ? parsed.sentiment : "neutral") as "positive" | "neutral" | "negative";
       aiAutoResolved = parsed.canAutoResolve === true;
     } catch (e) {
       log.warn("AI ticket analysis failed", { error: String(e) });
@@ -123,7 +129,7 @@ export const ticketsRouter = router({
       ticketNumber,
       subject: input.subject,
       description: input.description,
-      category: (input.category || aiCategory || "general") as any,
+      category: (input.category || aiCategory || "general") as typeof input.category & string,
       priority: input.priority || "normal",
       channel: "web",
       requesterId: ctx.user.id,
@@ -137,7 +143,7 @@ export const ticketsRouter = router({
       status: aiAutoResolved ? "solved" : "new",
     });
 
-    const ticketId = (result as any)[0]?.insertId;
+    const ticketId = (result as { insertId: number }[])[0]?.insertId;
 
     // If AI auto-resolved, add the AI response as a message
     if (aiAutoResolved && aiSuggestion && ticketId) {
@@ -163,7 +169,7 @@ export const ticketsRouter = router({
     const db = await getDb();
     if (!db) return { success: false };
     const { id, ...data } = input;
-    const updateData: any = { ...data };
+    const updateData: Record<string, unknown> = { ...data };
     if (data.status === "solved") updateData.resolvedAt = Date.now();
     if (data.status === "closed") updateData.closedAt = Date.now();
     await db.update(tickets).set(updateData).where(eq(tickets.id, id));
@@ -181,7 +187,7 @@ export const ticketsRouter = router({
     await db.insert(ticketMessages).values({
       ticketId: input.ticketId,
       senderId: ctx.user.id,
-      senderType: senderType as any,
+      senderType: senderType as "requester" | "agent" | "system" | "ai",
       body: input.body,
       isInternal: input.isInternal || false,
     });
@@ -325,10 +331,12 @@ export const opsAgendaRouter = router({
   }).optional()).query(async ({ input }) => {
     const db = await getDb();
     if (!db) return [];
-    const conditions: any[] = [];
+    type AgendaType = "event" | "maintenance" | "cleaning" | "delivery" | "meeting" | "inspection" | "other";
+    type AgendaStatus = "scheduled" | "in_progress" | "completed" | "cancelled";
+    const conditions: SQL[] = [];
     if (input?.locationId) conditions.push(eq(opsAgenda.locationId, input.locationId));
-    if (input?.type) conditions.push(eq(opsAgenda.type, input.type as any));
-    if (input?.status) conditions.push(eq(opsAgenda.status, input.status as any));
+    if (input?.type) conditions.push(eq(opsAgenda.type, input.type as AgendaType));
+    if (input?.status) conditions.push(eq(opsAgenda.status, input.status as AgendaStatus));
     if (input?.startDate) conditions.push(gte(opsAgenda.startTime, input.startDate));
     if (input?.endDate) conditions.push(lte(opsAgenda.startTime, input.endDate));
     const q = conditions.length > 0
@@ -386,7 +394,7 @@ export const presenceRouter = router({
     const today = new Date();
     today.setHours(0, 0, 0, 0);
     const todayStart = today.getTime();
-    const conditions: any[] = [
+    const conditions: SQL[] = [
       eq(accessLog.action, "entry"),
       gte(accessLog.createdAt, new Date(todayStart)),
     ];
@@ -424,7 +432,7 @@ export const presenceRouter = router({
     
     const today = new Date();
     today.setHours(0, 0, 0, 0);
-    const conditions: any[] = [gte(accessLog.createdAt, new Date(today.getTime()))];
+    const conditions: SQL[] = [gte(accessLog.createdAt, new Date(today.getTime()))];
     if (input?.locationId) conditions.push(eq(accessLog.locationId, input.locationId));
     
     const todayEntries = await db.select().from(accessLog).where(and(...conditions));
