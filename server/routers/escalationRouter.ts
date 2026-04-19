@@ -1,5 +1,5 @@
 import { z } from "zod";
-import { eq, and, desc, lte, isNull, ne, sql } from "drizzle-orm";
+import { eq, and, desc, lte, isNull, ne, sql, type SQL } from "drizzle-orm";
 import { protectedProcedure, router } from "../_core/trpc";
 import { getDb } from "../db";
 import {
@@ -69,7 +69,7 @@ export const escalationRulesRouter = router({
         autoPriorityBump: input.autoPriorityBump ?? false,
       });
 
-      return { success: true, id: (result as any).insertId };
+      return { success: true, id: (result as { insertId: number }[])[0]?.insertId };
     }),
 
   // Update escalation rule
@@ -132,7 +132,7 @@ export const escalationLogRouter = router({
       const db = await getDb();
       if (!db) return [];
 
-      const conditions: any[] = [];
+      const conditions: (SQL | undefined)[] = [];
       if (input?.ticketId) conditions.push(eq(escalationLog.ticketId, input.ticketId));
       if (input?.status) conditions.push(eq(escalationLog.status, input.status));
 

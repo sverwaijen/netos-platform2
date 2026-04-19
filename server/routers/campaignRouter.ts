@@ -186,7 +186,7 @@ export const campaignRouter = router({
   listSends: adminProcedure
     .input(z.object({
       campaignId: z.number(),
-      status: z.string().optional(),
+      status: z.enum(["queued", "sent", "opened", "clicked", "bounced", "unsubscribed"]).optional(),
       limit: z.number().optional(),
     }))
     .query(async ({ input }) => {
@@ -195,7 +195,7 @@ export const campaignRouter = router({
 
       const conditions = [eq(emailCampaignSends.campaignId, input.campaignId)];
       if (input.status) {
-        conditions.push(eq(emailCampaignSends.status, input.status as any));
+        conditions.push(eq(emailCampaignSends.status, input.status));
       }
 
       return db.select().from(emailCampaignSends)

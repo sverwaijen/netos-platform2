@@ -1,7 +1,7 @@
 import { z } from "zod";
 import { eq, and, gt, lt, ne } from "drizzle-orm";
 import { getDb } from "../db";
-import { bookings } from "../../drizzle/schema";
+import { bookings, type Booking } from "../../drizzle/schema";
 
 const MIN_DURATION_MS = 30 * 60 * 1000; // 30 minutes
 const MAX_DURATION_MS = 8 * 60 * 60 * 1000; // 8 hours
@@ -15,7 +15,7 @@ export async function validateNoOverlap(
   startTime: number,
   endTime: number,
   excludeBookingId?: number
-): Promise<{ valid: boolean; conflictingBooking?: any }> {
+): Promise<{ valid: boolean; conflictingBooking?: Booking }> {
   const db = await getDb();
   if (!db) throw new Error("Database unavailable");
 
