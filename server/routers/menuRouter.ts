@@ -1,5 +1,5 @@
 import { z } from "zod";
-import { eq, and, desc, asc, like, or, sql } from "drizzle-orm";
+import { eq, and, desc, asc, like, or, sql, type SQL } from "drizzle-orm";
 import { publicProcedure, protectedProcedure, router } from "../_core/trpc";
 import { getDb } from "../db";
 import { syncMenuToKiosk } from "../syncMenuToKiosk";
@@ -185,7 +185,7 @@ export const menuItemsRouter = router({
   })).query(async ({ input }) => {
     const db = await getDb();
     if (!db) return [];
-    const conditions: any[] = [eq(menuSeasonItems.seasonId, input.seasonId)];
+    const conditions: (SQL | undefined)[] = [eq(menuSeasonItems.seasonId, input.seasonId)];
     if (input.locationId) {
       conditions.push(or(
         eq(menuSeasonItems.locationId, input.locationId),
@@ -465,7 +465,7 @@ export const menuArrangementsRouter = router({
   }).optional()).query(async ({ input }) => {
     const db = await getDb();
     if (!db) return [];
-    const conditions: any[] = [eq(menuArrangements.isActive, true)];
+    const conditions: (SQL | undefined)[] = [eq(menuArrangements.isActive, true)];
     if (input?.seasonId) conditions.push(eq(menuArrangements.seasonId, input.seasonId));
     return db.select().from(menuArrangements)
       .where(and(...conditions))
