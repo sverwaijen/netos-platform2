@@ -1,6 +1,7 @@
 import { protectedProcedure, router } from "../_core/trpc";
 import { z } from "zod";
 import * as db from "../db";
+import type { InsertRozPricingTier, InsertRozContract, InsertRozInvoice } from "../../drizzle/schema";
 
 const adminProcedure = protectedProcedure.use(({ ctx, next }) => {
   if (ctx.user.role !== "administrator" && ctx.user.role !== "host") {
@@ -47,10 +48,11 @@ export const rozPricingTiersRouter = router({
     sortOrder: z.number().optional(),
   })).mutation(async ({ input }) => {
     const periodMonths = PERIOD_MONTHS[input.periodType] ?? 1;
-    const id = await db.createRozPricingTier({
+    const tierData: InsertRozPricingTier = {
       ...input,
       periodMonths,
-    } as any);
+    };
+    const id = await db.createRozPricingTier(tierData);
     return { id };
   }),
 
@@ -66,7 +68,8 @@ export const rozPricingTiersRouter = router({
     isActive: z.boolean().optional(),
   })).mutation(async ({ input }) => {
     const { id, ...data } = input;
-    await db.updateRozPricingTier(id, data as any);
+    const updateData: Partial<InsertRozPricingTier> = data;
+    await db.updateRozPricingTier(id, updateData);
     return { success: true };
   }),
 
@@ -113,12 +116,13 @@ export const rozContractsRouter = router({
     const endDate = input.startDate + (periodMonths * 30.44 * 24 * 60 * 60 * 1000); // approx months to ms
     const contractNumber = `ROZ-${Date.now().toString(36).toUpperCase()}-${Math.random().toString(36).substring(2, 6).toUpperCase()}`;
 
-    const id = await db.createRozContract({
+    const contractData: InsertRozContract = {
       ...input,
       contractNumber,
       endDate: Math.round(endDate),
       status: "draft",
-    } as any);
+    };
+    const id = await db.createRozContract(contractData);
     return { id, contractNumber };
   }),
 
@@ -133,7 +137,8 @@ export const rozContractsRouter = router({
     notes: z.string().optional(),
   })).mutation(async ({ input }) => {
     const { id, ...data } = input;
-    await db.updateRozContract(id, data as any);
+    const updateData: Partial<InsertRozContract> = data;
+    await db.updateRozContract(id, updateData);
     return { success: true };
   }),
 
@@ -171,7 +176,8 @@ export const rozContractsRouter = router({
       }
     }
 
-    await db.updateRozContract(contract.id, { status: "active" } as any);
+    const activateData: Partial<InsertRozContract> = { status: "active" };
+    await db.updateRozContract(contract.id, activateData);
     return { success: true };
   }),
 
@@ -210,7 +216,7 @@ export const rozInvoicesRouter = router({
     const invoiceNumber = `INV-ROZ-${Date.now().toString(36).toUpperCase()}`;
     const dueDate = input.periodStart + (14 * 24 * 60 * 60 * 1000); // 14 days payment term
 
-    const id = await db.createRozInvoice({
+    const invoiceData: InsertRozInvoice = {
       contractId: input.contractId,
       invoiceNumber,
       periodStart: input.periodStart,
@@ -221,7 +227,8 @@ export const rozInvoicesRouter = router({
       walletId: contract.walletId,
       dueDate,
       status: "draft",
-    } as any);
+    };
+    const id = await db.createRozInvoice(invoiceData);
 
     return { id, invoiceNumber, totalCredits };
   }),
@@ -260,11 +267,12 @@ export const rozInvoicesRouter = router({
       referenceId: invoice.id,
     });
 
-    await db.updateRozInvoice(invoice.id, {
+    const paidData: Partial<InsertRozInvoice> = {
       status: "paid",
       paidDate: Date.now(),
       walletId,
-    } as any);
+    };
+    await db.updateRozInvoice(invoice.id, paidData);
 
     return { success: true, newBalance };
   }),
@@ -275,7 +283,8 @@ export const rozInvoicesRouter = router({
     notes: z.string().optional(),
   })).mutation(async ({ input }) => {
     const { id, ...data } = input;
-    await db.updateRozInvoice(id, data as any);
+    const updateData: Partial<InsertRozInvoice> = data;
+    await db.updateRozInvoice(id, updateData);
     return { success: true };
   }),
 });
@@ -307,6 +316,6 @@ export const rozResourceSettingsRouter = router({
     const allResources = input?.locationId
       ? await db.getResourcesByLocation(input.locationId)
       : await db.searchResources({});
-    return allResources.filter((r: any) => r.isRozEligible);
+    return allResources.filter((r) => r.isRozEligible);
   }),
 });
