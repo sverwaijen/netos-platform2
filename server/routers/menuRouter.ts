@@ -228,7 +228,7 @@ export const menuItemsRouter = router({
     if (!season) return { season: null, items: [], arrangements: [] };
 
     // Get items
-    const conditions: any[] = [
+    const conditions: (SQL | undefined)[] = [
       eq(menuSeasonItems.seasonId, season.id),
       eq(menuSeasonItems.isAvailable, true),
     ];

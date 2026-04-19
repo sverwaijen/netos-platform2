@@ -174,7 +174,7 @@ export class VisitorTrackingService {
         body: JSON.stringify(data),
       });
     } catch (err) {
-      console.log('Tracking request failed (silently)', err);
+      log.warn('Tracking request failed (silently)', { error: err instanceof Error ? err.message : String(err) });
     }
   }
 
