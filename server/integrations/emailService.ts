@@ -36,7 +36,7 @@ export interface EmailTrackingPixel {
  */
 export async function send(options: SendEmailOptions): Promise<{ success: boolean; messageId?: string; error?: string }> {
   if (!RESEND_API_KEY) {
-    console.error("RESEND_API_KEY not configured");
+    log.error("RESEND_API_KEY not configured");
     return { success: false, error: "Email service not configured" };
   }
 
@@ -121,7 +121,7 @@ export async function trackOpen(db: any, sendId: string, openedAt: Date = new Da
   try {
     // This function assumes the caller has DB access and will update the emailCampaignSends table
     // The actual update is done by the endpoint that receives the tracking pixel request
-    console.log(`Email open tracked for sendId: ${sendId}`);
+    log.info("Email open tracked", { sendId });
   } catch (error) {
     log.error("Error tracking email open:", error);
   }

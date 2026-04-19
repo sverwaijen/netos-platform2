@@ -33,7 +33,7 @@ const GET_USER_INFO_WITH_JWT_PATH = `/webdev.v1.WebDevAuthPublicService/GetUserI
 
 class OAuthService {
   constructor(private client: ReturnType<typeof axios.create>) {
-    console.log("[OAuth] Initialized with baseURL:", ENV.oAuthServerUrl);
+    log.info("Initialized with baseURL", { baseURL: ENV.oAuthServerUrl });
     if (!ENV.oAuthServerUrl) {
       log.error("OAUTH_SERVER_URL is not configured! Set OAUTH_SERVER_URL environment variable.");
     }
@@ -228,7 +228,7 @@ class SDKServer {
         name,
       };
     } catch (error) {
-      console.warn("[Auth] Session verification failed", String(error));
+      log.warn("Session verification failed", { error: String(error) });
       return null;
     }
   }
