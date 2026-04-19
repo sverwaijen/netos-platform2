@@ -388,8 +388,8 @@ export const parkingPermitsRouter = router({
     userId: z.number().optional(),
     zoneId: z.number().optional(),
     poolId: z.number().optional(),
-    slaTier: z.string().optional(),
-    status: z.string().optional(),
+    slaTier: z.enum(["platinum", "gold", "silver", "bronze"]).optional(),
+    status: z.enum(["active", "expired", "suspended", "cancelled"]).optional(),
   }).optional()).query(async ({ input }) => {
     const db = await getDb();
     if (!db) return [];
@@ -397,8 +397,8 @@ export const parkingPermitsRouter = router({
     if (input?.userId) conditions.push(eq(parkingPermits.userId, input.userId));
     if (input?.zoneId) conditions.push(eq(parkingPermits.zoneId, input.zoneId));
     if (input?.poolId) conditions.push(eq(parkingPermits.poolId, input.poolId));
-    if (input?.slaTier) conditions.push(eq(parkingPermits.slaTier, input.slaTier as any));
-    if (input?.status) conditions.push(eq(parkingPermits.status, input.status as any));
+    if (input?.slaTier) conditions.push(eq(parkingPermits.slaTier, input.slaTier));
+    if (input?.status) conditions.push(eq(parkingPermits.status, input.status));
     if (conditions.length > 0) {
       return db.select().from(parkingPermits).where(and(...conditions)).orderBy(desc(parkingPermits.createdAt));
     }
@@ -710,14 +710,14 @@ export const parkingVisitorPermitsRouter = router({
   list: protectedProcedure.input(z.object({
     zoneId: z.number().optional(),
     invitedByUserId: z.number().optional(),
-    status: z.string().optional(),
+    status: z.enum(["active", "used", "expired", "cancelled"]).optional(),
   }).optional()).query(async ({ ctx, input }) => {
     const db = await getDb();
     if (!db) return [];
     const conditions = [];
     if (input?.zoneId) conditions.push(eq(parkingVisitorPermits.zoneId, input.zoneId));
     if (input?.invitedByUserId) conditions.push(eq(parkingVisitorPermits.invitedByUserId, input.invitedByUserId));
-    if (input?.status) conditions.push(eq(parkingVisitorPermits.status, input.status as any));
+    if (input?.status) conditions.push(eq(parkingVisitorPermits.status, input.status));
     if (conditions.length > 0) {
       return db.select().from(parkingVisitorPermits).where(and(...conditions)).orderBy(desc(parkingVisitorPermits.createdAt));
     }
@@ -793,13 +793,13 @@ export const parkingVisitorPermitsRouter = router({
 export const parkingSlaRouter = router({
   list: adminProcedure.input(z.object({
     zoneId: z.number().optional(),
-    status: z.string().optional(),
+    status: z.enum(["pending", "credited", "waived"]).optional(),
   }).optional()).query(async ({ input }) => {
     const db = await getDb();
     if (!db) return [];
     const conditions = [];
     if (input?.zoneId) conditions.push(eq(parkingSlaViolations.zoneId, input.zoneId));
-    if (input?.status) conditions.push(eq(parkingSlaViolations.compensationStatus, input.status as any));
+    if (input?.status) conditions.push(eq(parkingSlaViolations.compensationStatus, input.status));
     if (conditions.length > 0) {
       return db.select().from(parkingSlaViolations).where(and(...conditions)).orderBy(desc(parkingSlaViolations.timestamp));
     }
