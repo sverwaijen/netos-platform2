@@ -142,11 +142,11 @@ export async function syncMenuToKiosk(): Promise<{ synced: number; created: numb
 if (require.main === module) {
   syncMenuToKiosk()
     .then((result) => {
-      console.log("✅ Sync complete:", result);
+      log.info("Sync complete", result);
       process.exit(0);
     })
     .catch((err) => {
-      console.error("❌ Sync failed:", err);
+      log.error("Sync failed", err);
       process.exit(1);
     });
 }
