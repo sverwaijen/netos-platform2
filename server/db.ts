@@ -1,4 +1,4 @@
-import { eq, and, gte, lte, desc, sql, asc, like, or, inArray, isNull, ne } from "drizzle-orm";
+import { eq, and, gte, lte, desc, sql, asc, like, or, inArray, isNull, ne, type SQL } from "drizzle-orm";
 import { createLogger } from "./_core/logger";
 
 const log = createLogger("Database");
@@ -8,7 +8,8 @@ import {
   wallets, creditLedger, bookings, dayMultipliers, visitors,
   companyBranding, employeePhotos, devices, sensors, accessLog,
   notifications, invites,
-  crmLeads, InsertCrmLead, crmLeadActivities, crmCampaigns, InsertCrmCampaign,
+  crmLeads, InsertCrmLead, crmLeadActivities, InsertCrmLeadActivity,
+  crmCampaigns, InsertCrmCampaign,
   crmCampaignSteps, crmCampaignEnrollments, crmEmailTemplates,
   crmTriggers, InsertCrmTrigger, crmTriggerLogs,
   crmWebsiteVisitors, InsertCrmWebsiteVisitor,
@@ -19,6 +20,8 @@ import {
   commitContracts, InsertCommitContract,
   creditBonuses, InsertCreditBonus,
   walletTransactions, InsertWalletTransaction,
+  InsertAccessLogEntry, InsertNotification, InsertInvite,
+  Resource, CrmLead, CrmCampaign, ResourceRule, InsertCrmTriggerLog,
 } from "../drizzle/schema";
 import { ENV } from './_core/env';
 
@@ -105,7 +108,7 @@ export async function searchUsers(query: string, limit = 20) {
 export async function updateUserRole(userId: number, role: string) {
   const db = await getDb();
   if (!db) return;
-  await db.update(users).set({ role: role as any }).where(eq(users.id, userId));
+  await db.update(users).set({ role: role as InsertUser["role"] }).where(eq(users.id, userId));
 }
 
 export async function getAllUsersWithRoles() {
@@ -174,8 +177,8 @@ export async function searchResources(filters: {
   if (!db) return [];
   const conditions = [eq(resources.isActive, true)];
   if (filters.locationId) conditions.push(eq(resources.locationId, filters.locationId));
-  if (filters.type) conditions.push(eq(resources.type, filters.type as any));
-  if (filters.zone) conditions.push(eq(resources.zone, filters.zone as any));
+  if (filters.type) conditions.push(eq(resources.type, filters.type as Resource["type"]));
+  if (filters.zone) conditions.push(eq(resources.zone, filters.zone as Resource["zone"]));
   if (filters.minCapacity) conditions.push(gte(resources.capacity, filters.minCapacity));
   if (filters.maxCostPerHour) conditions.push(lte(resources.creditCostPerHour, String(filters.maxCostPerHour)));
   if (filters.query) conditions.push(like(resources.name, `%${filters.query}%`));
@@ -484,7 +487,7 @@ export async function createAccessLogEntry(data: {
 }) {
   const db = await getDb();
   if (!db) return;
-  await db.insert(accessLog).values(data as any);
+  await db.insert(accessLog).values(data as InsertAccessLogEntry);
 }
 
 // ─── Notifications ───
@@ -497,10 +500,10 @@ export async function getNotificationsForUser(userId: number | null, limit = 20)
   return db.select().from(notifications).orderBy(desc(notifications.createdAt)).limit(limit);
 }
 
-export async function createNotification(data: { userId?: number; type: string; title: string; message?: string; metadata?: any }) {
+export async function createNotification(data: InsertNotification) {
   const db = await getDb();
   if (!db) return;
-  await db.insert(notifications).values(data as any);
+  await db.insert(notifications).values(data);
 }
 
 export async function markNotificationRead(id: number) {
@@ -516,10 +519,10 @@ export async function markAllNotificationsRead(userId: number) {
 }
 
 // ─── Invites ───
-export async function createInvite(data: { email?: string; phone?: string; companyId?: number; invitedByUserId: number; role?: string; token: string; expiresAt: Date }) {
+export async function createInvite(data: { email?: string; phone?: string; companyId?: number; invitedByUserId?: number; role?: string; token: string; expiresAt?: Date }) {
   const db = await getDb();
   if (!db) return;
-  await db.insert(invites).values(data as any);
+  await db.insert(invites).values(data as InsertInvite);
 }
 
 export async function getInvitesByUser(userId: number) {
@@ -630,9 +633,9 @@ export async function getLocationBookingStats() {
 export async function getCrmLeads(filters?: { stage?: string; source?: string; search?: string; assignedToUserId?: number }) {
   const db = await getDb();
   if (!db) return [];
-  const conditions: any[] = [];
-  if (filters?.stage) conditions.push(eq(crmLeads.stage, filters.stage as any));
-  if (filters?.source) conditions.push(eq(crmLeads.source, filters.source as any));
+  const conditions: (SQL | undefined)[] = [];
+  if (filters?.stage) conditions.push(eq(crmLeads.stage, filters.stage as CrmLead["stage"]));
+  if (filters?.source) conditions.push(eq(crmLeads.source, filters.source as NonNullable<CrmLead["source"]>));
   if (filters?.assignedToUserId) conditions.push(eq(crmLeads.assignedToUserId, filters.assignedToUserId));
   if (filters?.search) conditions.push(or(like(crmLeads.companyName, `%${filters.search}%`), like(crmLeads.contactName, `%${filters.search}%`), like(crmLeads.contactEmail, `%${filters.search}%`)));
   return db.select().from(crmLeads).where(conditions.length > 0 ? and(...conditions) : undefined).orderBy(desc(crmLeads.updatedAt)).limit(200);
@@ -681,18 +684,18 @@ export async function getCrmLeadActivities(leadId: number, limit = 50) {
   return db.select().from(crmLeadActivities).where(eq(crmLeadActivities.leadId, leadId)).orderBy(desc(crmLeadActivities.createdAt)).limit(limit);
 }
 
-export async function addCrmLeadActivity(data: { leadId: number; userId?: number; type: string; title: string; description?: string; metadata?: any }) {
+export async function addCrmLeadActivity(data: InsertCrmLeadActivity) {
   const db = await getDb();
   if (!db) return;
-  await db.insert(crmLeadActivities).values(data as any);
+  await db.insert(crmLeadActivities).values(data);
 }
 
 // ─── CRM: Campaigns ───
 export async function getCrmCampaigns(filters?: { status?: string }) {
   const db = await getDb();
   if (!db) return [];
-  const conditions: any[] = [];
-  if (filters?.status) conditions.push(eq(crmCampaigns.status, filters.status as any));
+  const conditions: (SQL | undefined)[] = [];
+  if (filters?.status) conditions.push(eq(crmCampaigns.status, filters.status as CrmCampaign["status"]));
   return db.select().from(crmCampaigns).where(conditions.length > 0 ? and(...conditions) : undefined).orderBy(desc(crmCampaigns.updatedAt)).limit(100);
 }
 
@@ -901,7 +904,7 @@ export async function getResourceRules(scope?: string) {
   const db = await getDb();
   if (!db) return [];
   const conditions = [eq(resourceRules.isActive, true)];
-  if (scope) conditions.push(eq(resourceRules.scope, scope as any));
+  if (scope) conditions.push(eq(resourceRules.scope, scope as ResourceRule["scope"]));
   return db.select().from(resourceRules).where(and(...conditions)).orderBy(asc(resourceRules.evaluationOrder));
 }
 
@@ -1077,10 +1080,10 @@ export async function deleteCrmTrigger(id: number) {
   await db.delete(crmTriggers).where(eq(crmTriggers.id, id));
 }
 
-export async function addCrmTriggerLog(data: { triggerId: number; leadId?: number; eventData?: any; actionsExecuted?: any; status?: string }) {
+export async function addCrmTriggerLog(data: InsertCrmTriggerLog) {
   const db = await getDb();
   if (!db) return;
-  await db.insert(crmTriggerLogs).values(data as any);
+  await db.insert(crmTriggerLogs).values(data);
   await db.update(crmTriggers).set({ executionCount: sql`execution_count + 1`, lastExecutedAt: new Date() } as any).where(eq(crmTriggers.id, data.triggerId));
 }
 
