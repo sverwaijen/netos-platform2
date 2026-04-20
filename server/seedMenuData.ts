@@ -263,7 +263,7 @@ async function seed() {
     process.exit(1);
   }
 
-  console.log("🌱 Seeding menu data...");
+  log.info("Seeding menu data...");
 
   // 1. Seasons
   const [q1Season] = await db.insert(menuSeasons).values({
@@ -288,7 +288,7 @@ async function seed() {
     driveFoodbookDocId: "1-z-DwSY13Omj6fkW8MmMA2nsQj3p_ukslYdtgO5kJPY",
   }).$returningId();
 
-  console.log(`  ✅ Seasons: Q1=${q1Season.id}, Q2=${q2Season.id}`);
+  log.info("Seasons seeded", { q1Id: q1Season.id, q2Id: q2Season.id });
 
   // 2. Categories
   const catMap: Record<string, number> = {};
@@ -296,7 +296,7 @@ async function seed() {
     const [result] = await db.insert(menuCategories).values(cat).$returningId();
     catMap[cat.slug] = result.id;
   }
-  console.log(`  ✅ Categories: ${Object.keys(catMap).length}`);
+  log.info("Categories seeded", { count: Object.keys(catMap).length });
 
   // 3. Menu Items + Season Items + Preparations
   let itemCount = 0;
@@ -333,8 +333,7 @@ async function seed() {
 
     itemCount++;
   }
-  console.log(`  ✅ Menu items: ${itemCount}`);
-  console.log(`  ✅ Preparations: ${prepCount}`);
+  log.info("Menu items seeded", { items: itemCount, preparations: prepCount });
 
   // 4. Arrangements
   for (let i = 0; i < Q2_ARRANGEMENTS.length; i++) {
@@ -348,13 +347,13 @@ async function seed() {
       sortOrder: i,
     });
   }
-  console.log(`  ✅ Arrangements: ${Q2_ARRANGEMENTS.length}`);
+  log.info("Arrangements seeded", { count: Q2_ARRANGEMENTS.length });
 
-  console.log("🎉 Menu seed complete!");
+  log.info("Menu seed complete!");
   process.exit(0);
 }
 
 seed().catch((err) => {
-  console.error("Seed failed:", err);
+  log.error("Seed failed", { error: err instanceof Error ? err.message : String(err) });
   process.exit(1);
 });

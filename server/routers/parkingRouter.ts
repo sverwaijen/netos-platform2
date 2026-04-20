@@ -332,7 +332,7 @@ export const parkingSessionsRouter = router({
       const members = await db.select().from(parkingPoolMembers)
         .where(and(eq(parkingPoolMembers.poolId, input.poolId), eq(parkingPoolMembers.userId, input.userId)));
       if (members[0]) {
-        const updates: any = { totalSessions: (members[0].totalSessions || 0) + 1 };
+        const updates: { totalSessions: number; totalOverflowSessions?: number } = { totalSessions: (members[0].totalSessions || 0) + 1 };
         if (input.accessType === "pool_overflow") {
           updates.totalOverflowSessions = (members[0].totalOverflowSessions || 0) + 1;
         }
