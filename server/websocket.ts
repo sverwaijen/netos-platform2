@@ -78,7 +78,7 @@ export class WebSocketServerManager {
 
       this.clients.set(clientId, clientInfo);
 
-      ws.on("message", (data: any) => {
+      ws.on("message", (data: Buffer | string) => {
         this.handleMessage(clientId, data, clientInfo);
       });
 
@@ -86,7 +86,7 @@ export class WebSocketServerManager {
         this.handleDisconnection(clientId);
       });
 
-      ws.on("error", (error: any) => {
+      ws.on("error", (error: Error) => {
         log.error("WebSocket error for client", error, { clientId });
         this.handleDisconnection(clientId);
       });
@@ -110,7 +110,7 @@ export class WebSocketServerManager {
 
   private handleMessage(
     clientId: string,
-    data: any,
+    data: Buffer | string,
     clientInfo: ClientInfo
   ): void {
     try {
@@ -266,7 +266,7 @@ export class WebSocketServerManager {
     }, 30000); // 30 second heartbeat
   }
 
-  private getClientWebSocket(clientId: string): any {
+  private getClientWebSocket(clientId: string): any | null {
     let targetWs: any = null;
     this.wss.clients.forEach((ws: any) => {
       const wsClientId = (ws as any).clientId;
