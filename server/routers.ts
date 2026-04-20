@@ -5,6 +5,7 @@ import { publicProcedure, protectedProcedure, router } from "./_core/trpc";
 import { z } from "zod";
 import { nanoid } from "nanoid";
 import * as db from "./db";
+import { Booking, InsertCrmLead } from "../drizzle/schema";
 import {
   resourceTypesRouter, resourceRatesRouter, resourceRulesRouter,
   bookingPoliciesRouter, resourceAmenitiesRouter, resourceSchedulesRouter,
@@ -334,7 +335,7 @@ export const appRouter = router({
 
       // Edge case: Prevent double-booking by same user at same time
       const userBookings = await db.getBookingsByUser(ctx.user.id);
-      const doubleBooking = userBookings?.some((b: any) => {
+      const doubleBooking = userBookings?.some((b: Booking) => {
         if (b.status === "cancelled") return false;
         return !(input.endTime <= b.startTime || input.startTime >= b.endTime);
       });
@@ -966,7 +967,7 @@ Return JSON with "subject" and "body" fields. The body should be HTML formatted.
       });
       
       const enrichment = JSON.parse(String(response.choices[0].message.content) || "{}");
-      const updates: any = {};
+      const updates: Partial<InsertCrmLead> = {};
       if (enrichment.industry && !lead.industry) updates.industry = enrichment.industry;
       if (enrichment.companySize && !lead.companySize) updates.companySize = enrichment.companySize;
       if (enrichment.estimatedValue && !lead.estimatedValue) updates.estimatedValue = enrichment.estimatedValue;
