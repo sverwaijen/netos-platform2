@@ -1,6 +1,7 @@
 import { protectedProcedure, router } from "../_core/trpc";
 import { z } from "zod";
 import * as db from "../db";
+import type { InsertResourceRate, InsertResourceRule, InsertBookingPolicy } from "../../drizzle/schema";
 
 const adminProcedure = protectedProcedure.use(({ ctx, next }) => {
   if (ctx.user.role !== "administrator" && ctx.user.role !== "host") {
@@ -53,7 +54,7 @@ export const resourceRatesRouter = router({
     maxBookingLengthMinutes: z.number().optional(),
     sortOrder: z.number().optional(),
   })).mutation(async ({ input }) => {
-    const id = await db.createResourceRate(input as any);
+    const id = await db.createResourceRate(input as InsertResourceRate);
     return { id };
   }),
   update: adminProcedure.input(z.object({
@@ -68,7 +69,7 @@ export const resourceRatesRouter = router({
     sortOrder: z.number().optional(),
   })).mutation(async ({ input }) => {
     const { id, ...data } = input;
-    await db.updateResourceRate(id, data as any);
+    await db.updateResourceRate(id, data as Partial<InsertResourceRate>);
     return { success: true };
   }),
   delete: adminProcedure.input(z.object({ id: z.number() })).mutation(async ({ input }) => {
@@ -91,7 +92,7 @@ export const resourceRulesRouter = router({
     evaluationOrder: z.number().optional(),
     stopEvaluation: z.boolean().optional(),
   })).mutation(async ({ input }) => {
-    const id = await db.createResourceRule(input as any);
+    const id = await db.createResourceRule(input as InsertResourceRule);
     return { id };
   }),
   update: adminProcedure.input(z.object({
@@ -103,7 +104,7 @@ export const resourceRulesRouter = router({
     isActive: z.boolean().optional(),
   })).mutation(async ({ input }) => {
     const { id, ...data } = input;
-    await db.updateResourceRule(id, data as any);
+    await db.updateResourceRule(id, data as Partial<InsertResourceRule>);
     return { success: true };
   }),
   delete: adminProcedure.input(z.object({ id: z.number() })).mutation(async ({ input }) => {
@@ -125,7 +126,7 @@ export const bookingPoliciesRouter = router({
     allowRecurring: z.boolean().optional(), requireApproval: z.boolean().optional(),
     allowGuestBooking: z.boolean().optional(), maxAttendeesOverride: z.number().optional(),
   })).mutation(async ({ input }) => {
-    const id = await db.createBookingPolicy(input as any);
+    const id = await db.createBookingPolicy(input as InsertBookingPolicy);
     return { id };
   }),
   update: adminProcedure.input(z.object({
@@ -139,7 +140,7 @@ export const bookingPoliciesRouter = router({
     allowGuestBooking: z.boolean().optional(), maxAttendeesOverride: z.number().optional(),
   })).mutation(async ({ input }) => {
     const { id, ...data } = input;
-    await db.updateBookingPolicy(id, data as any);
+    await db.updateBookingPolicy(id, data as Partial<InsertBookingPolicy>);
     return { success: true };
   }),
   delete: adminProcedure.input(z.object({ id: z.number() })).mutation(async ({ input }) => {

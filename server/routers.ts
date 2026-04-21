@@ -5,7 +5,7 @@ import { publicProcedure, protectedProcedure, router } from "./_core/trpc";
 import { z } from "zod";
 import { nanoid } from "nanoid";
 import * as db from "./db";
-import { Booking, InsertCrmLead } from "../drizzle/schema";
+import { Booking, InsertCrmLead, InsertCrmLeadActivity, InsertCrmCampaign, InsertCreditBundle } from "../drizzle/schema";
 import {
   resourceTypesRouter, resourceRatesRouter, resourceRulesRouter,
   bookingPoliciesRouter, resourceAmenitiesRouter, resourceSchedulesRouter,
@@ -212,7 +212,7 @@ export const appRouter = router({
       minCommitMonths: z.number().optional(),
       maxRolloverCredits: z.number().optional(),
     })).mutation(async ({ input }) => {
-      await db.createBundle(input as any);
+      await db.createBundle(input as InsertCreditBundle);
       return { success: true };
     }),
     update: adminProcedure.input(z.object({
@@ -235,7 +235,7 @@ export const appRouter = router({
       maxRolloverCredits: z.number().optional(),
     })).mutation(async ({ input }) => {
       const { id, ...data } = input;
-      await db.updateBundle(id, data as any);
+      await db.updateBundle(id, data as Partial<InsertCreditBundle>);
       return { success: true };
     }),
   }),
@@ -703,7 +703,7 @@ export const appRouter = router({
     })).mutation(async ({ ctx, input }) => {
       const { id, ...data } = input;
       const oldLead = await db.getCrmLeadById(id);
-      await db.updateCrmLead(id, data as any);
+      await db.updateCrmLead(id, data as Partial<InsertCrmLead>);
       if (data.stage && oldLead && data.stage !== oldLead.stage) {
         await db.addCrmLeadActivity({ leadId: id, userId: ctx.user.id, type: "stage_change", title: `Stage: ${oldLead.stage} → ${data.stage}` });
       }
@@ -725,7 +725,7 @@ export const appRouter = router({
       title: z.string(),
       description: z.string().optional(),
     })).mutation(async ({ ctx, input }) => {
-      await db.addCrmLeadActivity({ ...input, userId: ctx.user.id } as any);
+      await db.addCrmLeadActivity({ ...input, userId: ctx.user.id } as InsertCrmLeadActivity);
       return { success: true };
     }),
     aiScore: protectedProcedure.input(z.object({ id: z.number() })).mutation(async ({ ctx, input }) => {
@@ -786,7 +786,7 @@ export const appRouter = router({
       targetAudience: z.string().optional(),
     })).mutation(async ({ input }) => {
       const { id, ...data } = input;
-      await db.updateCrmCampaign(id, data as any);
+      await db.updateCrmCampaign(id, data as Partial<InsertCrmCampaign>);
       return { success: true };
     }),
     steps: protectedProcedure.input(z.object({ campaignId: z.number() })).query(async ({ input }) => {
