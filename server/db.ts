@@ -22,6 +22,7 @@ import {
   walletTransactions, InsertWalletTransaction,
   InsertAccessLogEntry, InsertNotification, InsertInvite,
   Resource, CrmLead, CrmCampaign, ResourceRule, InsertCrmTriggerLog,
+  InsertCreditBundle,
 } from "../drizzle/schema";
 import { ENV } from './_core/env';
 
@@ -1679,13 +1680,13 @@ export async function getBundleBySlug(slug: string) {
   return result[0];
 }
 
-export async function createBundle(data: Partial<InsertCreditBonus> & { name: string; slug: string; creditsPerMonth: number; priceEur: string }) {
+export async function createBundle(data: InsertCreditBundle) {
   const db = await getDb();
   if (!db) return;
-  await db.insert(creditBundles).values(data as any);
+  await db.insert(creditBundles).values(data);
 }
 
-export async function updateBundle(id: number, data: Partial<InsertCreditBonus>) {
+export async function updateBundle(id: number, data: Partial<InsertCreditBundle>) {
   const db = await getDb();
   if (!db) return;
   const updateSet: Record<string, unknown> = {};
@@ -1695,8 +1696,9 @@ export async function updateBundle(id: number, data: Partial<InsertCreditBonus>)
     "rolloverPercent", "pricePerCredit", "walletType", "budgetControlLevel", "overageRate",
     "minCommitMonths", "maxRolloverCredits",
   ] as const;
+  const record = data as Record<string, unknown>;
   for (const f of fields) {
-    if ((data as any)[f] !== undefined) updateSet[f] = (data as any)[f];
+    if (record[f] !== undefined) updateSet[f] = record[f];
   }
   if (Object.keys(updateSet).length > 0) {
     await db.update(creditBundles).set(updateSet).where(eq(creditBundles.id, id));
@@ -1776,8 +1778,9 @@ export async function updateBudgetControl(id: number, data: Partial<InsertBudget
   if (!db) return;
   const updateSet: Record<string, unknown> = {};
   const fields = ["controlType", "targetUserId", "targetTeam", "capAmount", "periodType", "allowedLocationIds", "allowedResourceTypes", "approvalThreshold", "approverUserId", "isActive"] as const;
+  const record = data as Record<string, unknown>;
   for (const f of fields) {
-    if ((data as any)[f] !== undefined) updateSet[f] = (data as any)[f];
+    if (record[f] !== undefined) updateSet[f] = record[f];
   }
   if (Object.keys(updateSet).length > 0) {
     await db.update(budgetControls).set(updateSet).where(eq(budgetControls.id, id));
@@ -1873,8 +1876,9 @@ export async function updateCommitContract(id: number, data: Partial<InsertCommi
     "rampedCommitments", "discountPercent", "trueUpEnabled", "trueUpDate",
     "earlyRenewalBonus", "status", "notes",
   ] as const;
+  const record = data as Record<string, unknown>;
   for (const f of fields) {
-    if ((data as any)[f] !== undefined) updateSet[f] = (data as any)[f];
+    if (record[f] !== undefined) updateSet[f] = record[f];
   }
   if (Object.keys(updateSet).length > 0) {
     await db.update(commitContracts).set(updateSet).where(eq(commitContracts.id, id));
