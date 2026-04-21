@@ -135,12 +135,13 @@ class SDKServer {
     const data = await this.oauthService.getUserInfoByToken({
       accessToken,
     } as ExchangeTokenResponse);
+    const record = data as unknown as Record<string, unknown>;
     const loginMethod = this.deriveLoginMethod(
-      (data as any)?.platforms,
-      (data as any)?.platform ?? data.platform ?? null
+      record.platforms,
+      (record.platform as string | null | undefined) ?? data.platform ?? null
     );
     return {
-      ...(data as any),
+      ...record,
       platform: loginMethod,
       loginMethod,
     } as GetUserInfoResponse;
@@ -246,12 +247,13 @@ class SDKServer {
       payload
     );
 
+    const record = data as unknown as Record<string, unknown>;
     const loginMethod = this.deriveLoginMethod(
-      (data as any)?.platforms,
-      (data as any)?.platform ?? data.platform ?? null
+      record.platforms,
+      (record.platform as string | null | undefined) ?? data.platform ?? null
     );
     return {
-      ...(data as any),
+      ...record,
       platform: loginMethod,
       loginMethod,
     } as GetUserInfoWithJwtResponse;
