@@ -345,6 +345,7 @@ export const accessLog = mysqlTable("access_log", {
 });
 
 export type AccessLogEntry = typeof accessLog.$inferSelect;
+export type InsertAccessLogEntry = typeof accessLog.$inferInsert;
 
 // ─── Notifications ───────────────────────────────────────────────────
 export const notifications = mysqlTable("notifications", {
@@ -377,6 +378,7 @@ export const notifications = mysqlTable("notifications", {
 });
 
 export type Notification = typeof notifications.$inferSelect;
+export type InsertNotification = typeof notifications.$inferInsert;
 
 // ─── Invites ─────────────────────────────────────────────────────────
 export const invites = mysqlTable("invites", {
@@ -393,6 +395,7 @@ export const invites = mysqlTable("invites", {
 });
 
 export type Invite = typeof invites.$inferSelect;
+export type InsertInvite = typeof invites.$inferInsert;
 
 // ─── CRM: Leads ─────────────────────────────────────────────────────
 export const crmLeads = mysqlTable("crm_leads", {
@@ -467,6 +470,7 @@ export const crmLeadActivities = mysqlTable("crm_lead_activities", {
 });
 
 export type CrmLeadActivity = typeof crmLeadActivities.$inferSelect;
+export type InsertCrmLeadActivity = typeof crmLeadActivities.$inferInsert;
 
 // ─── CRM: Campaigns ────────────────────────────────────────────────
 export const crmCampaigns = mysqlTable("crm_campaigns", {
@@ -1256,6 +1260,7 @@ export const crmTriggerLogs = mysqlTable("crm_trigger_logs", {
 });
 
 export type CrmTriggerLog = typeof crmTriggerLogs.$inferSelect;
+export type InsertCrmTriggerLog = typeof crmTriggerLogs.$inferInsert;
 
 // ─── CRM: Website Visitors (LeadInfo-style) ─────────────────────────
 export const crmWebsiteVisitors = mysqlTable("crm_website_visitors", {
