@@ -259,7 +259,7 @@ export const walletPaymentRouter = router({
             ownerId: ctx.user.id,
             balance: "0",
           });
-        walletId = (result as any).insertId;
+        walletId = (result as unknown as { insertId: number }).insertId;
       }
 
       // Get user details
@@ -286,7 +286,7 @@ export const walletPaymentRouter = router({
         status: "pending",
       });
 
-      const transactionId = (txResult as any).insertId;
+      const transactionId = (txResult as unknown as { insertId: number }).insertId;
 
       // Configure payment method types based on user selection
       // iDEAL is the dominant payment method in the Netherlands
@@ -368,7 +368,7 @@ export const walletPaymentRouter = router({
         const result = await db
           .insert(wallets)
           .values({ type: "personal", ownerId: ctx.user.id, balance: "0" });
-        walletId = (result as any).insertId;
+        walletId = (result as unknown as { insertId: number }).insertId;
       }
 
       const userRecords = await db.select().from(users).where(eq(users.id, ctx.user.id));
@@ -394,7 +394,7 @@ export const walletPaymentRouter = router({
         status: "pending",
       });
 
-      const transactionId = (txResult as any).insertId;
+      const transactionId = (txResult as unknown as { insertId: number }).insertId;
 
       const paymentMethodTypes: string[] = input.paymentMethod === "ideal"
         ? ["ideal"]

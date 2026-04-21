@@ -1,6 +1,7 @@
 import { protectedProcedure, publicProcedure, router } from "../_core/trpc";
 import { z } from "zod";
 import * as db from "../db";
+import type { InsertCreditPackage, InsertBudgetControl, InsertCommitContract, InsertCreditBonus } from "../../drizzle/schema";
 
 const adminProcedure = protectedProcedure.use(({ ctx, next }) => {
   if (ctx.user.role !== "administrator" && ctx.user.role !== "host") {
@@ -42,7 +43,7 @@ export const creditPackagesRouter = router({
     minBundleTier: z.string().optional(),
     sortOrder: z.number().optional(),
   })).mutation(async ({ input }) => {
-    await db.createCreditPackage(input as any);
+    await db.createCreditPackage(input as InsertCreditPackage);
     return { success: true };
   }),
 
@@ -60,7 +61,7 @@ export const creditPackagesRouter = router({
     sortOrder: z.number().optional(),
   })).mutation(async ({ input }) => {
     const { id, ...data } = input;
-    await db.updateCreditPackage(id, data as any);
+    await db.updateCreditPackage(id, data as Partial<InsertCreditPackage>);
     return { success: true };
   }),
 
@@ -101,7 +102,7 @@ export const budgetControlsRouter = router({
     approvalThreshold: z.string().optional(),
     approverUserId: z.number().optional(),
   })).mutation(async ({ input }) => {
-    await db.createBudgetControl(input as any);
+    await db.createBudgetControl(input as InsertBudgetControl);
     return { success: true };
   }),
 
@@ -119,7 +120,7 @@ export const budgetControlsRouter = router({
     isActive: z.boolean().optional(),
   })).mutation(async ({ input }) => {
     const { id, ...data } = input;
-    await db.updateBudgetControl(id, data as any);
+    await db.updateBudgetControl(id, data as Partial<InsertBudgetControl>);
     return { success: true };
   }),
 
@@ -167,7 +168,7 @@ export const commitContractsRouter = router({
     earlyRenewalBonus: z.string().optional(),
     notes: z.string().optional(),
   })).mutation(async ({ input }) => {
-    await db.createCommitContract(input as any);
+    await db.createCommitContract(input as InsertCommitContract);
     return { success: true };
   }),
 
@@ -190,7 +191,7 @@ export const commitContractsRouter = router({
     notes: z.string().optional(),
   })).mutation(async ({ input }) => {
     const { id, ...data } = input;
-    await db.updateCommitContract(id, data as any);
+    await db.updateCommitContract(id, data as Partial<InsertCommitContract>);
     return { success: true };
   }),
 
@@ -226,7 +227,7 @@ export const creditBonusesRouter = router({
     sourceBundleId: z.number().optional(),
     expiresAt: z.number().optional(),
   })).mutation(async ({ input }) => {
-    await db.createCreditBonus(input as any);
+    await db.createCreditBonus(input as InsertCreditBonus);
     return { success: true };
   }),
 
