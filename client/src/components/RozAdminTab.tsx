@@ -16,6 +16,59 @@ import {
 } from "lucide-react";
 import RozInvoicesTab from "@/components/RozInvoicesTab";
 
+/** Resource record shape for ROZ admin (inferred from drizzle schema) */
+interface ResourceRecord {
+  id: number;
+  name: string;
+  type: string;
+  locationId: number;
+  areaM2?: string | null;
+  isRozEligible?: boolean | null;
+  rozContractType?: string | null;
+  rozServiceChargeModel?: string | null;
+  rozVatRate?: string | null;
+  rozIndexation?: string | null;
+  rozIndexationPct?: string | null;
+  rozTenantProtection?: boolean | null;
+  rozMinLeaseTerm?: number | null;
+  rozNoticePeriodMonths?: number | null;
+  zone: string;
+  capacity?: number | null;
+  creditCostPerHour: string;
+}
+
+/** ROZ pricing tier shape */
+interface TierRecord {
+  id: number;
+  resourceId?: number | null;
+  name: string;
+  periodType: string;
+  periodMonths: number;
+  creditCostPerMonth: string;
+  creditCostPerM2PerMonth?: string | null;
+  discountPercent?: string | null;
+  serviceChargePerMonth?: string | null;
+  depositMonths?: number | null;
+  isActive?: boolean | null;
+  sortOrder?: number | null;
+}
+
+/** ROZ contract shape */
+interface ContractRecord {
+  id: number;
+  contractNumber: string;
+  resourceId: number;
+  locationId: number;
+  userId?: number | null;
+  companyId?: number | null;
+  periodType: string;
+  startDate: number;
+  endDate: number;
+  monthlyRentCredits: string;
+  monthlyServiceCharge?: string | null;
+  status: string;
+}
+
 const PERIOD_LABELS: Record<string, string> = {
   month: "1 Maand", "6_months": "6 Maanden", "1_year": "1 Jaar",
   "2_year": "2 Jaar", "3_year": "3 Jaar", "5_year": "5 Jaar", "10_year": "10 Jaar",
@@ -50,7 +103,7 @@ function RozResourceSettings() {
     onError: (e) => toast.error(e.message),
   });
 
-  const [editResource, setEditResource] = useState<any>(null);
+  const [editResource, setEditResource] = useState<ResourceRecord | null>(null);
   const [form, setForm] = useState({
     areaM2: "",
     rozContractType: "kantoorruimte",
@@ -63,7 +116,7 @@ function RozResourceSettings() {
     rozNoticePeriodMonths: 3,
   });
 
-  function openEdit(r: any) {
+  function openEdit(r: ResourceRecord) {
     setEditResource(r);
     setForm({
       areaM2: r.areaM2 || "",
@@ -89,8 +142,8 @@ function RozResourceSettings() {
     setEditResource(null);
   }
 
-  const rozResources = resources?.filter((r: any) => r.isRozEligible) || [];
-  const nonRozResources = resources?.filter((r: any) => !r.isRozEligible) || [];
+  const rozResources = resources?.filter((r: ResourceRecord) => r.isRozEligible) || [];
+  const nonRozResources = resources?.filter((r: ResourceRecord) => !r.isRozEligible) || [];
 
   return (
     <div className="space-y-6">
@@ -114,7 +167,7 @@ function RozResourceSettings() {
             ROZ-gelabelde ruimtes ({rozResources.length})
           </h4>
           <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
-            {rozResources.map((r: any) => (
+            {rozResources.map((r: ResourceRecord) => (
               <Card key={r.id} className="bg-amber-500/5 border-amber-500/20">
                 <CardContent className="p-4">
                   <div className="flex items-start justify-between">
@@ -151,7 +204,7 @@ function RozResourceSettings() {
             Overige ruimtes — stel oppervlakte in om ROZ te activeren ({nonRozResources.length})
           </h4>
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-2">
-            {nonRozResources.map((r: any) => (
+            {nonRozResources.map((r: ResourceRecord) => (
               <Card key={r.id} className="bg-white/[0.02] border-border/30">
                 <CardContent className="p-3 flex items-center justify-between">
                   <div>
@@ -336,7 +389,7 @@ function RozPricingTiersSection() {
     },
   });
 
-  const rozResources = resources?.filter((r: any) => r.isRozEligible) || [];
+  const rozResources = resources?.filter((r: ResourceRecord) => r.isRozEligible) || [];
 
   return (
     <div className="space-y-6">
@@ -366,8 +419,8 @@ function RozPricingTiersSection() {
         </Card>
       ) : (
         <div className="space-y-2">
-          {tiers.map((tier: any) => {
-            const resource = resources?.find((r: any) => r.id === tier.resourceId);
+          {tiers.map((tier: TierRecord) => {
+            const resource = resources?.find((r: ResourceRecord) => r.id === tier.resourceId);
             return (
               <Card key={tier.id} className="bg-white/[0.02] border-border/30">
                 <CardContent className="p-4 flex items-center justify-between">
@@ -424,7 +477,7 @@ function RozPricingTiersSection() {
                   <SelectTrigger className="bg-secondary/50"><SelectValue placeholder="Alle ruimtes" /></SelectTrigger>
                   <SelectContent>
                     <SelectItem value="all">Alle ROZ-ruimtes</SelectItem>
-                    {rozResources.map((r: any) => (
+                    {rozResources.map((r: ResourceRecord) => (
                       <SelectItem key={r.id} value={r.id.toString()}>{r.name}</SelectItem>
                     ))}
                   </SelectContent>
@@ -470,7 +523,7 @@ function RozPricingTiersSection() {
               onClick={() => createMut.mutate({
                 name: form.name,
                 resourceId: form.resourceId,
-                periodType: form.periodType as any,
+                periodType: form.periodType as TierRecord["periodType"],
                 creditCostPerMonth: form.creditCostPerMonth,
                 discountPercent: form.discountPercent,
                 serviceChargePerMonth: form.serviceChargePerMonth,
@@ -571,8 +624,8 @@ function RozContractsSection() {
         </Card>
       ) : (
         <div className="space-y-2">
-          {contracts.map((c: any) => {
-            const resource = resources?.find((r: any) => r.id === c.resourceId);
+          {contracts.map((c: ContractRecord) => {
+            const resource = resources?.find((r: ResourceRecord) => r.id === c.resourceId);
             return (
               <Card key={c.id} className="bg-white/[0.02] border-border/30">
                 <CardContent className="p-4">
