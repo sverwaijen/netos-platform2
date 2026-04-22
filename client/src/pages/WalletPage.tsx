@@ -9,6 +9,48 @@ import { toast } from "sonner";
 import { useState, useMemo, useEffect } from "react";
 import { CreditCard, ArrowUpRight, ArrowDownRight, RefreshCw, TrendingUp, Clock, Package, Shield, Zap, Settings, Banknote, CheckCircle2 } from "lucide-react";
 import { BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer } from "recharts";
+/** Wallet record shape (inferred from drizzle schema) */
+interface WalletRecord {
+  id: number;
+  type: "personal" | "company";
+  balance: string;
+  permanentBalance?: string | null;
+  rolloverPercent?: number | null;
+  maxRollover?: string | number | null;
+  creditExpiresAt?: number | null;
+  autoTopUpEnabled?: boolean;
+  autoTopUpThreshold?: string | null;
+  autoTopUpAmount?: string | null;
+}
+
+/** Credit ledger entry shape */
+interface LedgerEntry {
+  id: number;
+  type: string;
+  amount: string;
+  source?: string | null;
+  description?: string | null;
+  createdAt: string | Date;
+}
+
+/** Credit bundle shape */
+interface BundleRecord {
+  id: number;
+  name: string;
+  creditsPerMonth: number;
+  priceEur: string;
+  description?: string | null;
+}
+
+/** Wallet payment transaction shape */
+interface PaymentRecord {
+  id: number;
+  status: string;
+  amount: string;
+  creditsAdded?: number | null;
+  description?: string | null;
+  createdAt: string | Date;
+}
 
 export default function WalletPage() {
   const { isAuthenticated } = useAuth();
@@ -21,7 +63,7 @@ export default function WalletPage() {
   const [autoTopUpThreshold, setAutoTopUpThreshold] = useState("10");
   const [autoTopUpAmount, setAutoTopUpAmount] = useState("50");
   const [bundleDialogOpen, setBundleDialogOpen] = useState(false);
-  const [selectedBundle, setSelectedBundle] = useState<any>(null);
+  const [selectedBundle, setSelectedBundle] = useState<BundleRecord | null>(null);
   const [paymentMethod, setPaymentMethod] = useState<"card" | "ideal">("ideal");
   const [paymentHistoryOpen, setPaymentHistoryOpen] = useState(false);
 
@@ -61,11 +103,11 @@ export default function WalletPage() {
   const utils = trpc.useUtils();
   const topUpMutation = trpc.wallets.topup.useMutation({
     onSuccess: () => { toast.success("Credits added."); setTopUpOpen(false); utils.wallets.mine.invalidate(); utils.wallets.ledger.invalidate(); },
-    onError: (err: any) => toast.error(err.message),
+    onError: (err: { message: string }) => toast.error(err.message),
   });
   const autoTopUpMutation = trpc.wallets.setAutoTopUp.useMutation({
     onSuccess: () => { toast.success("Auto top-up settings saved."); setAutoTopUpOpen(false); utils.wallets.mine.invalidate(); },
-    onError: (err: any) => toast.error(err.message),
+    onError: (err: { message: string }) => toast.error(err.message),
   });
   const checkoutMutation = trpc.walletPayment.createCheckoutSession.useMutation({
     onSuccess: (data) => {
@@ -73,11 +115,11 @@ export default function WalletPage() {
         window.location.href = data.checkoutUrl;
       }
     },
-    onError: (err: any) => toast.error(err.message || "Betaling kon niet gestart worden"),
+    onError: (err: { message: string }) => toast.error(err.message || "Betaling kon niet gestart worden"),
   });
 
-  const personalWallet = wallets?.find((w: any) => w.type === "personal");
-  const companyWallet = wallets?.find((w: any) => w.type === "company");
+  const personalWallet = wallets?.find((w: WalletRecord) => w.type === "personal");
+  const companyWallet = wallets?.find((w: WalletRecord) => w.type === "company");
   const personalBalance = personalWallet ? parseFloat(personalWallet.balance) : 0;
   const personalPermanent = personalWallet ? parseFloat(personalWallet.permanentBalance ?? "0") : 0;
   const companyBalance = companyWallet ? parseFloat(companyWallet.balance) : 0;
@@ -86,20 +128,20 @@ export default function WalletPage() {
 
   const analytics = useMemo(() => {
     if (!ledger || ledger.length === 0) return { spent: 0, earned: 0, breakage: 0, topups: 0, packages: 0, bonuses: 0, avgDaily: 0, spendByDay: [] };
-    const spent = ledger.filter((t: any) => t.type === "spend").reduce((s: number, t: any) => s + Math.abs(parseFloat(t.amount)), 0);
-    const earned = ledger.filter((t: any) => ["grant", "topup", "package_purchase", "bonus"].includes(t.type)).reduce((s: number, t: any) => s + parseFloat(t.amount), 0);
-    const breakage = ledger.filter((t: any) => ["breakage", "expiration"].includes(t.type)).reduce((s: number, t: any) => s + Math.abs(parseFloat(t.amount)), 0);
-    const topups = ledger.filter((t: any) => t.type === "topup").reduce((s: number, t: any) => s + parseFloat(t.amount), 0);
-    const packages = ledger.filter((t: any) => t.type === "package_purchase").reduce((s: number, t: any) => s + parseFloat(t.amount), 0);
-    const bonuses = ledger.filter((t: any) => t.type === "bonus").reduce((s: number, t: any) => s + parseFloat(t.amount), 0);
+    const spent = ledger.filter((t: LedgerEntry) => t.type === "spend").reduce((s: number, t: LedgerEntry) => s + Math.abs(parseFloat(t.amount)), 0);
+    const earned = ledger.filter((t: LedgerEntry) => ["grant", "topup", "package_purchase", "bonus"].includes(t.type)).reduce((s: number, t: LedgerEntry) => s + parseFloat(t.amount), 0);
+    const breakage = ledger.filter((t: LedgerEntry) => ["breakage", "expiration"].includes(t.type)).reduce((s: number, t: LedgerEntry) => s + Math.abs(parseFloat(t.amount)), 0);
+    const topups = ledger.filter((t: LedgerEntry) => t.type === "topup").reduce((s: number, t: LedgerEntry) => s + parseFloat(t.amount), 0);
+    const packages = ledger.filter((t: LedgerEntry) => t.type === "package_purchase").reduce((s: number, t: LedgerEntry) => s + parseFloat(t.amount), 0);
+    const bonuses = ledger.filter((t: LedgerEntry) => t.type === "bonus").reduce((s: number, t: LedgerEntry) => s + parseFloat(t.amount), 0);
     const dayMap: Record<number, number> = {};
     const dayNames = ["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"];
-    ledger.filter((t: any) => t.type === "spend").forEach((t: any) => {
+    ledger.filter((t: LedgerEntry) => t.type === "spend").forEach((t: LedgerEntry) => {
       const d = new Date(t.createdAt).getDay();
       dayMap[d] = (dayMap[d] || 0) + Math.abs(parseFloat(t.amount));
     });
     const spendByDay = dayNames.map((name, i) => ({ day: name, credits: Math.round(dayMap[i] || 0) }));
-    const uniqueDays = new Set(ledger.filter((t: any) => t.type === "spend").map((t: any) => new Date(t.createdAt).toDateString())).size;
+    const uniqueDays = new Set(ledger.filter((t: LedgerEntry) => t.type === "spend").map((t: LedgerEntry) => new Date(t.createdAt).toDateString())).size;
     return { spent, earned, breakage, topups, packages, bonuses, avgDaily: uniqueDays > 0 ? spent / uniqueDays : 0, spendByDay };
   }, [ledger]);
 
@@ -249,7 +291,7 @@ export default function WalletPage() {
             </div>
           ) : (
             <div className="space-y-0">
-              {(ledger ?? []).slice(0, 50).map((tx: any, i: number) => {
+              {(ledger ?? []).slice(0, 50).map((tx: LedgerEntry, i: number) => {
                 const amount = parseFloat(tx.amount);
                 const isCredit = amount > 0;
                 const typeLabel = (tx.type || "transaction").replace(/_/g, " ");
@@ -367,7 +409,7 @@ export default function WalletPage() {
             <div className="text-center py-8 text-[#888]">Geen bundels beschikbaar</div>
           ) : (
             <div className="space-y-2">
-              {bundles.map((bundle: any) => (
+              {bundles.map((bundle: BundleRecord) => (
                 <button
                   key={bundle.id}
                   onClick={() => setSelectedBundle(bundle)}
@@ -459,7 +501,7 @@ export default function WalletPage() {
             </div>
           ) : (
             <div className="space-y-0 max-h-80 overflow-y-auto">
-              {paymentHistory.map((tx: any) => {
+              {paymentHistory.map((tx: PaymentRecord) => {
                 const statusColor = tx.status === "completed" ? "text-[#627653]" : tx.status === "failed" ? "text-red-400" : "text-amber-400";
                 const statusLabel = tx.status === "completed" ? "Betaald" : tx.status === "failed" ? "Mislukt" : "In behandeling";
                 return (
