@@ -1,11 +1,35 @@
 import { Server as HTTPServer } from "http";
+import type { IncomingMessage } from "http";
 import { createLogger } from "./_core/logger";
 
 const log = createLogger("WebSocket");
 
-// WebSocket types - using any since ws package is not installed
-const WebSocket: any = null;
-const WebSocketServer: any = null;
+// Minimal WebSocket interfaces since ws package is not directly imported
+interface WsWebSocket {
+  readonly readyState: number;
+  clientId?: string;
+  on(event: "message", listener: (data: Buffer | string) => void): void;
+  on(event: "close", listener: () => void): void;
+  on(event: "error", listener: (error: Error) => void): void;
+  on(event: "pong", listener: () => void): void;
+  on(event: string, listener: (...args: unknown[]) => void): void;
+  send(data: string): void;
+  ping(): void;
+}
+
+interface WsWebSocketServer {
+  on(event: "connection", listener: (ws: WsWebSocket, req: IncomingMessage) => void): void;
+  clients: Set<WsWebSocket>;
+  close(): void;
+}
+
+interface WsWebSocketServerConstructor {
+  new (options: { server: HTTPServer }): WsWebSocketServer;
+}
+
+// WebSocket stubs - replaced at runtime by ws package
+const WebSocket: { OPEN: number } = { OPEN: 1 };
+const WebSocketServer: WsWebSocketServerConstructor | null = null;
 
 export type WebSocketChannel =
   | "bookings"
@@ -34,7 +58,7 @@ interface ChannelBroadcast {
 }
 
 export class WebSocketServerManager {
-  private wss: any;
+  private wss: WsWebSocketServer;
   private clients: Map<string, ClientInfo> = new Map();
   private channels: Map<WebSocketChannel, ChannelBroadcast> = new Map();
   private heartbeatInterval: NodeJS.Timeout | null = null;
@@ -42,7 +66,7 @@ export class WebSocketServerManager {
   private reconnectionTimeouts: Map<string, NodeJS.Timeout> = new Map();
 
   constructor(httpServer: HTTPServer) {
-    this.wss = new WebSocketServer({ server: httpServer });
+    this.wss = new (WebSocketServer as unknown as WsWebSocketServerConstructor)({ server: httpServer });
     this.initializeChannels();
     this.setupConnectionHandler();
     this.startHeartbeat();
@@ -67,7 +91,7 @@ export class WebSocketServerManager {
   }
 
   private setupConnectionHandler(): void {
-    this.wss.on("connection", (ws: any, req: any) => {
+    this.wss.on("connection", (ws: WsWebSocket, req: IncomingMessage) => {
       const clientId = this.generateClientId();
       const clientInfo: ClientInfo = {
         id: clientId,
@@ -266,10 +290,10 @@ export class WebSocketServerManager {
     }, 30000); // 30 second heartbeat
   }
 
-  private getClientWebSocket(clientId: string): any | null {
-    let targetWs: any = null;
-    this.wss.clients.forEach((ws: any) => {
-      const wsClientId = (ws as any).clientId;
+  private getClientWebSocket(clientId: string): WsWebSocket | null {
+    let targetWs: WsWebSocket | null = null;
+    this.wss.clients.forEach((ws: WsWebSocket) => {
+      const wsClientId = ws.clientId;
       if (wsClientId === clientId) {
         targetWs = ws;
       }
