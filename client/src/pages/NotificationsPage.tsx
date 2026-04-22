@@ -4,8 +4,21 @@ import { Skeleton } from "@/components/ui/skeleton";
 import { toast } from "sonner";
 import { useState } from "react";
 import { Bell, CheckCheck, AlertTriangle, CreditCard, DoorOpen, Calendar, Users, Info } from "lucide-react";
+import type { LucideIcon } from "lucide-react";
 
-const TYPE_ICONS: Record<string, any> = {
+/** Notification record shape (inferred from drizzle schema) */
+interface NotificationRecord {
+  id: number;
+  userId: number | null;
+  type: string;
+  title: string;
+  message: string | null;
+  isRead: boolean | null;
+  metadata: unknown;
+  createdAt: Date;
+}
+
+const TYPE_ICONS: Record<string, LucideIcon> = {
   booking_reminder: Calendar, enterprise_signup: Users, breakage_milestone: CreditCard,
   occupancy_anomaly: AlertTriangle, credit_inflation: CreditCard, monthly_report: Calendar,
   visitor_arrival: Users, system: Info,
@@ -21,8 +34,8 @@ export default function NotificationsPage() {
   });
   const [tab, setTab] = useState<"all" | "unread" | "read">("all");
 
-  const unread = (notifications ?? []).filter((n: any) => !n.isRead);
-  const readItems = (notifications ?? []).filter((n: any) => n.isRead);
+  const unread = (notifications ?? []).filter((n: NotificationRecord) => !n.isRead);
+  const readItems = (notifications ?? []).filter((n: NotificationRecord) => n.isRead);
   const items = tab === "unread" ? unread : tab === "read" ? readItems : (notifications ?? []);
 
   if (isLoading) return <div className="space-y-4 p-1">{Array.from({ length: 4 }).map((_, i) => <Skeleton key={i} className="h-16" />)}</div>;
@@ -77,7 +90,7 @@ export default function NotificationsPage() {
         </div>
       ) : (
         <div className="space-y-0">
-          {items.map((n: any) => {
+          {items.map((n: NotificationRecord) => {
             const Icon = TYPE_ICONS[n.type] ?? Bell;
             return (
               <div
