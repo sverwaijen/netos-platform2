@@ -110,7 +110,7 @@ export default function MemberDatabase() {
                 <Textarea value={newMember.notes} onChange={e => setNewMember({ ...newMember, notes: e.target.value })}
                   placeholder="Optionele notities..." className="bg-zinc-800 border-zinc-700 text-white" />
               </div>
-              <Button onClick={() => createMut.mutate(newMember as any)} disabled={!newMember.displayName || createMut.isPending}
+              <Button onClick={() => createMut.mutate({ displayName: newMember.displayName, email: newMember.email || undefined, companyName: newMember.companyName || undefined, jobTitle: newMember.jobTitle || undefined, tier: newMember.tier as "prospect" | "vergaderen" | "gebaloteerd", notes: newMember.notes || undefined })} disabled={!newMember.displayName || createMut.isPending}
                 className="w-full bg-green-600 hover:bg-green-700">
                 {createMut.isPending ? "Toevoegen..." : "Lid Toevoegen"}
               </Button>
@@ -247,7 +247,7 @@ export default function MemberDatabase() {
                   </div>
 
                   {/* Tier change dropdown */}
-                  <Select value={member.tier} onValueChange={v => { updateMut.mutate({ id: member.id, tier: v as any }); }}>
+                  <Select value={member.tier} onValueChange={v => { updateMut.mutate({ id: member.id, tier: v as "prospect" | "vergaderen" | "gebaloteerd" }); }}>
                     <SelectTrigger className="w-auto bg-transparent border-none text-zinc-400 hover:text-white p-1" onClick={e => e.stopPropagation()}>
                       <MoreHorizontal className="h-4 w-4" />
                     </SelectTrigger>

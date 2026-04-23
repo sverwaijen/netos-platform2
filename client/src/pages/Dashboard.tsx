@@ -9,6 +9,58 @@ import {
 import { MapPin, Calendar, CreditCard, Building2, Users, ArrowRight, Clock } from "lucide-react";
 import { useLocation, Link } from "wouter";
 
+/** Wallet record shape for dashboard display */
+interface DashboardWalletRecord {
+  id: number;
+  type: "personal" | "company";
+  balance: string;
+}
+
+/** Booking-by-day aggregation shape */
+interface BookingsByDayRecord {
+  dayOfWeek: number;
+  count: number;
+  totalCredits: number;
+}
+
+/** Resource distribution aggregation shape */
+interface ResourceDistRecord {
+  type: string;
+  count: number;
+}
+
+/** Location stats aggregation shape */
+interface LocationStatRecord {
+  locationId: number;
+  locationName: string;
+  city: string;
+  totalBookings: number;
+  totalResources: number;
+  totalRevenue: number;
+  occupancyRate: number;
+}
+
+/** Recent booking record shape */
+interface RecentBookingRecord {
+  id: number;
+  resourceId: number;
+  locationId: number;
+  startTime: number;
+  endTime: number;
+  status: string;
+  creditsCost: string | null;
+  resourceName: string;
+  resourceType: string;
+  locationName: string;
+  userName: string;
+}
+
+/** Pie chart data point */
+interface PieDataPoint {
+  name: string;
+  value: number;
+}
+
 const CHART_COLORS = ["#627653", "#b8a472", "#888888", "#3a4a34"];
 const DAY_NAMES = ["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"];
 
@@ -22,16 +74,16 @@ export default function Dashboard() {
   const { data: recentBookings } = trpc.dashboard.recentBookings.useQuery({ limit: 8 });
   const { data: myWallets } = trpc.wallets.mine.useQuery();
 
-  const personalWallet = myWallets?.find((w: any) => w.type === "personal");
-  const companyWallet = myWallets?.find((w: any) => w.type === "company");
+  const personalWallet = myWallets?.find((w: DashboardWalletRecord) => w.type === "personal");
+  const companyWallet = myWallets?.find((w: DashboardWalletRecord) => w.type === "company");
   const firstName = user?.name?.split(" ")[0] || "there";
 
-  const bookingChartData = bookingsByDay?.map((d: any) => ({
+  const bookingChartData = bookingsByDay?.map((d: BookingsByDayRecord) => ({
     day: DAY_NAMES[(d.dayOfWeek - 1) % 7] || "?",
     bookings: d.count,
   })) ?? [];
 
-  const pieData = resourceDist?.map((r: any) => ({
+  const pieData = resourceDist?.map((r: ResourceDistRecord) => ({
     name: r.type.replace("_", " "),
     value: r.count,
   })) ?? [];
@@ -127,13 +179,13 @@ export default function Dashboard() {
                   <ResponsiveContainer width="100%" height="100%">
                     <PieChart>
                       <Pie data={pieData} dataKey="value" nameKey="name" cx="50%" cy="50%" outerRadius={70} strokeWidth={0}>
-                        {pieData.map((_: any, i: number) => <Cell key={i} fill={CHART_COLORS[i % CHART_COLORS.length]} />)}
+                        {pieData.map((_: PieDataPoint, i: number) => <Cell key={i} fill={CHART_COLORS[i % CHART_COLORS.length]} />)}
                       </Pie>
                       <Tooltip contentStyle={{ background: "#1a1a1a", border: "1px solid rgba(255,255,255,0.06)", borderRadius: 4, fontSize: 12, color: "#fff" }} />
                     </PieChart>
                   </ResponsiveContainer>
                   <div className="space-y-1.5 md:space-y-2 min-w-0 md:min-w-[120px] flex flex-wrap md:flex-col gap-x-4 md:gap-x-0">
-                    {pieData.map((rs: any, i: number) => (
+                    {pieData.map((rs: PieDataPoint, i: number) => (
                       <div key={i} className="flex items-center gap-2">
                         <div className="w-2 h-2 rounded-full" style={{ background: CHART_COLORS[i % CHART_COLORS.length] }} />
                         <span className="text-[11px] text-[#888] capitalize">{rs.name}</span>
@@ -165,7 +217,7 @@ export default function Dashboard() {
                 </tr>
               </thead>
               <tbody>
-                {locationStats?.map((loc: any) => (
+                {locationStats?.map((loc: LocationStatRecord) => (
                   <tr key={loc.locationId} className="border-b border-white/[0.03] hover:bg-white/[0.02] transition-colors">
                     <td className="py-3 text-sm font-light">{loc.locationName}</td>
                     <td className="py-3 text-sm text-[#888]">{loc.city}</td>
@@ -207,7 +259,7 @@ export default function Dashboard() {
                 <p className="text-sm text-[#888] font-light">No bookings yet. <Link href="/locations" className="text-[#627653] hover:underline">Book your first space</Link></p>
               </div>
             ) : (
-              (recentBookings ?? []).map((b: any, i: number) => (
+              (recentBookings ?? []).map((b: RecentBookingRecord, i: number) => (
                 <div key={i} className="flex items-center justify-between py-3 border-b border-white/[0.03] last:border-0 gap-2">
                   <div className="flex items-center gap-3">
                     <div className="w-8 h-8 rounded bg-[#627653]/10 flex items-center justify-center">
@@ -219,7 +271,7 @@ export default function Dashboard() {
                     </div>
                   </div>
                   <div className="text-right shrink-0">
-                    <p className="text-sm font-medium text-[#627653]">{parseFloat(b.creditsCost || 0).toFixed(1)}c</p>
+                    <p className="text-sm font-medium text-[#627653]">{parseFloat(b.creditsCost || "0").toFixed(1)}c</p>
                     <p className="text-[11px] text-[#888]">{new Date(b.startTime).toLocaleDateString("nl-NL", { day: "numeric", month: "short" })}</p>
                   </div>
                 </div>
