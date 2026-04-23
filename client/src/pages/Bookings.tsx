@@ -8,14 +8,30 @@ import { useState, useMemo } from "react";
 import { Link } from "wouter";
 import { Calendar, Clock, MapPin, X, Plus, AlertCircle, CheckCircle } from "lucide-react";
 
+/** Booking record shape (inferred from drizzle schema) */
+interface BookingRecord {
+  id: number;
+  resourceId: number;
+  locationId: number;
+  startTime: string | number | Date;
+  endTime: string | number | Date;
+  status: string;
+  creditsCost: string | null;
+  resourceName: string | undefined;
+  resourceType: string | undefined;
+  locationName: string | undefined;
+  locationCity: string | undefined;
+  notes: string | null;
+}
+
 type Tab = "upcoming" | "past" | "all";
 
 export default function Bookings() {
   const { isAuthenticated } = useAuth();
   const { data: bookings, isLoading } = trpc.bookings.mine.useQuery(undefined, { enabled: isAuthenticated });
-  const [cancelTarget, setCancelTarget] = useState<any>(null);
+  const [cancelTarget, setCancelTarget] = useState<BookingRecord | null>(null);
   const [tab, setTab] = useState<Tab>("upcoming");
-  const [showConfirmation, setShowConfirmation] = useState<any>(null);
+  const [showConfirmation, setShowConfirmation] = useState<BookingRecord | null>(null);
   const [confirmationTimer, setConfirmationTimer] = useState(0);
 
   const utils = trpc.useUtils();
@@ -26,7 +42,7 @@ export default function Bookings() {
       utils.bookings.mine.invalidate();
       utils.wallets.mine.invalidate();
     },
-    onError: (err: any) => {
+    onError: (err: { message: string }) => {
       const errorMsg = err?.message || "Failed to cancel booking";
       // User-friendly error messages
       if (errorMsg.includes("1 hour")) {
@@ -42,21 +58,21 @@ export default function Bookings() {
   const now = Date.now();
   const CANCEL_THRESHOLD_MS = 60 * 60 * 1000; // 1 hour
 
-  const upcoming = useMemo(() => (bookings ?? []).filter((b: any) => new Date(b.startTime).getTime() > now && b.status !== "cancelled"), [bookings, now]);
-  const past = useMemo(() => (bookings ?? []).filter((b: any) => new Date(b.startTime).getTime() <= now || b.status === "cancelled"), [bookings, now]);
+  const upcoming = useMemo(() => (bookings ?? []).filter((b: BookingRecord) => new Date(b.startTime).getTime() > now && b.status !== "cancelled"), [bookings, now]);
+  const past = useMemo(() => (bookings ?? []).filter((b: BookingRecord) => new Date(b.startTime).getTime() <= now || b.status === "cancelled"), [bookings, now]);
   const filtered = tab === "upcoming" ? upcoming : tab === "past" ? past : (bookings ?? []);
-  const totalSpent = (bookings ?? []).filter((b: any) => b.status !== "cancelled").reduce((sum: number, b: any) => sum + parseFloat(b.creditsCost || "0"), 0);
-  const totalHours = (bookings ?? []).filter((b: any) => b.status !== "cancelled").reduce((sum: number, b: any) => {
+  const totalSpent = (bookings ?? []).filter((b: BookingRecord) => b.status !== "cancelled").reduce((sum: number, b: BookingRecord) => sum + parseFloat(b.creditsCost || "0"), 0);
+  const totalHours = (bookings ?? []).filter((b: BookingRecord) => b.status !== "cancelled").reduce((sum: number, b: BookingRecord) => {
     return sum + (new Date(b.endTime).getTime() - new Date(b.startTime).getTime()) / 3600000;
   }, 0);
 
-  const canCancelBooking = (booking: any) => {
+  const canCancelBooking = (booking: BookingRecord) => {
     const start = new Date(booking.startTime).getTime();
     const timeUntilStart = start - now;
     return booking.status !== "cancelled" && timeUntilStart >= CANCEL_THRESHOLD_MS;
   };
 
-  const getCancelButtonTooltip = (booking: any) => {
+  const getCancelButtonTooltip = (booking: BookingRecord) => {
     if (booking.status === "cancelled") return "Already cancelled";
     const start = new Date(booking.startTime).getTime();
     const timeUntilStart = start - now;
@@ -130,7 +146,7 @@ export default function Bookings() {
         </div>
       ) : (
         <div className="space-y-0">
-          {filtered.map((b: any) => {
+          {filtered.map((b: BookingRecord) => {
             const start = new Date(b.startTime);
             const end = new Date(b.endTime);
             const isPast = start.getTime() <= now;
@@ -245,7 +261,7 @@ export default function Bookings() {
                   Credits will be refunded to your wallet
                 </p>
               </div>
-              {Date.now() > cancelTarget.startTime - (60 * 60 * 1000) && (
+              {Date.now() > new Date(cancelTarget.startTime).getTime() - (60 * 60 * 1000) && (
                 <div className="bg-orange-500/10 border border-orange-500/20 rounded-lg p-3">
                   <p className="text-[12px] text-orange-300 font-light">
                     <AlertCircle className="w-3.5 h-3.5 inline mr-1.5" />
@@ -259,8 +275,8 @@ export default function Bookings() {
             <Button variant="outline" onClick={() => setCancelTarget(null)} className="border-white/10 bg-transparent hover:bg-white/5">Keep</Button>
             <Button
               variant="destructive"
-              disabled={cancelMutation.isPending || (cancelTarget && Date.now() > cancelTarget.startTime - (60 * 60 * 1000))}
-              onClick={() => cancelMutation.mutate({ id: cancelTarget?.id })}
+              disabled={cancelMutation.isPending || (cancelTarget ? Date.now() > new Date(cancelTarget.startTime).getTime() - (60 * 60 * 1000) : false)}
+              onClick={() => cancelMutation.mutate({ id: cancelTarget?.id ?? 0 })}
             >
               {cancelMutation.isPending ? "Cancelling..." : "Cancel booking"}
             </Button>
