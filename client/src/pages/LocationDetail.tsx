@@ -19,8 +19,44 @@ import { getLocationImage } from "@/lib/brand";
 import RozBadge from "@/components/RozBadge";
 import RozInfoModal from "@/components/RozInfoModal";
 import RozBookingModal from "@/components/RozBookingModal";
+import type { LucideIcon } from "lucide-react";
 
-const RESOURCE_ICONS: Record<string, any> = {
+/** Resource record shape (inferred from drizzle schema) */
+interface ResourceRecord {
+  id: number;
+  name: string;
+  type: string;
+  zone: string;
+  capacity: number | null;
+  creditCostPerHour: string;
+  isRozEligible: boolean | null;
+  areaM2: string | null;
+  floor: string | null;
+  imageUrl: string | null;
+  amenities: string[] | null;
+  locationId: number;
+}
+
+/** Multiplier record shape */
+interface MultiplierRecord {
+  dayOfWeek: number;
+  multiplier: string;
+}
+
+/** Booking/availability record shape */
+interface AvailabilityRecord {
+  startTime: string | number | Date;
+  endTime: string | number | Date;
+}
+
+/** Wallet record shape */
+interface WalletRecord {
+  id: number;
+  type: "personal" | "company";
+  balance: string;
+}
+
+const RESOURCE_ICONS: Record<string, LucideIcon> = {
   desk: Monitor, meeting_room: UsersIcon, private_office: Coffee,
   phone_booth: Phone, open_space: MapPin, event_space: Calendar,
   locker: Coffee, gym: Dumbbell,
@@ -51,7 +87,7 @@ export default function LocationDetail() {
   const [searchQuery, setSearchQuery] = useState("");
   const [capacityFilter, setCapacityFilter] = useState("all");
 
-  const [bookingResource, setBookingResource] = useState<any>(null);
+  const [bookingResource, setBookingResource] = useState<ResourceRecord | null>(null);
   const [selectedDate, setSelectedDate] = useState(() => {
     const d = new Date(); d.setHours(0, 0, 0, 0); return d;
   });
@@ -64,9 +100,9 @@ export default function LocationDetail() {
 
   // ROZ state
   const [rozInfoOpen, setRozInfoOpen] = useState(false);
-  const [rozInfoResource, setRozInfoResource] = useState<any>(null);
+  const [rozInfoResource, setRozInfoResource] = useState<ResourceRecord | null>(null);
   const [rozBookingOpen, setRozBookingOpen] = useState(false);
-  const [rozBookingResource, setRozBookingResource] = useState<any>(null);
+  const [rozBookingResource, setRozBookingResource] = useState<ResourceRecord | null>(null);
 
   const { data: availability } = trpc.resources.availability.useQuery(
     { resourceId: bookingResource?.id ?? 0, dateStart: selectedDate.getTime(), dateEnd: selectedDate.getTime() + 86400000 },
@@ -89,7 +125,7 @@ export default function LocationDetail() {
 
   const filteredResources = useMemo(() => {
     if (!allResources) return [];
-    return allResources.filter((r: any) => {
+    return allResources.filter((r: ResourceRecord) => {
       if (typeFilter !== "all" && r.type !== typeFilter) return false;
       if (zoneFilter !== "all" && r.zone !== zoneFilter) return false;
       if (searchQuery && !r.name.toLowerCase().includes(searchQuery.toLowerCase())) return false;
@@ -103,12 +139,12 @@ export default function LocationDetail() {
 
   const resourceTypes = useMemo(() => {
     if (!allResources) return [];
-    return Array.from(new Set(allResources.map((r: any) => r.type)));
+    return Array.from(new Set(allResources.map((r: ResourceRecord) => r.type)));
   }, [allResources]);
 
   const multiplierMap = useMemo(() => {
     const m: Record<number, number> = {};
-    multipliers?.forEach((mul: any) => { m[mul.dayOfWeek] = parseFloat(mul.multiplier); });
+    multipliers?.forEach((mul: MultiplierRecord) => { m[mul.dayOfWeek] = parseFloat(mul.multiplier); });
     return m;
   }, [multipliers]);
 
@@ -116,7 +152,7 @@ export default function LocationDetail() {
 
   const occupiedSlots = useMemo(() => {
     const set = new Set<number>();
-    availability?.forEach((b: any) => {
+    availability?.forEach((b: AvailabilityRecord) => {
       const start = new Date(b.startTime);
       const end = new Date(b.endTime);
       for (let h = start.getHours(); h < end.getHours(); h++) set.add(h);
@@ -124,8 +160,8 @@ export default function LocationDetail() {
     return set;
   }, [availability]);
 
-  const personalWallet = myWallets?.find((w: any) => w.type === "personal");
-  const companyWallet = myWallets?.find((w: any) => w.type === "company");
+  const personalWallet = myWallets?.find((w: WalletRecord) => w.type === "personal");
+  const companyWallet = myWallets?.find((w: WalletRecord) => w.type === "company");
   const activeWallet = selectedWalletType === "company" && companyWallet ? companyWallet : personalWallet;
 
   const estimatedCost = useMemo(() => {
@@ -240,7 +276,7 @@ export default function LocationDetail() {
       ) : (
         <>
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-          {filteredResources.slice(page * PAGE_SIZE, (page + 1) * PAGE_SIZE).map((r: any) => {
+          {filteredResources.slice(page * PAGE_SIZE, (page + 1) * PAGE_SIZE).map((r: ResourceRecord) => {
             const Icon = RESOURCE_ICONS[r.type] || MapPin;
             return (
               <Card key={r.id} className="glass-card border-border/50 hover:border-primary/30 transition-all">
@@ -384,7 +420,7 @@ export default function LocationDetail() {
       <RozInfoModal
         open={rozInfoOpen}
         onOpenChange={setRozInfoOpen}
-        resource={rozInfoResource}
+        resource={rozInfoResource || undefined}
       />
 
       {/* ROZ Booking Modal */}
