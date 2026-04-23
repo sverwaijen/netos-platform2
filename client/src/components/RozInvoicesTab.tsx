@@ -70,9 +70,9 @@ export default function RozInvoicesTab() {
 
   // Summary stats
   const totalInvoices = invoices?.length || 0;
-  const paidInvoices = invoices?.filter((i: any) => i.status === "paid").length || 0;
-  const overdueInvoices = invoices?.filter((i: any) => i.status === "overdue").length || 0;
-  const totalRevenue = invoices?.filter((i: any) => i.status === "paid").reduce((sum: number, i: any) => sum + parseFloat(i.totalCredits), 0) || 0;
+  const paidInvoices = invoices?.filter((i) => i.status === "paid").length || 0;
+  const overdueInvoices = invoices?.filter((i) => i.status === "overdue").length || 0;
+  const totalRevenue = invoices?.filter((i) => i.status === "paid").reduce((sum, i) => sum + parseFloat(i.totalCredits), 0) || 0;
 
   return (
     <div className="space-y-6">
@@ -136,7 +136,7 @@ export default function RozInvoicesTab() {
         </Card>
       ) : (
         <div className="space-y-2">
-          {invoices.map((inv: any) => (
+          {invoices.map((inv) => (
             <Card key={inv.id} className="bg-white/[0.02] border-border/30">
               <CardContent className="p-4">
                 <div className="flex items-start justify-between">
@@ -154,7 +154,7 @@ export default function RozInvoicesTab() {
                       </span>
                       {parseFloat(inv.serviceChargeCredits || "0") > 0 && (
                         <span className="flex items-center gap-1">
-                          Service: +{parseFloat(inv.serviceChargeCredits).toFixed(0)}c
+                          Service: +{parseFloat(inv.serviceChargeCredits || "0").toFixed(0)}c
                         </span>
                       )}
                       <span className="font-medium text-foreground">
@@ -225,7 +225,7 @@ export default function RozInvoicesTab() {
                   <SelectValue placeholder="Kies een contract..." />
                 </SelectTrigger>
                 <SelectContent>
-                  {contracts?.map((c: any) => (
+                  {contracts?.map((c) => (
                     <SelectItem key={c.id} value={c.id.toString()}>
                       {c.contractNumber} — {parseFloat(c.monthlyRentCredits).toFixed(0)}c/mnd
                     </SelectItem>
