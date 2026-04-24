@@ -14,7 +14,31 @@ import {
   Ticket, Calendar, Users, AlertTriangle, MessageSquare, Plus,
   Clock, CheckCircle, XCircle, Bot, TrendingUp, Search,
   ChevronRight, Star, Sparkles, Send,
+  type LucideIcon,
 } from "lucide-react";
+
+type TicketCategory =
+  | "general" | "billing" | "access" | "booking" | "parking" | "maintenance"
+  | "wifi" | "catering" | "equipment" | "noise" | "cleaning" | "other";
+type TicketPriority = "low" | "normal" | "high" | "urgent";
+type TicketStatus = "new" | "open" | "pending" | "on_hold" | "solved" | "closed";
+type AgendaType =
+  | "event" | "maintenance" | "cleaning" | "delivery" | "meeting" | "inspection" | "other";
+type PresencePerson = {
+  userId: number;
+  name: string;
+  email?: string | null;
+  avatarUrl?: string | null;
+  lastEntryAt?: Date | null;
+  zone?: string | null;
+  locationId?: number | null;
+};
+type PresenceStats = {
+  totalToday: number;
+  currentlyIn: number;
+  peakHour: number;
+  avgDailyVisitors: number;
+};
 
 const priorityColors: Record<string, string> = {
   low: "bg-slate-500/10 text-slate-400",
@@ -106,7 +130,7 @@ export default function OperationsDashboard() {
   );
 }
 
-function StatCard({ icon: Icon, label, value, color, bg }: { icon: any; label: string; value: number | string; color: string; bg: string }) {
+function StatCard({ icon: Icon, label, value, color, bg }: { icon: LucideIcon; label: string; value: number | string; color: string; bg: string }) {
   return (
     <Card className="bg-card/50 border-border/30">
       <CardContent className="p-3">
@@ -123,7 +147,7 @@ function StatCard({ icon: Icon, label, value, color, bg }: { icon: any; label: s
 }
 
 function CreateTicketDialog({ onClose }: { onClose: () => void }) {
-  const [form, setForm] = useState({ subject: "", description: "", category: "general" as const, priority: "normal" as const });
+  const [form, setForm] = useState<{ subject: string; description: string; category: TicketCategory; priority: TicketPriority }>({ subject: "", description: "", category: "general", priority: "normal" });
   const utils = trpc.useUtils();
   const createTicket = trpc.tickets.create.useMutation({
     onSuccess: (data) => {
@@ -145,7 +169,7 @@ function CreateTicketDialog({ onClose }: { onClose: () => void }) {
         <Input placeholder="Onderwerp" value={form.subject} onChange={e => setForm(p => ({ ...p, subject: e.target.value }))} />
         <Textarea placeholder="Beschrijf je probleem..." rows={4} value={form.description} onChange={e => setForm(p => ({ ...p, description: e.target.value }))} />
         <div className="grid grid-cols-2 gap-3">
-          <Select value={form.category} onValueChange={v => setForm(p => ({ ...p, category: v as any }))}>
+          <Select value={form.category} onValueChange={v => setForm(p => ({ ...p, category: v as TicketCategory }))}>
             <SelectTrigger><SelectValue placeholder="Categorie" /></SelectTrigger>
             <SelectContent>
               {["general", "billing", "access", "booking", "parking", "maintenance", "wifi", "catering", "equipment", "noise", "cleaning", "other"].map(c => (
@@ -153,7 +177,7 @@ function CreateTicketDialog({ onClose }: { onClose: () => void }) {
               ))}
             </SelectContent>
           </Select>
-          <Select value={form.priority} onValueChange={v => setForm(p => ({ ...p, priority: v as any }))}>
+          <Select value={form.priority} onValueChange={v => setForm(p => ({ ...p, priority: v as TicketPriority }))}>
             <SelectTrigger><SelectValue placeholder="Prioriteit" /></SelectTrigger>
             <SelectContent>
               <SelectItem value="low">Laag</SelectItem>
@@ -280,7 +304,7 @@ function TicketDetail({ ticketId, onBack }: { ticketId: number; onBack: () => vo
             </div>
             {(user?.role === "administrator" || user?.role === "host") && (
               <div className="flex gap-2">
-                <Select value={t.status} onValueChange={v => updateTicket.mutate({ id: ticketId, status: v as any })}>
+                <Select value={t.status} onValueChange={v => updateTicket.mutate({ id: ticketId, status: v as TicketStatus })}>
                   <SelectTrigger className="w-32 h-8 text-xs"><SelectValue /></SelectTrigger>
                   <SelectContent>
                     {["new", "open", "pending", "on_hold", "solved", "closed"].map(s => (
@@ -346,7 +370,7 @@ function AgendaTab() {
   const today = useMemo(() => { const d = new Date(); d.setHours(0,0,0,0); return d.getTime(); }, []);
   const weekEnd = useMemo(() => today + 7 * 86400000, [today]);
   const agenda = trpc.opsAgenda.list.useQuery({ startDate: today, endDate: weekEnd });
-  const [form, setForm] = useState({ title: "", description: "", type: "event" as const, startTime: Date.now(), locationId: 1, priority: "normal" as const });
+  const [form, setForm] = useState<{ title: string; description: string; type: AgendaType; startTime: number; locationId: number; priority: TicketPriority }>({ title: "", description: "", type: "event", startTime: Date.now(), locationId: 1, priority: "normal" });
   const createItem = trpc.opsAgenda.create.useMutation({
     onSuccess: () => { agenda.refetch(); setShowCreate(false); toast.success("Agenda-item aangemaakt"); },
   });
@@ -367,7 +391,7 @@ function AgendaTab() {
             <div className="space-y-3">
               <Input placeholder="Titel" value={form.title} onChange={e => setForm(p => ({ ...p, title: e.target.value }))} />
               <Textarea placeholder="Beschrijving" value={form.description} onChange={e => setForm(p => ({ ...p, description: e.target.value }))} />
-              <Select value={form.type} onValueChange={v => setForm(p => ({ ...p, type: v as any }))}>
+              <Select value={form.type} onValueChange={v => setForm(p => ({ ...p, type: v as AgendaType }))}>
                 <SelectTrigger><SelectValue /></SelectTrigger>
                 <SelectContent>
                   {["event", "maintenance", "cleaning", "delivery", "meeting", "inspection", "other"].map(t => (
@@ -412,7 +436,7 @@ function AgendaTab() {
   );
 }
 
-function PresenceTab({ data, stats }: { data: any[] | undefined; stats: any }) {
+function PresenceTab({ data, stats }: { data: PresencePerson[] | undefined; stats: PresenceStats | undefined }) {
   return (
     <div className="space-y-4">
       <div className="grid grid-cols-3 gap-4">
@@ -443,7 +467,7 @@ function PresenceTab({ data, stats }: { data: any[] | undefined; stats: any }) {
             <p className="text-sm text-muted-foreground text-center py-8">Nog niemand ingecheckt vandaag</p>
           ) : (
             <div className="grid gap-2 md:grid-cols-2">
-              {data.map((person: any) => (
+              {data.map((person) => (
                 <div key={person.userId} className="flex items-center gap-3 p-3 rounded-lg bg-muted/30 border border-border/20">
                   <div className="w-8 h-8 rounded-full bg-primary/10 flex items-center justify-center text-xs font-medium">
                     {person.name?.charAt(0) || "?"}
