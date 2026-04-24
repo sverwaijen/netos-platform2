@@ -3,8 +3,9 @@ import { trpc } from "@/lib/trpc";
 import { Skeleton } from "@/components/ui/skeleton";
 import { toast } from "sonner";
 import { Check, ShoppingCart, Zap, Building2, Users, Crown, User } from "lucide-react";
+import type { LucideIcon } from "lucide-react";
 
-const AUDIENCE_ICONS: Record<string, any> = {
+const AUDIENCE_ICONS: Record<string, LucideIcon> = {
   freelancer: User,
   individual: Zap,
   smb: Users,
@@ -36,8 +37,8 @@ export default function BundlesPage() {
 
   if (isLoading) return <div className="space-y-4 p-1">{Array.from({ length: 3 }).map((_, i) => <Skeleton key={i} className="h-64" />)}</div>;
 
-  const sorted = [...(bundles ?? [])].sort((a: any, b: any) => parseFloat(a.priceEur) - parseFloat(b.priceEur));
-  const popular = sorted.find((b: any) => b.isPopular) || sorted[2];
+  const sorted = [...(bundles ?? [])].sort((a, b) => parseFloat(a.priceEur) - parseFloat(b.priceEur));
+  const popular = sorted.find((b) => b.isPopular) || sorted[2];
 
   return (
     <div className="space-y-12 p-1">
@@ -87,9 +88,9 @@ export default function BundlesPage() {
 
           {/* Pricing grid */}
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-[1px] bg-white/[0.04] max-w-5xl mx-auto">
-            {sorted.map((bundle: any) => {
+            {sorted.map((bundle) => {
               const isPopular = bundle.id === popular?.id;
-              const AudienceIcon = AUDIENCE_ICONS[bundle.targetAudience] || User;
+              const AudienceIcon = (bundle.targetAudience ? AUDIENCE_ICONS[bundle.targetAudience] : null) || User;
               return (
                 <div key={bundle.id} className={`bg-[#111] p-8 flex flex-col relative ${isPopular ? "ring-1 ring-[#627653]/40" : ""}`}>
                   {isPopular && <div className="absolute top-0 left-0 right-0 h-[2px] bg-[#627653]" />}
@@ -177,7 +178,7 @@ export default function BundlesPage() {
           </div>
 
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-[1px] bg-white/[0.04] max-w-5xl mx-auto">
-            {(packages ?? []).map((pkg: any, idx: number) => {
+            {(packages ?? []).map((pkg, idx) => {
               const bestValue = idx === (packages?.length ?? 0) - 1;
               return (
                 <div key={pkg.id} className={`bg-[#111] p-8 flex flex-col relative ${bestValue ? "ring-1 ring-[#b8a472]/40" : ""}`}>
@@ -200,7 +201,7 @@ export default function BundlesPage() {
 
                   {parseFloat(pkg.discountPercent || "0") > 0 && (
                     <span className="mt-3 inline-block text-[9px] font-medium tracking-[1px] uppercase bg-[#627653]/10 text-[#627653] px-2 py-1 rounded-sm w-fit">
-                      {parseFloat(pkg.discountPercent).toFixed(0)}% savings
+                      {parseFloat(pkg.discountPercent || "0").toFixed(0)}% savings
                     </span>
                   )}
 

@@ -47,8 +47,8 @@ export default function RozBookingModal({ open, onOpenChange, resource, location
 
   const { data: myWallets } = trpc.wallets.mine.useQuery(undefined, { enabled: isAuthenticated });
 
-  const personalWallet = myWallets?.find((w: any) => w.type === "personal");
-  const companyWallet = myWallets?.find((w: any) => w.type === "company");
+  const personalWallet = myWallets?.find((w) => w.type === "personal");
+  const companyWallet = myWallets?.find((w) => w.type === "company");
   const activeWallet = selectedWalletType === "company" && companyWallet ? companyWallet : personalWallet;
 
   const utils = trpc.useUtils();
@@ -64,7 +64,7 @@ export default function RozBookingModal({ open, onOpenChange, resource, location
 
   const selectedTier = useMemo(() => {
     if (!pricingTiers?.length) return null;
-    return pricingTiers.find((t: any) => t.periodType === selectedPeriod) || null;
+    return pricingTiers.find((t) => t.periodType === selectedPeriod) || null;
   }, [pricingTiers, selectedPeriod]);
 
   const pricing = useMemo(() => {
@@ -148,7 +148,7 @@ export default function RozBookingModal({ open, onOpenChange, resource, location
             </label>
             <div className="grid grid-cols-4 gap-1.5">
               {PERIOD_OPTIONS.map((p) => {
-                const tier = pricingTiers?.find((t: any) => t.periodType === p.value);
+                const tier = pricingTiers?.find((t) => t.periodType === p.value);
                 const isSelected = selectedPeriod === p.value;
                 return (
                   <button

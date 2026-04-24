@@ -157,9 +157,9 @@ export function BrandingPreviewPanel({ companyId, companyName }: BrandingPreview
           <div>
             <h3 className="text-sm font-semibold mb-2">Foto's ({preview.photos.length})</h3>
             <div className="grid grid-cols-4 gap-2">
-              {preview.photos.map((photo: any) => (
+              {preview.photos.map((photo) => (
                 <div key={photo.id} className="aspect-square rounded overflow-hidden bg-gray-100">
-                  <img src={photo.url} alt={photo.employeeName} className="w-full h-full object-cover" />
+                  <img src={photo.photoUrl} alt={photo.displayName ?? ""} className="w-full h-full object-cover" />
                 </div>
               ))}
             </div>
