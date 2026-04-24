@@ -9,8 +9,20 @@ import { BRAND } from "@/lib/brand";
 import { useState, useEffect, useMemo } from "react";
 import { Leaf, Wheat, UtensilsCrossed, Coffee } from "lucide-react";
 
+// ─── Menu item shape (covers DEMO_FOOD, DEMO_DRINKS, and DB items) ────
+type MenuItem = {
+  name: string;
+  price: string;
+  priceL?: string;
+  description?: string;
+  isVegan?: boolean;
+  isVegetarian?: boolean;
+  isGlutenFree?: boolean;
+  category?: string;
+};
+
 interface Props {
-  config: any;
+  config?: { location?: { name?: string } };
   time: Date;
   locationId: number;
   onRefresh: () => void;
@@ -119,7 +131,7 @@ function WaveDivider({ vertical = false }: { vertical?: boolean }) {
 // ─── Menu Section ────────────────────────────────────────────────────
 function MenuSection({ title, items, showSizes = false, compact = false }: {
   title: string;
-  items: any[];
+  items: MenuItem[];
   showSizes?: boolean;
   compact?: boolean;
 }) {
@@ -194,8 +206,9 @@ export default function SignageKitchenDisplay({ config, time, locationId, onRefr
   // Build menu data from DB or demo
   const foodData = useMemo(() => {
     if (isDemo) return DEMO_FOOD;
-    const grouped: Record<string, any[]> = {};
-    (menuItems || []).forEach((item: any) => {
+    const grouped: Record<string, MenuItem[]> = {};
+    ((menuItems || []) as MenuItem[]).forEach((item) => {
+      if (!item.category) return;
       const cat = DB_TO_FOOD_CATEGORY[item.category] || item.category;
       if (!grouped[cat]) grouped[cat] = [];
       grouped[cat].push(item);
@@ -206,7 +219,7 @@ export default function SignageKitchenDisplay({ config, time, locationId, onRefr
   const drinksData = useMemo(() => {
     if (isDemo) return DEMO_DRINKS;
     // Filter drink items from DB
-    const drinkItems = (menuItems || []).filter((item: any) => item.category === "drink");
+    const drinkItems = ((menuItems || []) as MenuItem[]).filter((item) => item.category === "drink");
     if (drinkItems.length === 0) return DEMO_DRINKS;
     return { drinks: drinkItems };
   }, [isDemo, menuItems]);
@@ -270,13 +283,13 @@ export default function SignageKitchenDisplay({ config, time, locationId, onRefr
                   <h2 className="font-black uppercase tracking-[4px] text-[#f5e6d0] text-base">Mr.Green's Drinks</h2>
                 </div>
                 {Object.entries(drinksData).slice(0, 2).map(([cat, items]) => (
-                  <MenuSection key={cat} title={cat} items={items as any[]} compact={false} />
+                  <MenuSection key={cat} title={cat} items={items as MenuItem[]} compact={false} />
                 ))}
               </div>
               <WaveDivider vertical />
               <div className="flex-1 overflow-hidden">
                 {Object.entries(drinksData).slice(2).map(([cat, items]) => (
-                  <MenuSection key={cat} title={cat} items={items as any[]} compact={false} />
+                  <MenuSection key={cat} title={cat} items={items as MenuItem[]} compact={false} />
                 ))}
               </div>
             </div>
@@ -363,14 +376,14 @@ export default function SignageKitchenDisplay({ config, time, locationId, onRefr
               </h1>
               <div className="w-8 h-px bg-[#c4a68a]/30 mb-[6%]" />
               {leftDrinkEntries.map(([cat, items]) => (
-                <MenuSection key={cat} title={cat} items={items as any[]} compact />
+                <MenuSection key={cat} title={cat} items={items as MenuItem[]} compact />
               ))}
             </div>
           </div>
           {/* ─── RIGHT PANEL (drinks: lighter brown) ─── */}
           <div className="flex-1 overflow-auto p-[6%] pl-[8%]" style={{ background: "#6B4C3A" }}>
             {rightDrinkEntries.map(([cat, items]) => (
-              <MenuSection key={cat} title={cat} items={items as any[]} compact />
+              <MenuSection key={cat} title={cat} items={items as MenuItem[]} compact />
             ))}
           </div>
         </>
@@ -393,3 +406,4 @@ export default function SignageKitchenDisplay({ config, time, locationId, onRefr
     </div>
   );
 }
+
