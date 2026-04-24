@@ -32,7 +32,7 @@ export default function AppParking() {
   });
 
   // Find user's active session
-  const mySession = activeSessions.find((s: any) => s.userId === user?.id);
+  const mySession = activeSessions.find((s) => s.userId === user?.id);
 
   return (
     <div className="px-5 pt-6 pb-4 space-y-6">
@@ -95,7 +95,7 @@ export default function AppParking() {
         <div>
           <h2 className="text-white/60 text-xs tracking-[0.15em] uppercase font-medium mb-3">Mijn Pools</h2>
           <div className="space-y-2">
-            {pools.map((pool: any) => (
+            {pools.map((pool) => (
               <PoolStatusCard key={pool.id} pool={pool} />
             ))}
           </div>
@@ -189,7 +189,7 @@ export default function AppParking() {
           {zones.length === 0 ? (
             <p className="text-white/30 text-sm text-center py-4">Geen zones geconfigureerd</p>
           ) : (
-            zones.map((zone: any) => (
+            zones.map((zone) => (
               <ZoneStatusCard key={zone.id} zone={zone} />
             ))
           )}
@@ -201,7 +201,7 @@ export default function AppParking() {
         <div>
           <h2 className="text-white/60 text-xs tracking-[0.15em] uppercase font-medium mb-3">Uitgenodigde Bezoekers</h2>
           <div className="space-y-2">
-            {myVisitorPermits.slice(0, 5).map((vp: any) => (
+            {myVisitorPermits.slice(0, 5).map((vp) => (
               <div key={vp.id} className="bg-white/[0.03] rounded-xl p-4 flex items-center gap-3">
                 <div className="w-8 h-8 rounded-lg bg-purple-500/10 flex items-center justify-center flex-shrink-0">
                   <QrCode className="w-4 h-4 text-purple-400" />
@@ -235,13 +235,13 @@ export default function AppParking() {
           </div>
         ) : (
           <div className="space-y-2">
-            {reservations.map((res: any) => (
+            {reservations.map((res) => (
               <div key={res.id} className="bg-white/[0.03] rounded-xl p-4 flex items-center gap-3">
                 <Calendar className="w-5 h-5 text-[#b8a472]" />
                 <div className="flex-1 min-w-0">
-                  <p className="text-white text-sm">{res.zoneName || "Parkeerplaats"}</p>
+                  <p className="text-white text-sm">{(res as any).zoneName || "Parkeerplaats"}</p>
                   <p className="text-white/30 text-xs">
-                    {new Date(res.date || res.reservationDate).toLocaleDateString("nl-NL", { weekday: "short", day: "numeric", month: "short" })}
+                    {new Date((res as any).date || res.reservationDate).toLocaleDateString("nl-NL", { weekday: "short", day: "numeric", month: "short" })}
                   </p>
                 </div>
                 <span className={`text-xs px-2 py-0.5 rounded-full ${

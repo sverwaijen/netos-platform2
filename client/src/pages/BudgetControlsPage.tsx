@@ -35,11 +35,11 @@ export default function BudgetControlsPage() {
   const utils = trpc.useUtils();
   const createMutation = trpc.budgetControls.create.useMutation({
     onSuccess: () => { toast.success("Budget control created."); setCreateOpen(false); utils.budgetControls.byCompany.invalidate(); },
-    onError: (err: any) => toast.error(err.message),
+    onError: (err) => toast.error(err.message),
   });
   const deleteMutation = trpc.budgetControls.delete.useMutation({
     onSuccess: () => { toast.success("Control removed."); utils.budgetControls.byCompany.invalidate(); },
-    onError: (err: any) => toast.error(err.message),
+    onError: (err) => toast.error(err.message),
   });
 
   // Auto-select first company
@@ -62,7 +62,7 @@ export default function BudgetControlsPage() {
             onChange={(e) => setSelectedCompanyId(Number(e.target.value))}
             className="bg-[#111] border border-white/10 text-sm px-3 py-2 rounded-sm text-white"
           >
-            {(companies ?? []).map((c: any) => (
+            {(companies ?? []).map((c) => (
               <option key={c.id} value={c.id}>{c.name}</option>
             ))}
           </select>
@@ -96,7 +96,7 @@ export default function BudgetControlsPage() {
         </Card>
       ) : (
         <div className="space-y-[1px] bg-white/[0.04]">
-          {(controls ?? []).map((ctrl: any) => {
+          {(controls ?? []).map((ctrl) => {
             const ctInfo = CONTROL_TYPES.find(ct => ct.value === ctrl.controlType) || CONTROL_TYPES[0];
             const CtIcon = ctInfo.icon;
             return (

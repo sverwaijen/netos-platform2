@@ -41,7 +41,7 @@ export default function CrmCampaigns() {
   const [aiSubject, setAiSubject] = useState("");
   const [aiBody, setAiBody] = useState("");
 
-  const selectedCampaignData = campaigns.find((c: any) => c.id === selectedCampaign);
+  const selectedCampaignData = campaigns.find((c) => c.id === selectedCampaign);
 
   return (
     <div className="space-y-6">
@@ -113,7 +113,7 @@ export default function CrmCampaigns() {
               <p className="text-xs text-white/30 mt-1">Create your first outreach campaign</p>
             </Card>
           )}
-          {campaigns.map((c: any) => (
+          {campaigns.map((c) => (
             <Card
               key={c.id}
               onClick={() => setSelectedCampaign(c.id)}
@@ -128,8 +128,8 @@ export default function CrmCampaigns() {
               {c.description && <p className="text-xs text-white/50 mb-2 line-clamp-1">{c.description}</p>}
               <div className="flex items-center gap-3 text-[10px] text-white/30 uppercase tracking-wider">
                 <span className="flex items-center gap-1"><Users className="w-3 h-3" /> {c.totalLeads ?? 0}</span>
-                <span className="flex items-center gap-1"><Eye className="w-3 h-3" /> {c.openRate ?? 0}%</span>
-                <span className="flex items-center gap-1"><MousePointer className="w-3 h-3" /> {c.clickRate ?? 0}%</span>
+                <span className="flex items-center gap-1"><Eye className="w-3 h-3" /> {(c as any).openRate ?? 0}%</span>
+                <span className="flex items-center gap-1"><MousePointer className="w-3 h-3" /> {(c as any).clickRate ?? 0}%</span>
               </div>
             </Card>
           ))}
@@ -186,13 +186,13 @@ export default function CrmCampaigns() {
                 </TabsList>
 
                 <TabsContent value="steps" className="mt-4 space-y-3">
-                  {steps.map((step: any, i: number) => (
+                  {steps.map((step, i) => (
                     <Card key={step.id} className="p-4 bg-white/[0.06] border-white/10">
                       <div className="flex items-center justify-between mb-2">
                         <div className="flex items-center gap-2">
                           <div className="w-6 h-6 rounded-full bg-[#627653] text-white flex items-center justify-center text-xs font-semibold">{i + 1}</div>
                           <span className="text-xs text-white/40">
-                            {step.delayDays > 0 ? `Wait ${step.delayDays} day${step.delayDays > 1 ? "s" : ""}` : "Immediate"}
+                            {(step.delayDays ?? 0) > 0 ? `Wait ${step.delayDays} day${(step.delayDays ?? 0) > 1 ? "s" : ""}` : "Immediate"}
                           </span>
                         </div>
                         <Button size="sm" variant="ghost" onClick={() => deleteStep.mutate({ id: step.id })} className="text-white/30 hover:text-red-500">
@@ -247,7 +247,7 @@ export default function CrmCampaigns() {
                     </div>
                   ) : (
                     <div className="space-y-2">
-                      {enrollments.map((e: any) => (
+                      {enrollments.map((e) => (
                         <div key={e.id} className="flex items-center justify-between p-3 bg-white/[0.04] rounded-lg">
                           <div>
                             <p className="text-sm font-medium text-white">{e.leadName}</p>
@@ -255,7 +255,7 @@ export default function CrmCampaigns() {
                           </div>
                           <div className="flex items-center gap-2">
                             <Badge variant="outline" className="text-[10px] border-white/10 text-white/40">
-                              Step {e.currentStep ?? 1}
+                              Step {e.currentStepId ?? 1}
                             </Badge>
                             <Badge variant="secondary" className={`text-[10px] ${e.status === "active" ? "bg-[#627653]/10 text-[#627653]" : "bg-white/[0.04] text-white/40"}`}>
                               {e.status}

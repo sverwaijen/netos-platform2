@@ -16,7 +16,7 @@ export default function Visitors() {
   const utils = trpc.useUtils();
   const createVisitor = trpc.visitors.create.useMutation({
     onSuccess: () => { toast.success("Visitor invited!"); setOpen(false); setForm({ name: "", email: "", phone: "", licensePlate: "", locationId: "" }); utils.visitors.mine.invalidate(); },
-    onError: (e: any) => toast.error(e.message),
+    onError: (e) => toast.error(e.message),
   });
   const updateStatus = trpc.visitors.updateStatus.useMutation({
     onSuccess: () => { toast.success("Status updated."); utils.visitors.mine.invalidate(); },
@@ -25,11 +25,11 @@ export default function Visitors() {
   const [tab, setTab] = useState<"all" | "today" | "active">("all");
   const [form, setForm] = useState({ name: "", email: "", phone: "", licensePlate: "", locationId: "" });
 
-  const today = (visitors ?? []).filter((v: any) => {
+  const today = (visitors ?? []).filter((v) => {
     const d = new Date(Number(v.visitDate));
     return d.toDateString() === new Date().toDateString();
   });
-  const checkedIn = (visitors ?? []).filter((v: any) => v.status === "checked_in");
+  const checkedIn = (visitors ?? []).filter((v) => v.status === "checked_in");
   const items = tab === "today" ? today : tab === "active" ? checkedIn : (visitors ?? []);
 
   if (isLoading) return <div className="space-y-4 p-1">{Array.from({ length: 4 }).map((_, i) => <Skeleton key={i} className="h-20" />)}</div>;
@@ -53,7 +53,7 @@ export default function Visitors() {
           { label: "Total", value: (visitors ?? []).length },
           { label: "Today", value: today.length, accent: true },
           { label: "Checked In", value: checkedIn.length },
-          { label: "With Plate", value: (visitors ?? []).filter((v: any) => v.licensePlate).length },
+          { label: "With Plate", value: (visitors ?? []).filter((v) => v.licensePlate).length },
         ].map((kpi, i) => (
           <div key={i} className="bg-[#111] p-5">
             <div className="text-[10px] font-medium tracking-[2px] uppercase text-[#888] mb-1">{kpi.label}</div>
@@ -81,7 +81,7 @@ export default function Visitors() {
         </div>
       ) : (
         <div className="space-y-0">
-          {items.map((v: any) => {
+          {items.map((v) => {
             const isIn = v.status === "checked_in";
             const isPending = v.status === "invited" || !v.status;
             return (
@@ -140,7 +140,7 @@ export default function Visitors() {
               <label className="text-[10px] text-[#888] tracking-[2px] uppercase font-medium">Location *</label>
               <Select value={form.locationId} onValueChange={(v) => setForm({ ...form, locationId: v })}>
                 <SelectTrigger className="mt-1 bg-white/[0.03] border-white/[0.06]"><SelectValue placeholder="Select location" /></SelectTrigger>
-                <SelectContent>{(locations ?? []).map((l: any) => <SelectItem key={l.id} value={String(l.id)}>{l.name}</SelectItem>)}</SelectContent>
+                <SelectContent>{(locations ?? []).map((l) => <SelectItem key={l.id} value={String(l.id)}>{l.name}</SelectItem>)}</SelectContent>
               </Select>
             </div>
             <div className="bg-white/[0.03] p-3 text-[11px] text-[#888]">

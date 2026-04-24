@@ -276,7 +276,7 @@ export default function KitchenPrepDisplay() {
             <h2 className="text-lg font-semibold text-[#dc2626]">Nieuw ({grouped.new.length})</h2>
           </div>
           <div className="flex-1 overflow-y-auto space-y-3 pr-4">
-            {grouped.new.map((order: any) => (
+            {grouped.new.map((order) => (
               <button
                 key={order.id}
                 onClick={() => bumpOrderStatus(order.id, "new")}
@@ -285,7 +285,7 @@ export default function KitchenPrepDisplay() {
                   <div className="min-w-0 flex-1">
                     <p className="font-semibold text-white truncate">{order.orderNumber}</p>
                     <p className="text-xs text-white/50 mt-1">
-                      {order.items?.map((item: any) => item.productName).join(", ") || "Geen items"}
+                      {order.items?.map((item) => item.productName).join(", ") || "Geen items"}
                     </p>
                   </div>
                   <div className="text-right ml-2">
@@ -318,7 +318,7 @@ export default function KitchenPrepDisplay() {
                   <div className="min-w-0 flex-1">
                     <p className="font-semibold text-white truncate">{order.orderNumber}</p>
                     <p className="text-xs text-white/50 mt-1">
-                      {order.items?.map((item: any) => item.productName).join(", ") || "Geen items"}
+                      {order.items?.map((item) => item.productName).join(", ") || "Geen items"}
                     </p>
                   </div>
                   <div className="text-right ml-2">
@@ -351,7 +351,7 @@ export default function KitchenPrepDisplay() {
                   <div className="min-w-0 flex-1">
                     <p className="font-semibold text-white truncate">{order.orderNumber}</p>
                     <p className="text-xs text-white/50 mt-1">
-                      {order.items?.map((item: any) => item.productName).join(", ") || "Geen items"}
+                      {order.items?.map((item) => item.productName).join(", ") || "Geen items"}
                     </p>
                   </div>
                   <div className="text-right ml-2">
