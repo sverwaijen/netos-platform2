@@ -1,35 +1,6 @@
 import { Server as HTTPServer } from "http";
-import type { IncomingMessage } from "http";
-import { createLogger } from "./_core/logger";
-
-const log = createLogger("WebSocket");
-
-// Minimal WebSocket interfaces since ws package is not directly imported
-interface WsWebSocket {
-  readonly readyState: number;
-  clientId?: string;
-  on(event: "message", listener: (data: Buffer | string) => void): void;
-  on(event: "close", listener: () => void): void;
-  on(event: "error", listener: (error: Error) => void): void;
-  on(event: "pong", listener: () => void): void;
-  on(event: string, listener: (...args: unknown[]) => void): void;
-  send(data: string): void;
-  ping(): void;
-}
-
-interface WsWebSocketServer {
-  on(event: "connection", listener: (ws: WsWebSocket, req: IncomingMessage) => void): void;
-  clients: Set<WsWebSocket>;
-  close(): void;
-}
-
-interface WsWebSocketServerConstructor {
-  new (options: { server: HTTPServer }): WsWebSocketServer;
-}
-
-// WebSocket stubs - replaced at runtime by ws package
-const WebSocket: { OPEN: number } = { OPEN: 1 };
-const WebSocketServer: WsWebSocketServerConstructor | null = null;
+// @ts-expect-error ws types not fully compatible
+import WebSocket, { Server as WebSocketServer } from "ws";
 
 export type WebSocketChannel =
   | "bookings"
@@ -58,7 +29,7 @@ interface ChannelBroadcast {
 }
 
 export class WebSocketServerManager {
-  private wss: WsWebSocketServer;
+  private wss: WebSocketServer;
   private clients: Map<string, ClientInfo> = new Map();
   private channels: Map<WebSocketChannel, ChannelBroadcast> = new Map();
   private heartbeatInterval: NodeJS.Timeout | null = null;
@@ -66,7 +37,7 @@ export class WebSocketServerManager {
   private reconnectionTimeouts: Map<string, NodeJS.Timeout> = new Map();
 
   constructor(httpServer: HTTPServer) {
-    this.wss = new (WebSocketServer as unknown as WsWebSocketServerConstructor)({ server: httpServer });
+    this.wss = new WebSocketServer({ server: httpServer });
     this.initializeChannels();
     this.setupConnectionHandler();
     this.startHeartbeat();
@@ -80,7 +51,7 @@ export class WebSocketServerManager {
       "kiosk-orders",
       "signage",
     ];
-    channelNames.forEach((channel) => {
+    channelNames.forEach((channel: any) => {
       this.channels.set(channel, {
         subscribers: new Map(),
         messageCount: 0,
@@ -91,7 +62,7 @@ export class WebSocketServerManager {
   }
 
   private setupConnectionHandler(): void {
-    this.wss.on("connection", (ws: WsWebSocket, req: IncomingMessage) => {
+    this.wss.on("connection", (ws: WebSocket, req: any) => {
       const clientId = this.generateClientId();
       const clientInfo: ClientInfo = {
         id: clientId,
@@ -102,7 +73,7 @@ export class WebSocketServerManager {
 
       this.clients.set(clientId, clientInfo);
 
-      ws.on("message", (data: Buffer | string) => {
+      ws.on("message", (data: WebSocket.Data) => {
         this.handleMessage(clientId, data, clientInfo);
       });
 
@@ -110,8 +81,8 @@ export class WebSocketServerManager {
         this.handleDisconnection(clientId);
       });
 
-      ws.on("error", (error: Error) => {
-        log.error("WebSocket error for client", error, { clientId });
+      ws.on("error", (error: any) => {
+        console.error(`WebSocket error for client ${clientId}:`, error);
         this.handleDisconnection(clientId);
       });
 
@@ -134,7 +105,7 @@ export class WebSocketServerManager {
 
   private handleMessage(
     clientId: string,
-    data: Buffer | string,
+    data: WebSocket.Data,
     clientInfo: ClientInfo
   ): void {
     try {
@@ -162,15 +133,15 @@ export class WebSocketServerManager {
           ws.send(JSON.stringify({ type: "pong", timestamp: Date.now() }));
         }
       }
-    } catch (error) {
-      log.error("Error handling message from client", error, { clientId });
+    } catch (error: any) {
+      console.error(`Error handling message from client ${clientId}:`, error);
     }
   }
 
   private handleDisconnection(clientId: string): void {
     const clientInfo = this.clients.get(clientId);
     if (clientInfo) {
-      clientInfo.channels.forEach((channel) => {
+      clientInfo.channels.forEach((channel: any) => {
         const channelInfo = this.channels.get(channel);
         if (channelInfo) {
           channelInfo.subscribers.delete(clientId);
@@ -192,7 +163,7 @@ export class WebSocketServerManager {
     data: unknown
   ): void {
     if (!this.isValidChannel(channel)) {
-      log.warn("Invalid channel attempted", { channel });
+      console.warn(`Invalid channel: ${channel}`);
       return;
     }
 
@@ -206,9 +177,9 @@ export class WebSocketServerManager {
       timestamp: Date.now(),
     });
 
-    channelInfo.subscribers.forEach((clientInfo) => {
+    channelInfo.subscribers.forEach((clientInfo: any) => {
       const ws = this.getClientWebSocket(clientInfo.id);
-      if (ws && ws.readyState === 1) {
+      if (ws && ws.readyState === WebSocket.OPEN) {
         ws.send(message);
       }
     });
@@ -276,24 +247,24 @@ export class WebSocketServerManager {
       });
     });
 
-    return activity.sort((a, b) => b.lastMessageTime - a.lastMessageTime);
+    return activity.sort((a: any, b: any) => b.lastMessageTime - a.lastMessageTime);
   }
 
   private startHeartbeat(): void {
     this.heartbeatInterval = setInterval(() => {
       this.clients.forEach((clientInfo, clientId) => {
         const ws = this.getClientWebSocket(clientId);
-        if (ws && ws.readyState === 1) {
+        if (ws && ws.readyState === WebSocket.OPEN) {
           ws.ping();
         }
       });
     }, 30000); // 30 second heartbeat
   }
 
-  private getClientWebSocket(clientId: string): WsWebSocket | null {
-    let targetWs: WsWebSocket | null = null;
-    this.wss.clients.forEach((ws: WsWebSocket) => {
-      const wsClientId = ws.clientId;
+  private getClientWebSocket(clientId: string): WebSocket | null {
+    let targetWs: WebSocket | null = null;
+    this.wss.clients.forEach((ws: any) => {
+      const wsClientId = (ws as any).clientId;
       if (wsClientId === clientId) {
         targetWs = ws;
       }
@@ -313,7 +284,7 @@ export class WebSocketServerManager {
     if (this.heartbeatInterval) {
       clearInterval(this.heartbeatInterval);
     }
-    this.reconnectionTimeouts.forEach((timeout) => clearTimeout(timeout));
+    this.reconnectionTimeouts.forEach((timeout: any) => clearTimeout(timeout));
     this.wss.close();
   }
 }

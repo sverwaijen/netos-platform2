@@ -2,6 +2,7 @@
  * Email Service Abstraction
  * Supports Resend API (primary) with fallback patterns for SendGrid
  */
+import fetch from "node-fetch";
 import { createLogger } from "../_core/logger";
 
 const log = createLogger("Email");
@@ -36,7 +37,7 @@ export interface EmailTrackingPixel {
  */
 export async function send(options: SendEmailOptions): Promise<{ success: boolean; messageId?: string; error?: string }> {
   if (!RESEND_API_KEY) {
-    log.error("RESEND_API_KEY not configured");
+    console.error("RESEND_API_KEY not configured");
     return { success: false, error: "Email service not configured" };
   }
 
@@ -59,12 +60,12 @@ export async function send(options: SendEmailOptions): Promise<{ success: boolea
     });
 
     if (!response.ok) {
-      const errorData: unknown = await response.json();
+      const errorData = await response.json() as any;
       log.error("Resend API error:", errorData);
       return { success: false, error: `Failed to send email: ${response.statusText}` };
     }
 
-    const data = await response.json() as { id?: string };
+    const data = await response.json() as any;
     return {
       success: true,
       messageId: data.id,
@@ -117,11 +118,11 @@ export function getClickTrackingUrl(baseUrl: string, originalUrl: string, tracki
 /**
  * Track email open by storing it in the database
  */
-export async function trackOpen(db: unknown, sendId: string, openedAt: Date = new Date()): Promise<void> {
+export async function trackOpen(db: any, sendId: string, openedAt: Date = new Date()): Promise<void> {
   try {
     // This function assumes the caller has DB access and will update the emailCampaignSends table
     // The actual update is done by the endpoint that receives the tracking pixel request
-    log.info("Email open tracked", { sendId });
+    console.log(`Email open tracked for sendId: ${sendId}`);
   } catch (error) {
     log.error("Error tracking email open:", error);
   }

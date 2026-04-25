@@ -1,6 +1,6 @@
 #!/usr/bin/env node
 /**
- * Import data from PostgreSQL SQL dump (extracted JSON) into skynet-platform2 MySQL database.
+ * Import data from PostgreSQL SQL dump (extracted JSON) into netos-platform2 MySQL database.
  * 
  * Maps old Nexudus-based PostgreSQL schema → new Drizzle MySQL schema.
  * 
@@ -56,7 +56,7 @@ function mapResourceType(name) {
   if (n.includes("gym")) return "gym";
   if (n.includes("phone") || n.includes("booth")) return "phone_booth";
   if (n.includes("event")) return "event_space";
-  if (n.includes("open") || n.includes("coworking") || n.includes("hot")) return "open_space";
+  if (n.includes("open") || n.includes("private members") || n.includes("hot")) return "open_space";
   // Default for unknown types
   return "desk";
 }
@@ -152,7 +152,7 @@ async function main() {
 
   for (const loc of oldLocations) {
     const parsed = parseAddress(loc.address);
-    const slug = slugify(loc.name.replace("Boutique Office ", "").replace("Mr.Green ", "mrgreen-"));
+    const slug = slugify(loc.name.replace("Boutique Office ", "").replace("Mr.Green ", "thegreen-"));
     
     const [result] = await conn.execute(
       `INSERT INTO locations (name, slug, address, city, postalCode, lat, lng, totalResources, isActive, timezone)
@@ -597,7 +597,7 @@ async function main() {
       const [result] = await conn.execute(
         `INSERT INTO devices (locationId, name, type, serialNumber, status, firmwareVersion)
          VALUES (?, ?, 'netlink', ?, ?, ?)`,
-        [locationId, `SKYNET-${dev.model}-${dev.id.substring(0, 8)}`, dev.id.substring(0, 16), status, dev.sw_version || "1.0.0"]
+        [locationId, `NETOS-${dev.model}-${dev.id.substring(0, 8)}`, dev.id.substring(0, 16), status, dev.sw_version || "1.0.0"]
       );
       deviceIdMap[dev.id] = result.insertId;
       deviceCount++;

@@ -33,7 +33,7 @@ const GET_USER_INFO_WITH_JWT_PATH = `/webdev.v1.WebDevAuthPublicService/GetUserI
 
 class OAuthService {
   constructor(private client: ReturnType<typeof axios.create>) {
-    log.info("Initialized with baseURL", { baseURL: ENV.oAuthServerUrl });
+    console.log("[OAuth] Initialized with baseURL:", ENV.oAuthServerUrl);
     if (!ENV.oAuthServerUrl) {
       log.error("OAUTH_SERVER_URL is not configured! Set OAUTH_SERVER_URL environment variable.");
     }
@@ -135,13 +135,12 @@ class SDKServer {
     const data = await this.oauthService.getUserInfoByToken({
       accessToken,
     } as ExchangeTokenResponse);
-    const record = data as unknown as Record<string, unknown>;
     const loginMethod = this.deriveLoginMethod(
-      record.platforms,
-      (record.platform as string | null | undefined) ?? data.platform ?? null
+      (data as any)?.platforms,
+      (data as any)?.platform ?? data.platform ?? null
     );
     return {
-      ...record,
+      ...(data as any),
       platform: loginMethod,
       loginMethod,
     } as GetUserInfoResponse;
@@ -229,7 +228,7 @@ class SDKServer {
         name,
       };
     } catch (error) {
-      log.warn("Session verification failed", { error: String(error) });
+      console.warn("[Auth] Session verification failed", String(error));
       return null;
     }
   }
@@ -247,13 +246,12 @@ class SDKServer {
       payload
     );
 
-    const record = data as unknown as Record<string, unknown>;
     const loginMethod = this.deriveLoginMethod(
-      record.platforms,
-      (record.platform as string | null | undefined) ?? data.platform ?? null
+      (data as any)?.platforms,
+      (data as any)?.platform ?? data.platform ?? null
     );
     return {
-      ...record,
+      ...(data as any),
       platform: loginMethod,
       loginMethod,
     } as GetUserInfoWithJwtResponse;

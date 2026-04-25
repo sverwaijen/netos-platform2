@@ -2,16 +2,16 @@ import { z } from "zod";
 import { eq, and, desc } from "drizzle-orm";
 import { protectedProcedure, publicProcedure, router } from "../_core/trpc";
 import { getDb } from "../db";
-import { walletTransactions, wallets, creditBundles, creditLedger, users } from "../../drizzle/schema";
+import { walletTransactions, wallets, creditBundles, creditLedger, users } from "../../drizzle/pg-schema";
 import { ENV } from "../_core/env";
 import { createLogger } from "../_core/logger";
-
-const logger = createLogger("WalletPayment");
+import Stripe from "stripe";
+const logger = createLogger("walletPayment");
 
 // Initialize Stripe client if secret key is available
-const stripe = ENV.STRIPE_SECRET_KEY
-  ? require("stripe").default(ENV.STRIPE_SECRET_KEY, {
-      apiVersion: "2024-06-20",
+const stripe = ENV.stripeSecretKey
+  ? new Stripe(ENV.stripeSecretKey, {
+      apiVersion: "2024-06-20" as any,
       maxNetworkRetries: 3,
     })
   : null;
@@ -251,7 +251,6 @@ export const walletPaymentRouter = router({
 
       let walletId = userWallets[0]?.id;
       if (!walletId) {
-        // Create a personal wallet if it doesn't exist
         const result = await db
           .insert(wallets)
           .values({
@@ -259,7 +258,7 @@ export const walletPaymentRouter = router({
             ownerId: ctx.user.id,
             balance: "0",
           });
-        walletId = (result as unknown as { insertId: number }).insertId;
+        walletId = result.insertId;
       }
 
       // Get user details
@@ -286,7 +285,7 @@ export const walletPaymentRouter = router({
         status: "pending",
       });
 
-      const transactionId = (txResult as unknown as { insertId: number }).insertId;
+      const transactionId = txResult.insertId;
 
       // Configure payment method types based on user selection
       // iDEAL is the dominant payment method in the Netherlands
@@ -312,8 +311,8 @@ export const walletPaymentRouter = router({
         ],
         mode: "payment",
         customer: stripeCustomerId,
-        success_url: `${ENV.CLIENT_URL}/wallet?session_id={CHECKOUT_SESSION_ID}&success=true`,
-        cancel_url: `${ENV.CLIENT_URL}/wallet?cancelled=true`,
+        success_url: `${ctx.req.headers.origin || ''}/wallet?session_id={CHECKOUT_SESSION_ID}&success=true`,
+        cancel_url: `${ctx.req.headers.origin || ''}/wallet?cancelled=true`,
         client_reference_id: transactionId.toString(),
         metadata: {
           walletId: walletId.toString(),
@@ -368,7 +367,7 @@ export const walletPaymentRouter = router({
         const result = await db
           .insert(wallets)
           .values({ type: "personal", ownerId: ctx.user.id, balance: "0" });
-        walletId = (result as unknown as { insertId: number }).insertId;
+        walletId = result.insertId;
       }
 
       const userRecords = await db.select().from(users).where(eq(users.id, ctx.user.id));
@@ -394,14 +393,14 @@ export const walletPaymentRouter = router({
         status: "pending",
       });
 
-      const transactionId = (txResult as unknown as { insertId: number }).insertId;
+      const transactionId = txResult.insertId;
 
-      const paymentMethodTypes: string[] = input.paymentMethod === "ideal"
-        ? ["ideal"]
-        : ["card", "ideal"];
+      const paymentMethodTypes = input.paymentMethod === "ideal"
+        ? ["ideal"] as const
+        : ["card", "ideal"] as const;
 
       const session = await stripe.checkout.sessions.create({
-        payment_method_types: paymentMethodTypes,
+        payment_method_types: paymentMethodTypes as any,
         line_items: [
           {
             price_data: {
@@ -417,8 +416,8 @@ export const walletPaymentRouter = router({
         ],
         mode: "payment",
         customer: stripeCustomerId,
-        success_url: `${ENV.CLIENT_URL}/wallet?session_id={CHECKOUT_SESSION_ID}&success=true`,
-        cancel_url: `${ENV.CLIENT_URL}/wallet?cancelled=true`,
+        success_url: `${ctx.req.headers.origin || ''}/wallet?session_id={CHECKOUT_SESSION_ID}&success=true`,
+        cancel_url: `${ctx.req.headers.origin || ''}/wallet?cancelled=true`,
         client_reference_id: transactionId.toString(),
         metadata: {
           walletId: walletId.toString(),
@@ -495,6 +494,131 @@ export const walletPaymentRouter = router({
       currency: "eur",
     };
   }),
+
+  // Subscription status (placeholder - subscriptions not yet implemented)
+  subscriptionStatus: protectedProcedure.query(async ({ ctx }) => {
+    return {
+      active: false,
+      plan: null as string | null,
+      currentPeriodEnd: null as number | null,
+      cancelAtPeriodEnd: false,
+    };
+  }),
+
+  // Create subscription checkout (placeholder)
+  createSubscription: protectedProcedure
+    .input(z.object({ bundleId: z.number(), priceEur: z.string().optional() }))
+    .mutation(async ({ ctx, input }) => {
+      // For now, redirect to the regular checkout session
+      if (!stripe) throw new Error("Stripe is not configured");
+      const db = await getDb();
+      if (!db) throw new Error("DB unavailable");
+
+      const bundleResults = await db.select().from(creditBundles).where(eq(creditBundles.id, input.bundleId));
+      if (bundleResults.length === 0) throw new Error("Bundle not found");
+      const bundle = bundleResults[0];
+
+      const userWallets = await db.select().from(wallets).where(and(eq(wallets.ownerId, ctx.user.id), eq(wallets.type, "personal")));
+      let walletId = userWallets[0]?.id;
+      if (!walletId) {
+        const result = await db.insert(wallets).values({ type: "personal", ownerId: ctx.user.id, balance: "0" });
+        walletId = result.insertId;
+      }
+
+      const userRecords = await db.select().from(users).where(eq(users.id, ctx.user.id));
+      const user = userRecords[0];
+      const stripeCustomerId = await getOrCreateStripeCustomer(ctx.user.id, user?.email ?? null, user?.name ?? null, walletId);
+
+      const session = await stripe.checkout.sessions.create({
+        payment_method_types: ["card", "ideal"],
+        line_items: [{ price_data: { currency: "eur", product_data: { name: bundle.name, description: `${bundle.creditsPerMonth} credits/month` }, unit_amount: Math.round(parseFloat(bundle.priceEur) * 100) }, quantity: 1 }],
+        mode: "payment",
+        customer: stripeCustomerId,
+        success_url: `${ctx.req.headers.origin || ''}/wallet?session_id={CHECKOUT_SESSION_ID}&success=true`,
+        cancel_url: `${ctx.req.headers.origin || ''}/bundles?cancelled=true`,
+        client_reference_id: ctx.user.id.toString(),
+        metadata: { walletId: walletId.toString(), bundleId: input.bundleId.toString(), userId: ctx.user.id.toString(), platform: "skynet" },
+        locale: "nl",
+      });
+
+      return { checkoutUrl: session.url, sessionId: session.id };
+    }),
+
+  // Customer portal (Stripe billing portal)
+  customerPortal: protectedProcedure.mutation(async ({ ctx }) => {
+    if (!stripe) throw new Error("Stripe is not configured");
+    const db = await getDb();
+    if (!db) throw new Error("DB unavailable");
+
+    const userRecords = await db.select().from(users).where(eq(users.id, ctx.user.id));
+    const user = userRecords[0];
+    if (!user) throw new Error("User not found");
+
+    const walletRows = await db.select().from(wallets).where(and(eq(wallets.ownerId, ctx.user.id), eq(wallets.type, "personal")));
+    const walletId = walletRows[0]?.id || 0;
+    const stripeCustomerId = await getOrCreateStripeCustomer(ctx.user.id, user?.email ?? null, user?.name ?? null, walletId);
+
+    const portalSession = await stripe.billingPortal.sessions.create({
+      customer: stripeCustomerId,
+      return_url: `${ctx.req.headers.origin || ''}/wallet`,
+    });
+
+    return { portalUrl: portalSession.url };
+  }),
+
+  // Create top-up (alias for createTopUpSession)
+  createTopup: protectedProcedure
+    .input(z.object({ amountEur: z.number().min(5).max(1000) }))
+    .mutation(async ({ ctx, input }) => {
+      if (!stripe) throw new Error("Stripe is not configured");
+      const db = await getDb();
+      if (!db) throw new Error("DB unavailable");
+
+      const userWallets = await db.select().from(wallets).where(and(eq(wallets.ownerId, ctx.user.id), eq(wallets.type, "personal")));
+      let walletId = userWallets[0]?.id;
+      if (!walletId) {
+        const result = await db.insert(wallets).values({ type: "personal", ownerId: ctx.user.id, balance: "0" });
+        walletId = result.insertId;
+      }
+
+      const userRecords = await db.select().from(users).where(eq(users.id, ctx.user.id));
+      const user = userRecords[0];
+      const stripeCustomerId = await getOrCreateStripeCustomer(ctx.user.id, user?.email ?? null, user?.name ?? null, walletId);
+      const credits = input.amountEur.toString();
+
+      const txResult = await db.insert(walletTransactions).values({
+        userId: ctx.user.id, walletId, amount: input.amountEur.toFixed(2), creditsAdded: credits,
+        type: "topup", description: `Direct top-up: ${credits} credits`, status: "pending",
+      });
+      const transactionId = txResult.insertId;
+
+      const session = await stripe.checkout.sessions.create({
+        payment_method_types: ["card", "ideal"],
+        line_items: [{ price_data: { currency: "eur", product_data: { name: "Skynet Credits Top-Up", description: `${credits} credits` }, unit_amount: Math.round(input.amountEur * 100) }, quantity: 1 }],
+        mode: "payment",
+        customer: stripeCustomerId,
+        success_url: `${ctx.req.headers.origin || ''}/wallet?session_id={CHECKOUT_SESSION_ID}&success=true`,
+        cancel_url: `${ctx.req.headers.origin || ''}/wallet?cancelled=true`,
+        client_reference_id: transactionId.toString(),
+        metadata: { walletId: walletId.toString(), transactionId: transactionId.toString(), userId: ctx.user.id.toString(), platform: "skynet" },
+        locale: "nl",
+      });
+
+      await db.update(walletTransactions).set({ stripeSessionId: session.id }).where(eq(walletTransactions.id, transactionId));
+      return { checkoutUrl: session.url, sessionId: session.id };
+    }),
+
+  // Payment history (alias for getPaymentHistory with different shape)
+  payments: protectedProcedure
+    .input(z.object({ limit: z.number().optional() }).optional())
+    .query(async ({ ctx, input }) => {
+      const db = await getDb();
+      if (!db) return [];
+      return db.select().from(walletTransactions)
+        .where(and(eq(walletTransactions.userId, ctx.user.id), eq(walletTransactions.status, "completed")))
+        .orderBy(desc(walletTransactions.createdAt))
+        .limit(input?.limit ?? 50);
+    }),
 });
 
 // ─── Export fulfillment helper for webhook route ─────────────────────

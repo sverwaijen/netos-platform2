@@ -18,8 +18,8 @@ import {
 
 const STAGES = ["new", "qualified", "tour_scheduled", "proposal", "negotiation", "won", "lost"] as const;
 const STAGE_COLORS: Record<string, string> = {
-  new: "#627653", qualified: "#b8a472", tour_scheduled: "#8B7355",
-  proposal: "#627653", negotiation: "#b8a472", won: "#4a7c3f", lost: "#8a4444",
+  new: "#C4B89E", qualified: "#C4B89E", tour_scheduled: "#8B7355",
+  proposal: "#C4B89E", negotiation: "#C4B89E", won: "#4a7c3f", lost: "#8a4444",
 };
 
 export default function CrmLeadDetail() {
@@ -45,7 +45,7 @@ export default function CrmLeadDetail() {
   if (!lead) {
     return (
       <div className="flex items-center justify-center min-h-[50vh]">
-        <div className="w-6 h-6 border-2 border-[#627653] border-t-transparent rounded-full animate-spin" />
+        <div className="w-6 h-6 border-2 border-[#C4B89E] border-t-transparent rounded-full animate-spin" />
       </div>
     );
   }
@@ -95,7 +95,7 @@ export default function CrmLeadDetail() {
                   {lead.stage.replace("_", " ")}
                 </Badge>
                 {(lead.score ?? 0) > 0 && (
-                  <Badge variant="secondary" className="bg-[#627653]/10 text-[#627653]">
+                  <Badge variant="secondary" className="bg-[#C4B89E]/10 text-[#C4B89E]">
                     <Zap className="w-3 h-3 mr-1" /> {lead.score}
                   </Badge>
                 )}
@@ -134,7 +134,7 @@ export default function CrmLeadDetail() {
                   { icon: Target, label: "Budget", value: lead.budgetRange },
                 ].map((item, i) => (
                   <div key={i} className="flex items-center gap-2">
-                    <item.icon className="w-3.5 h-3.5 text-[#627653]" />
+                    <item.icon className="w-3.5 h-3.5 text-[#C4B89E]" />
                     <div>
                       <p className="text-[10px] uppercase tracking-wider text-white/30">{item.label}</p>
                       <p className="text-sm text-white">{item.value || "—"}</p>
@@ -161,13 +161,13 @@ export default function CrmLeadDetail() {
               {!editing ? (
                 <>
                   <Button size="sm" variant="outline" onClick={startEdit} className="border-white/10 text-white/70">Edit</Button>
-                  <Button size="sm" variant="outline" onClick={() => aiScore.mutate({ id: leadId })} disabled={aiScore.isPending} className="border-[#627653]/30 text-[#627653]">
+                  <Button size="sm" variant="outline" onClick={() => aiScore.mutate({ id: leadId })} disabled={aiScore.isPending} className="border-[#C4B89E]/30 text-[#C4B89E]">
                     <Zap className="w-3.5 h-3.5 mr-1" /> {aiScore.isPending ? "Scoring..." : "AI Score"}
                   </Button>
-                  <Button size="sm" variant="outline" onClick={() => aiEnrich.mutate({ leadId })} disabled={aiEnrich.isPending} className="border-[#b8a472]/30 text-[#b8a472]">
+                  <Button size="sm" variant="outline" onClick={() => aiEnrich.mutate({ leadId })} disabled={aiEnrich.isPending} className="border-[#C4B89E]/30 text-[#C4B89E]">
                     <Brain className="w-3.5 h-3.5 mr-1" /> {aiEnrich.isPending ? "Enriching..." : "AI Enrich"}
                   </Button>
-                  <Button size="sm" variant="outline" onClick={() => aiSuggest.mutate({ leadId })} disabled={aiSuggest.isPending} className="border-[#627653]/30 text-[#627653]">
+                  <Button size="sm" variant="outline" onClick={() => aiSuggest.mutate({ leadId })} disabled={aiSuggest.isPending} className="border-[#C4B89E]/30 text-[#C4B89E]">
                     <Sparkles className="w-3.5 h-3.5 mr-1" /> {aiSuggest.isPending ? "Thinking..." : "Suggest Action"}
                   </Button>
                   <div className="flex-1" />
@@ -177,7 +177,7 @@ export default function CrmLeadDetail() {
                 </>
               ) : (
                 <>
-                  <Button size="sm" onClick={saveEdit} className="bg-[#627653] hover:bg-[#3a4a34] text-white">Save</Button>
+                  <Button size="sm" onClick={saveEdit} className="bg-[#C4B89E] hover:bg-[#1C1C1C] text-white">Save</Button>
                   <Button size="sm" variant="outline" onClick={() => setEditing(false)} className="border-white/10">Cancel</Button>
                 </>
               )}
@@ -186,11 +186,11 @@ export default function CrmLeadDetail() {
 
           {/* AI Suggestion */}
           {suggestion && (
-            <Card className="p-4 bg-[#627653]/5 border-[#627653]/20">
+            <Card className="p-4 bg-[#C4B89E]/5 border-[#C4B89E]/20">
               <div className="flex items-center gap-2 mb-2">
-                <Sparkles className="w-4 h-4 text-[#627653]" />
-                <span className="text-xs font-semibold uppercase tracking-wider text-[#627653]">AI Recommendation</span>
-                <Badge variant="outline" className={`text-[10px] ml-auto ${suggestion.priority === "high" ? "border-red-300 text-red-600" : suggestion.priority === "medium" ? "border-[#b8a472] text-[#b8a472]" : "border-white/10 text-white/40"}`}>
+                <Sparkles className="w-4 h-4 text-[#C4B89E]" />
+                <span className="text-xs font-semibold uppercase tracking-wider text-[#C4B89E]">AI Recommendation</span>
+                <Badge variant="outline" className={`text-[10px] ml-auto ${suggestion.priority === "high" ? "border-red-300 text-red-600" : suggestion.priority === "medium" ? "border-[#C4B89E] text-[#C4B89E]" : "border-white/10 text-white/40"}`}>
                   {suggestion.priority}
                 </Badge>
               </div>
@@ -214,7 +214,7 @@ export default function CrmLeadDetail() {
             <h3 className="text-xs font-semibold uppercase tracking-wider text-white/40 mb-4">Add Activity</h3>
             <Textarea value={noteText} onChange={e => setNoteText(e.target.value)} placeholder="Add a note or log an activity..." className="bg-white/[0.06] border-white/10 text-sm" rows={3} />
             <div className="flex items-center gap-2 mt-2">
-              <Button size="sm" onClick={() => { addActivity.mutate({ leadId, type: "note", title: "Note", description: noteText }); setNoteText(""); }} disabled={!noteText || addActivity.isPending} className="bg-[#627653] hover:bg-[#3a4a34] text-white">
+              <Button size="sm" onClick={() => { addActivity.mutate({ leadId, type: "note", title: "Note", description: noteText }); setNoteText(""); }} disabled={!noteText || addActivity.isPending} className="bg-[#C4B89E] hover:bg-[#1C1C1C] text-white">
                 <MessageSquare className="w-3.5 h-3.5 mr-1" /> Note
               </Button>
               <Button size="sm" variant="outline" onClick={() => { addActivity.mutate({ leadId, type: "call", title: "Phone call", description: noteText }); setNoteText(""); }} className="border-white/10 text-white/70">
@@ -236,16 +236,16 @@ export default function CrmLeadDetail() {
                 <div key={a.id} className="flex gap-3">
                   <div className="flex flex-col items-center">
                     <div className={`w-6 h-6 rounded-full flex items-center justify-center flex-shrink-0 ${
-                      a.type === "stage_change" ? "bg-[#b8a472]/20" :
+                      a.type === "stage_change" ? "bg-[#C4B89E]/20" :
                       a.type === "email_sent" ? "bg-blue-50" :
                       a.type === "call" ? "bg-green-50" :
-                      a.type === "score_change" ? "bg-[#627653]/10" :
+                      a.type === "score_change" ? "bg-[#C4B89E]/10" :
                       "bg-white/[0.04]"
                     }`}>
-                      {a.type === "stage_change" ? <TrendingUp className="w-3 h-3 text-[#b8a472]" /> :
+                      {a.type === "stage_change" ? <TrendingUp className="w-3 h-3 text-[#C4B89E]" /> :
                        a.type === "email_sent" ? <Send className="w-3 h-3 text-blue-500" /> :
                        a.type === "call" ? <Phone className="w-3 h-3 text-green-600" /> :
-                       a.type === "score_change" ? <Zap className="w-3 h-3 text-[#627653]" /> :
+                       a.type === "score_change" ? <Zap className="w-3 h-3 text-[#C4B89E]" /> :
                        <MessageSquare className="w-3 h-3 text-white/30" />}
                     </div>
                     <div className="w-px h-full bg-[#e8e6e1] mt-1" />

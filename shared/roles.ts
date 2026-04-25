@@ -3,14 +3,30 @@
  *
  * Roles:
  *   administrator – Full platform access, can manage roles, settings, billing
+ *   ceo           – CEO/Executive, strategic view of all areas, no manage permissions
+ *   cfo           – CFO, full finance/credit/budget access, no operational manage
  *   host          – Building owner / boss, full operational access, cannot manage platform settings
+ *   company_owner – Company owner, manages own company members and bookings
  *   teamadmin     – Team/company admin, manages own team members and bookings
  *   member        – Regular coworking member
+ *   facility      – Facilitymedewerker, operations + cleaning + maintenance
+ *   cleaner       – Schoonmaakster, cleaning only
  *   guest         – Visitor / limited access
  */
 
 // ── Role definitions ────────────────────────────────────────────────
-export const ROLES = ["administrator", "host", "company_owner", "teamadmin", "tenant", "member", "facility", "cleaner", "guest", "ceo", "cfo", "developer"] as const;
+export const ROLES = [
+  "administrator",
+  "ceo",
+  "cfo",
+  "host",
+  "company_owner",
+  "teamadmin",
+  "member",
+  "facility",
+  "cleaner",
+  "guest",
+] as const;
 export type UserRole = (typeof ROLES)[number];
 
 // ── Permission keys ─────────────────────────────────────────────────
@@ -38,7 +54,6 @@ export const PERMISSIONS = [
   "members.view",
   "members.manage",
   // Company
-  "company.billing.view",
   "company.billing.manage",
   "company.settings.manage",
   // Visitors
@@ -91,23 +106,21 @@ export const PERMISSIONS = [
   "budget_controls.manage",
   "commit_contracts.view",
   "commit_contracts.manage",
-  // Finance & Contracts (CFO)
-  "finance.view",
-  "finance.reports",
-  "invoices.view",
-  "invoices.manage",
-  "contracts.view",
-  "contracts.manage",
-  // Cleaning & Maintenance
-  "cleaning.view",
-  "cleaning.manage",
-  "maintenance.view",
-  "maintenance.manage",
-  // Executive / CEO
+  // Executive
   "executive.view",
   "executive.reports",
-  // SLA
-  "sla.view",
+  // Finance
+  "finance.view",
+  "finance.reports",
+  // Invoices
+  "invoices.view",
+  "invoices.manage",
+  // Cleaning
+  "cleaning.view",
+  "cleaning.manage",
+  // Maintenance
+  "maintenance.view",
+  "maintenance.manage",
 ] as const;
 
 export type Permission = (typeof PERMISSIONS)[number];
@@ -115,6 +128,39 @@ export type Permission = (typeof PERMISSIONS)[number];
 // ── Role → Permission matrix ────────────────────────────────────────
 export const ROLE_PERMISSIONS: Record<UserRole, readonly Permission[]> = {
   administrator: [...PERMISSIONS], // Full access
+
+  ceo: [
+    "dashboard.view",
+    "locations.view",
+    "resources.view",
+    "bookings.view",
+    "wallet.view", "wallet.manage",
+    "bundles.view", "bundles.manage",
+    "companies.view",
+    "members.view",
+    "parking.view",
+    "notifications.view",
+    "credits.view", "credits.manage",
+    "budget_controls.view", "budget_controls.manage",
+    "executive.view", "executive.reports",
+  ],
+
+  cfo: [
+    "dashboard.view",
+    "locations.view",
+    "resources.view",
+    "bookings.view",
+    "wallet.view", "wallet.manage",
+    "bundles.view", "bundles.manage",
+    "companies.view",
+    "members.view",
+    "notifications.view",
+    "credits.view", "credits.manage",
+    "budget_controls.view", "budget_controls.manage",
+    "commit_contracts.view", "commit_contracts.manage",
+    "finance.view", "finance.reports",
+    "invoices.view", "invoices.manage",
+  ],
 
   host: [
     "dashboard.view",
@@ -142,6 +188,8 @@ export const ROLE_PERMISSIONS: Record<UserRole, readonly Permission[]> = {
     "credits.view", "credits.manage", "credits.purchase",
     "budget_controls.view", "budget_controls.manage",
     "commit_contracts.view", "commit_contracts.manage",
+    "cleaning.view", "cleaning.manage",
+    "maintenance.view", "maintenance.manage",
   ],
 
   company_owner: [
@@ -197,22 +245,10 @@ export const ROLE_PERMISSIONS: Record<UserRole, readonly Permission[]> = {
     "credits.view", "credits.purchase",
   ],
 
-  guest: [
-    "locations.view",
-    "resources.view",
-    "bookings.view",
-    "parking.view",
-  ],
-
   facility: [
     "dashboard.view",
-    "locations.view", "locations.manage",
-    "resources.view", "resources.manage",
-    "roomcontrol.view", "roomcontrol.manage",
-    "parking.view", "parking.manage",
-    "signage.view", "signage.manage",
-    "devices.view", "devices.manage",
     "operations.view", "operations.manage",
+    "parking.view",
     "notifications.view",
     "settings.view",
     "cleaning.view", "cleaning.manage",
@@ -226,59 +262,12 @@ export const ROLE_PERMISSIONS: Record<UserRole, readonly Permission[]> = {
     "cleaning.view", "cleaning.manage",
   ],
 
-  tenant: [
-    "dashboard.view",
-    "locations.view",
-    "resources.view",
-    "bookings.view", "bookings.create", "bookings.manage",
-    "wallet.view",
-    "bundles.view",
-    "visitors.view", "visitors.manage",
-    "invites.view", "invites.manage",
-    "parking.view",
-    "notifications.view",
-    "settings.view",
-    "credits.view", "credits.purchase",
-    "contracts.view",
-    "invoices.view",
-    "sla.view",
-    "company.billing.view",
-  ],
-
-  ceo: [
-    "dashboard.view",
-    "wallet.view", "wallet.manage",
-    "bundles.view", "bundles.manage",
-    "credits.view", "credits.manage",
-    "budget_controls.view", "budget_controls.manage",
-    "companies.view",
-    "members.view",
+  guest: [
     "locations.view",
     "resources.view",
     "bookings.view",
     "parking.view",
-    "notifications.view",
-    "executive.view", "executive.reports",
   ],
-
-  cfo: [
-    "dashboard.view",
-    "wallet.view", "wallet.manage",
-    "bundles.view", "bundles.manage",
-    "credits.view", "credits.manage",
-    "budget_controls.view", "budget_controls.manage",
-    "commit_contracts.view", "commit_contracts.manage",
-    "locations.view",
-    "resources.view",
-    "bookings.view",
-    "parking.view",
-    "notifications.view",
-    "settings.view",
-    "finance.view", "finance.reports",
-    "invoices.view", "invoices.manage",
-  ],
-
-  developer: [...PERMISSIONS], // Full access for development/testing
 };
 
 // ── Helper functions ────────────────────────────────────────────────
@@ -305,50 +294,50 @@ export function getPermissions(role: UserRole): readonly Permission[] {
 
 /** Map old role names to new role names (migration helper) */
 export function migrateRole(oldRole: string): UserRole {
+  // Map legacy role names to new ones
   switch (oldRole) {
     case "admin":
       return "administrator";
     case "user":
       return "member";
-    case "guest":
-      return "guest";
-    case "tenant":
-      return "tenant";
-    case "klant":
-      return "tenant";
     default:
-      return "guest";
+      break;
   }
+  // If it's already a valid new role, pass through
+  const validRoles: UserRole[] = [
+    "administrator", "ceo", "cfo", "host", "company_owner",
+    "teamadmin", "member", "facility", "cleaner", "guest",
+  ];
+  if (validRoles.includes(oldRole as UserRole)) {
+    return oldRole as UserRole;
+  }
+  return "guest";
 }
 
 /** Role display labels */
 export const ROLE_LABELS: Record<UserRole, string> = {
   administrator: "Administrator",
+  ceo: "CEO/Executive",
+  cfo: "CFO",
   host: "Host (Boss)",
   company_owner: "Company Owner",
   teamadmin: "Team Admin",
-  tenant: "Tenant (Klant)",
   member: "Member",
   facility: "Facilitymedewerker",
   cleaner: "Schoonmaakster",
   guest: "Guest",
-  ceo: "CEO/Executive",
-  cfo: "CFO",
-  developer: "Developer",
 };
 
 /** Role hierarchy level (higher = more powerful) */
 export const ROLE_HIERARCHY: Record<UserRole, number> = {
   administrator: 100,
   ceo: 95,
-  developer: 95,
   cfo: 90,
   host: 80,
   company_owner: 70,
   teamadmin: 60,
-  tenant: 50,
-  facility: 35,
   member: 40,
+  facility: 35,
   cleaner: 25,
   guest: 10,
 };

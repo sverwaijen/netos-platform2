@@ -55,7 +55,7 @@ function ResourceTypesTab() {
     onSuccess: () => { utils.resourceTypes.list.invalidate(); toast.success("Resource type deactivated"); },
   });
 
-  if (isLoading) return <div className="animate-pulse space-y-3">{[1,2,3].map(i => <div key={i} className="h-20 bg-white/5 rounded-lg" />)}</div>;
+  if (isLoading) return <div className="animate-pulse space-y-3">{[1,2,3].map((i: any) => <div key={i} className="h-20 bg-white/5 rounded-lg" />)}</div>;
 
   return (
     <div className="space-y-6">
@@ -96,7 +96,7 @@ function ResourceTypesTab() {
       </div>
 
       <div className="grid gap-3">
-        {types?.map(t => (
+        {types?.map((t: any) => (
           <Card key={t.id} className="bg-white/[0.03] border-white/10 hover:bg-white/[0.06] transition-colors">
             <CardContent className="p-4 flex items-center justify-between">
               <div className="flex items-center gap-4">
@@ -159,12 +159,12 @@ function ResourceRatesTab() {
   const filteredRates = useMemo(() => {
     if (!rates) return [];
     if (!filterTypeId) return rates;
-    return rates.filter(r => r.resourceTypeId === filterTypeId);
+    return rates.filter((r: any) => r.resourceTypeId === filterTypeId);
   }, [rates, filterTypeId]);
 
-  const getTypeName = (id: number) => types?.find(t => t.id === id)?.name ?? `Type #${id}`;
+  const getTypeName = (id: number) => types?.find((t: any) => t.id === id)?.name ?? `Type #${id}`;
 
-  if (isLoading) return <div className="animate-pulse space-y-3">{[1,2,3].map(i => <div key={i} className="h-20 bg-white/5 rounded-lg" />)}</div>;
+  if (isLoading) return <div className="animate-pulse space-y-3">{[1,2,3].map((i: any) => <div key={i} className="h-20 bg-white/5 rounded-lg" />)}</div>;
 
   return (
     <div className="space-y-6">
@@ -187,7 +187,7 @@ function ResourceRatesTab() {
                     <Label>Resource Type</Label>
                     <Select value={String(form.resourceTypeId || "")} onValueChange={v => setForm(f => ({ ...f, resourceTypeId: parseInt(v) }))}>
                       <SelectTrigger className="bg-white/5 border-white/10"><SelectValue placeholder="Select type" /></SelectTrigger>
-                      <SelectContent>{types?.map(t => <SelectItem key={t.id} value={String(t.id)}>{t.name}</SelectItem>)}</SelectContent>
+                      <SelectContent>{types?.map((t: any) => <SelectItem key={t.id} value={String(t.id)}>{t.name}</SelectItem>)}</SelectContent>
                     </Select>
                   </div>
                 </div>
@@ -242,13 +242,13 @@ function ResourceRatesTab() {
 
       <div className="flex gap-2 flex-wrap">
         <Button variant={filterTypeId === null ? "default" : "outline"} size="sm" onClick={() => setFilterTypeId(null)} className={filterTypeId === null ? "bg-[#627653]" : ""}>All</Button>
-        {types?.map(t => (
+        {types?.map((t: any) => (
           <Button key={t.id} variant={filterTypeId === t.id ? "default" : "outline"} size="sm" onClick={() => setFilterTypeId(t.id)} className={filterTypeId === t.id ? "bg-[#627653]" : ""}>{t.name}</Button>
         ))}
       </div>
 
       <div className="grid gap-3">
-        {filteredRates.map(r => (
+        {filteredRates.map((r: any) => (
           <Card key={r.id} className="bg-white/[0.03] border-white/10 hover:bg-white/[0.06] transition-colors">
             <CardContent className="p-4">
               <div className="flex items-center justify-between">
@@ -310,7 +310,7 @@ function ResourceRulesTab() {
     }
   };
 
-  if (isLoading) return <div className="animate-pulse space-y-3">{[1,2,3].map(i => <div key={i} className="h-20 bg-white/5 rounded-lg" />)}</div>;
+  if (isLoading) return <div className="animate-pulse space-y-3">{[1,2,3].map((i: any) => <div key={i} className="h-20 bg-white/5 rounded-lg" />)}</div>;
 
   return (
     <div className="space-y-6">
@@ -320,7 +320,7 @@ function ResourceRulesTab() {
       </div>
 
       <div className="space-y-3">
-        {rules?.map((r, i) => (
+        {rules?.map((r: any, i: any) => (
           <Card key={r.id} className="bg-white/[0.03] border-white/10 hover:bg-white/[0.06] transition-colors">
             <CardContent className="p-4">
               <div className="flex items-center justify-between">
@@ -374,10 +374,10 @@ function BookingPoliciesTab() {
     onSuccess: () => { utils.bookingPolicies.list.invalidate(); toast.success("Policy deactivated"); },
   });
 
-  const getTypeName = (id: number | null) => id ? types?.find(t => t.id === id)?.name ?? `Type #${id}` : "All Types";
-  const getLocationName = (id: number | null) => id ? locations?.find(l => l.id === id)?.name ?? `Loc #${id}` : "All Locations";
+  const getTypeName = (id: number | null) => id ? types?.find((t: any) => t.id === id)?.name ?? `Type #${id}` : "All Types";
+  const getLocationName = (id: number | null) => id ? locations?.find((l: any) => l.id === id)?.name ?? `Loc #${id}` : "All Locations";
 
-  if (isLoading) return <div className="animate-pulse space-y-3">{[1,2,3].map(i => <div key={i} className="h-20 bg-white/5 rounded-lg" />)}</div>;
+  if (isLoading) return <div className="animate-pulse space-y-3">{[1,2,3].map((i: any) => <div key={i} className="h-20 bg-white/5 rounded-lg" />)}</div>;
 
   return (
     <div className="space-y-6">
@@ -387,7 +387,7 @@ function BookingPoliciesTab() {
       </div>
 
       <div className="grid gap-4">
-        {policies?.map(p => (
+        {policies?.map((p: any) => (
           <Card key={p.id} className="bg-white/[0.03] border-white/10">
             <CardHeader className="pb-3">
               <div className="flex items-center justify-between">
@@ -456,14 +456,14 @@ function AmenitiesTab() {
     catering: "text-pink-400 bg-pink-400/10",
   };
 
-  if (isLoading) return <div className="animate-pulse space-y-3">{[1,2,3].map(i => <div key={i} className="h-20 bg-white/5 rounded-lg" />)}</div>;
+  if (isLoading) return <div className="animate-pulse space-y-3">{[1,2,3].map((i: any) => <div key={i} className="h-20 bg-white/5 rounded-lg" />)}</div>;
 
-  const grouped = amenities?.reduce((acc, a) => {
+  const grouped = amenities?.reduce((acc: Record<string, any[]>, a: any) => {
     const cat = a.category ?? "tech";
     if (!acc[cat]) acc[cat] = [];
     acc[cat].push(a);
     return acc;
-  }, {} as Record<string, typeof amenities>) ?? {};
+  }, {} as Record<string, any[]>) ?? ({} as Record<string, any[]>);
 
   return (
     <div className="space-y-6">
@@ -472,11 +472,11 @@ function AmenitiesTab() {
         <p className="text-sm text-muted-foreground mt-1">Amenities that can be assigned to individual resources. Members see these when browsing available spaces.</p>
       </div>
 
-      {Object.entries(grouped).map(([cat, items]) => (
+      {(Object.entries(grouped) as [string, any[]][]).map(([cat, items]) => (
         <div key={cat}>
           <p className="text-xs font-medium uppercase tracking-wider text-muted-foreground mb-3">{cat}</p>
           <div className="flex flex-wrap gap-2">
-            {items?.map(a => (
+            {items?.map((a: any) => (
               <Badge key={a.id} variant="outline" className={`px-3 py-1.5 text-sm ${categoryColors[cat] ?? ""}`}>
                 {a.icon && <span className="mr-1">{a.icon}</span>}
                 {a.name}
@@ -500,16 +500,16 @@ function SchedulesTab() {
   const { data: schedules, isLoading } = trpc.resourceSchedules.list.useQuery();
   const { data: locations } = trpc.locations.list.useQuery();
 
-  const getLocationName = (id: number | null) => id ? locations?.find(l => l.id === id)?.name ?? `Loc #${id}` : "Global";
+  const getLocationName = (id: number | null) => id ? locations?.find((l: any) => l.id === id)?.name ?? `Loc #${id}` : "Global";
 
-  if (isLoading) return <div className="animate-pulse space-y-3">{[1,2,3].map(i => <div key={i} className="h-20 bg-white/5 rounded-lg" />)}</div>;
+  if (isLoading) return <div className="animate-pulse space-y-3">{[1,2,3].map((i: any) => <div key={i} className="h-20 bg-white/5 rounded-lg" />)}</div>;
 
-  const grouped = schedules?.reduce((acc, s) => {
-    const key = s.locationId ?? 0;
+  const grouped = schedules?.reduce((acc: Record<string, any[]>, s: any) => {
+    const key = String(s.locationId ?? 0);
     if (!acc[key]) acc[key] = [];
     acc[key].push(s);
     return acc;
-  }, {} as Record<number, typeof schedules>) ?? {};
+  }, {} as Record<string, any[]>) ?? ({} as Record<string, any[]>);
 
   return (
     <div className="space-y-6">
@@ -518,7 +518,7 @@ function SchedulesTab() {
         <p className="text-sm text-muted-foreground mt-1">Opening hours per location and day of week. Resources inherit their location's schedule unless overridden.</p>
       </div>
 
-      {Object.entries(grouped).map(([locId, items]) => (
+      {(Object.entries(grouped) as [string, any[]][]).map(([locId, items]) => (
         <Card key={locId} className="bg-white/[0.03] border-white/10">
           <CardHeader className="pb-2">
             <CardTitle className="text-sm font-medium">{getLocationName(parseInt(locId))}</CardTitle>
@@ -526,7 +526,7 @@ function SchedulesTab() {
           <CardContent>
             <div className="grid grid-cols-7 gap-2">
               {DAYS.map((day, i) => {
-                const schedule = items?.find(s => s.dayOfWeek === i);
+                const schedule = items?.find((s: any) => s.dayOfWeek === i);
                 return (
                   <div key={i} className={`text-center p-2 rounded-lg ${schedule?.isActive ? "bg-[#627653]/10" : "bg-white/5 opacity-50"}`}>
                     <p className="text-[10px] uppercase tracking-wider text-muted-foreground">{day.slice(0, 3)}</p>
@@ -561,9 +561,9 @@ function BlockedDatesTab() {
     onSuccess: () => { utils.blockedDates.list.invalidate(); toast.success("Blocked date removed"); },
   });
 
-  const getLocationName = (id: number | null) => id ? locations?.find(l => l.id === id)?.name ?? `Loc #${id}` : "All Locations";
+  const getLocationName = (id: number | null) => id ? locations?.find((l: any) => l.id === id)?.name ?? `Loc #${id}` : "All Locations";
 
-  if (isLoading) return <div className="animate-pulse space-y-3">{[1,2,3].map(i => <div key={i} className="h-20 bg-white/5 rounded-lg" />)}</div>;
+  if (isLoading) return <div className="animate-pulse space-y-3">{[1,2,3].map((i: any) => <div key={i} className="h-20 bg-white/5 rounded-lg" />)}</div>;
 
   return (
     <div className="space-y-6">
@@ -573,7 +573,7 @@ function BlockedDatesTab() {
       </div>
 
       <div className="space-y-3">
-        {blocked?.map(b => (
+        {blocked?.map((b: any) => (
           <Card key={b.id} className="bg-white/[0.03] border-white/10">
             <CardContent className="p-4 flex items-center justify-between">
               <div className="flex items-center gap-4">
@@ -598,6 +598,196 @@ function BlockedDatesTab() {
           <div className="text-center py-12 text-muted-foreground">
             <CalendarOff className="w-10 h-10 mx-auto mb-3 opacity-30" />
             <p>No blocked dates configured</p>
+          </div>
+        )}
+      </div>
+    </div>
+  );
+}
+
+// ─── Resources Tab (CRUD for individual resources) ───
+const RESOURCE_TYPES = ["desk", "meeting_room", "private_office", "open_space", "locker", "gym", "phone_booth", "event_space"];
+const ZONES = ["zone_0", "zone_1", "zone_2", "zone_3"];
+
+function ResourcesTab() {
+  const { data: resources, isLoading } = trpc.resources.all.useQuery();
+  const { data: locations } = trpc.locations.list.useQuery();
+  const utils = trpc.useUtils();
+  const [showCreate, setShowCreate] = useState(false);
+  const [editId, setEditId] = useState<number | null>(null);
+  const [form, setForm] = useState({ locationId: 0, name: "", type: "desk", zone: "zone_0", capacity: 1, floor: "", creditCostPerHour: "5.00", areaM2: "" });
+  const [editForm, setEditForm] = useState<any>({});
+  const [filterLocation, setFilterLocation] = useState<string>("all");
+  const [filterType, setFilterType] = useState<string>("all");
+
+  const createMut = trpc.resources.create.useMutation({
+    onSuccess: () => { utils.resources.all.invalidate(); toast.success("Resource created"); setShowCreate(false); setForm({ locationId: 0, name: "", type: "desk", zone: "zone_0", capacity: 1, floor: "", creditCostPerHour: "5.00", areaM2: "" }); },
+    onError: (e: any) => toast.error(e.message),
+  });
+  const updateMut = trpc.resources.update.useMutation({
+    onSuccess: () => { utils.resources.all.invalidate(); toast.success("Resource updated"); setEditId(null); },
+    onError: (e: any) => toast.error(e.message),
+  });
+  const deleteMut = trpc.resources.delete.useMutation({
+    onSuccess: () => { utils.resources.all.invalidate(); toast.success("Resource deactivated"); },
+  });
+
+  const getLocationName = (id: number) => locations?.find((l: any) => l.id === id)?.name ?? `Loc #${id}`;
+
+  const filtered = useMemo(() => {
+    if (!resources) return [];
+    return resources.filter((r: any) => {
+      if (filterLocation !== "all" && r.locationId !== parseInt(filterLocation)) return false;
+      if (filterType !== "all" && r.type !== filterType) return false;
+      return true;
+    });
+  }, [resources, filterLocation, filterType]);
+
+  if (isLoading) return <div className="animate-pulse space-y-3">{[1,2,3].map((i: any) => <div key={i} className="h-20 bg-white/5 rounded-lg" />)}</div>;
+
+  return (
+    <div className="space-y-6">
+      <div className="flex items-center justify-between">
+        <div>
+          <h3 className="text-lg font-semibold tracking-tight">All Resources</h3>
+          <p className="text-sm text-muted-foreground mt-1">Manage individual desks, meeting rooms, offices, and other bookable spaces across all locations.</p>
+        </div>
+        <Dialog open={showCreate} onOpenChange={setShowCreate}>
+          <DialogTrigger asChild>
+            <Button className="bg-[#627653] hover:bg-[#4e5f42]"><Plus className="w-4 h-4 mr-1.5" /> Add Resource</Button>
+          </DialogTrigger>
+          <DialogContent className="max-w-lg">
+            <DialogHeader><DialogTitle>Create New Resource</DialogTitle></DialogHeader>
+            <div className="grid gap-4 py-4">
+              <div className="grid grid-cols-2 gap-4">
+                <div><Label>Name</Label><Input value={form.name} onChange={e => setForm(f => ({ ...f, name: e.target.value }))} placeholder="Desk A1" /></div>
+                <div><Label>Location</Label>
+                  <Select value={String(form.locationId || "")} onValueChange={v => setForm(f => ({ ...f, locationId: parseInt(v) }))}>
+                    <SelectTrigger><SelectValue placeholder="Select location" /></SelectTrigger>
+                    <SelectContent>{locations?.map((l: any) => <SelectItem key={l.id} value={String(l.id)}>{l.name}</SelectItem>)}</SelectContent>
+                  </Select>
+                </div>
+              </div>
+              <div className="grid grid-cols-3 gap-4">
+                <div><Label>Type</Label>
+                  <Select value={form.type} onValueChange={v => setForm(f => ({ ...f, type: v }))}>
+                    <SelectTrigger><SelectValue /></SelectTrigger>
+                    <SelectContent>{RESOURCE_TYPES.map((t: any) => <SelectItem key={t} value={t}>{t.replace(/_/g, " ")}</SelectItem>)}</SelectContent>
+                  </Select>
+                </div>
+                <div><Label>Zone</Label>
+                  <Select value={form.zone} onValueChange={v => setForm(f => ({ ...f, zone: v }))}>
+                    <SelectTrigger><SelectValue /></SelectTrigger>
+                    <SelectContent>{ZONES.map((z: any) => <SelectItem key={z} value={z}>{z.replace(/_/g, " ")}</SelectItem>)}</SelectContent>
+                  </Select>
+                </div>
+                <div><Label>Capacity</Label><Input type="number" value={form.capacity} onChange={e => setForm(f => ({ ...f, capacity: parseInt(e.target.value) || 1 }))} /></div>
+              </div>
+              <div className="grid grid-cols-3 gap-4">
+                <div><Label>Credits/Hour</Label><Input value={form.creditCostPerHour} onChange={e => setForm(f => ({ ...f, creditCostPerHour: e.target.value }))} /></div>
+                <div><Label>Floor</Label><Input value={form.floor} onChange={e => setForm(f => ({ ...f, floor: e.target.value }))} placeholder="1" /></div>
+                <div><Label>Area (m2)</Label><Input value={form.areaM2} onChange={e => setForm(f => ({ ...f, areaM2: e.target.value }))} placeholder="12.5" /></div>
+              </div>
+              <Button className="w-full bg-[#627653] hover:bg-[#4e5f42]" onClick={() => createMut.mutate(form)} disabled={createMut.isPending || !form.name || !form.locationId}>Create Resource</Button>
+            </div>
+          </DialogContent>
+        </Dialog>
+      </div>
+
+      {/* Filters */}
+      <div className="flex gap-3">
+        <Select value={filterLocation} onValueChange={setFilterLocation}>
+          <SelectTrigger className="w-48"><SelectValue placeholder="All Locations" /></SelectTrigger>
+          <SelectContent>
+            <SelectItem value="all">All Locations</SelectItem>
+            {locations?.map((l: any) => <SelectItem key={l.id} value={String(l.id)}>{l.name}</SelectItem>)}
+          </SelectContent>
+        </Select>
+        <Select value={filterType} onValueChange={setFilterType}>
+          <SelectTrigger className="w-48"><SelectValue placeholder="All Types" /></SelectTrigger>
+          <SelectContent>
+            <SelectItem value="all">All Types</SelectItem>
+            {RESOURCE_TYPES.map((t: any) => <SelectItem key={t} value={t}>{t.replace(/_/g, " ")}</SelectItem>)}
+          </SelectContent>
+        </Select>
+        <div className="ml-auto text-sm text-muted-foreground self-center">{filtered.length} resources</div>
+      </div>
+
+      {/* Resource List */}
+      <div className="space-y-2">
+        {filtered.map((r: any) => (
+          <Card key={r.id} className={`border-white/10 ${r.isActive ? "bg-white/[0.03]" : "bg-red-500/5 border-red-500/20"}`}>
+            <CardContent className="p-4">
+              {editId === r.id ? (
+                <div className="space-y-3">
+                  <div className="grid grid-cols-4 gap-3">
+                    <div><Label className="text-xs">Name</Label><Input value={editForm.name ?? r.name} onChange={e => setEditForm((f: any) => ({ ...f, name: e.target.value }))} /></div>
+                    <div><Label className="text-xs">Type</Label>
+                      <Select value={editForm.type ?? r.type} onValueChange={v => setEditForm((f: any) => ({ ...f, type: v }))}>
+                        <SelectTrigger><SelectValue /></SelectTrigger>
+                        <SelectContent>{RESOURCE_TYPES.map((t: any) => <SelectItem key={t} value={t}>{t.replace(/_/g, " ")}</SelectItem>)}</SelectContent>
+                      </Select>
+                    </div>
+                    <div><Label className="text-xs">Zone</Label>
+                      <Select value={editForm.zone ?? r.zone} onValueChange={v => setEditForm((f: any) => ({ ...f, zone: v }))}>
+                        <SelectTrigger><SelectValue /></SelectTrigger>
+                        <SelectContent>{ZONES.map((z: any) => <SelectItem key={z} value={z}>{z.replace(/_/g, " ")}</SelectItem>)}</SelectContent>
+                      </Select>
+                    </div>
+                    <div><Label className="text-xs">Capacity</Label><Input type="number" value={editForm.capacity ?? r.capacity} onChange={e => setEditForm((f: any) => ({ ...f, capacity: parseInt(e.target.value) || 1 }))} /></div>
+                  </div>
+                  <div className="grid grid-cols-4 gap-3">
+                    <div><Label className="text-xs">Credits/Hour</Label><Input value={editForm.creditCostPerHour ?? r.creditCostPerHour} onChange={e => setEditForm((f: any) => ({ ...f, creditCostPerHour: e.target.value }))} /></div>
+                    <div><Label className="text-xs">Floor</Label><Input value={editForm.floor ?? r.floor ?? ""} onChange={e => setEditForm((f: any) => ({ ...f, floor: e.target.value }))} /></div>
+                    <div><Label className="text-xs">Area (m2)</Label><Input value={editForm.areaM2 ?? r.areaM2 ?? ""} onChange={e => setEditForm((f: any) => ({ ...f, areaM2: e.target.value }))} /></div>
+                    <div className="flex items-end gap-2">
+                      <Button size="sm" className="bg-[#627653] hover:bg-[#4e5f42]" onClick={() => updateMut.mutate({ id: r.id, ...editForm })} disabled={updateMut.isPending}>Save</Button>
+                      <Button size="sm" variant="outline" onClick={() => { setEditId(null); setEditForm({}); }}>Cancel</Button>
+                    </div>
+                  </div>
+                </div>
+              ) : (
+                <div className="flex items-center justify-between">
+                  <div className="flex items-center gap-4">
+                    <div className={`w-10 h-10 rounded-lg flex items-center justify-center ${r.isActive ? "bg-[#627653]/10" : "bg-red-500/10"}`}>
+                      <Monitor className={`w-5 h-5 ${r.isActive ? "text-[#627653]" : "text-red-400"}`} />
+                    </div>
+                    <div>
+                      <div className="font-medium flex items-center gap-2">
+                        {r.name}
+                        {!r.isActive && <Badge variant="outline" className="text-red-400 border-red-400/30 text-[10px]">Inactive</Badge>}
+                        {r.isRozEligible && <Badge variant="outline" className="text-amber-400 border-amber-400/30 text-[10px]">ROZ</Badge>}
+                      </div>
+                      <div className="text-xs text-muted-foreground mt-0.5 flex items-center gap-3">
+                        <span>{getLocationName(r.locationId)}</span>
+                        <span>{r.type?.replace(/_/g, " ")}</span>
+                        <span>{r.zone?.replace(/_/g, " ")}</span>
+                        <span><Users className="w-3 h-3 inline mr-0.5" />{r.capacity}</span>
+                        {r.floor && <span>Floor {r.floor}</span>}
+                        {r.areaM2 && <span>{r.areaM2}m2</span>}
+                      </div>
+                    </div>
+                  </div>
+                  <div className="flex items-center gap-2">
+                    <Badge className="bg-[#627653]/20 text-[#627653] border-0">{r.creditCostPerHour} cr/hr</Badge>
+                    <Button variant="ghost" size="icon" className="h-8 w-8" onClick={() => { setEditId(r.id); setEditForm({}); }}>
+                      <Pencil className="w-4 h-4" />
+                    </Button>
+                    {r.isActive && (
+                      <Button variant="ghost" size="icon" className="h-8 w-8 text-red-400 hover:text-red-300 hover:bg-red-500/10" onClick={() => { if (confirm("Deactivate this resource?")) deleteMut.mutate({ id: r.id }); }}>
+                        <Trash2 className="w-4 h-4" />
+                      </Button>
+                    )}
+                  </div>
+                </div>
+              )}
+            </CardContent>
+          </Card>
+        ))}
+        {filtered.length === 0 && (
+          <div className="text-center py-12 text-muted-foreground">
+            <Monitor className="w-10 h-10 mx-auto mb-3 opacity-30" />
+            <p>No resources found</p>
           </div>
         )}
       </div>
@@ -654,6 +844,9 @@ export default function ResourceManagement() {
           <TabsTrigger value="roz" className="data-[state=active]:bg-amber-500 data-[state=active]:text-white">
             <Building2 className="w-4 h-4 mr-1.5" /> ROZ Huur
           </TabsTrigger>
+          <TabsTrigger value="resources" className="data-[state=active]:bg-[#627653] data-[state=active]:text-white">
+            <Monitor className="w-4 h-4 mr-1.5" /> Resources
+          </TabsTrigger>
         </TabsList>
 
         <TabsContent value="types"><ResourceTypesTab /></TabsContent>
@@ -664,6 +857,7 @@ export default function ResourceManagement() {
         <TabsContent value="schedules"><SchedulesTab /></TabsContent>
         <TabsContent value="blocked"><BlockedDatesTab /></TabsContent>
         <TabsContent value="roz"><RozAdminTab /></TabsContent>
+        <TabsContent value="resources"><ResourcesTab /></TabsContent>
       </Tabs>
     </div>
   );

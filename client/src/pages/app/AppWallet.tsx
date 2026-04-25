@@ -30,7 +30,7 @@ export default function AppWallet() {
         <h1 className="text-xl font-light text-white">Wallet</h1>
         <button
           onClick={() => toast.info("Opwaarderen via iDEAL komt binnenkort", { description: "Binnenkort beschikbaar" })}
-          className="flex items-center gap-1.5 bg-[#627653] text-white text-xs font-medium px-4 py-2 rounded-full active:scale-95 transition-transform"
+          className="flex items-center gap-1.5 bg-[#C4B89E] text-white text-xs font-medium px-4 py-2 rounded-full active:scale-95 transition-transform"
         >
           <Plus className="w-3.5 h-3.5" />
           Opwaarderen
@@ -40,7 +40,7 @@ export default function AppWallet() {
       {/* Balance Cards */}
       <div className="space-y-3">
         {personalWallet && (
-          <div className="bg-gradient-to-br from-[#627653] to-[#4a5c3f] rounded-2xl p-5 relative overflow-hidden">
+          <div className="bg-gradient-to-br from-[#C4B89E] to-[#4a5c3f] rounded-2xl p-5 relative overflow-hidden">
             <div className="absolute top-0 right-0 w-32 h-32 rounded-full bg-white/5 -mr-10 -mt-10" />
             <p className="text-white/60 text-xs tracking-[0.15em] uppercase">Persoonlijk Saldo</p>
             <p className="text-white text-3xl font-light mt-2">
@@ -55,7 +55,7 @@ export default function AppWallet() {
         )}
 
         {companyWallet && (
-          <div className="bg-gradient-to-br from-[#b8a472] to-[#8B7355] rounded-2xl p-5 relative overflow-hidden">
+          <div className="bg-gradient-to-br from-[#C4B89E] to-[#8B7355] rounded-2xl p-5 relative overflow-hidden">
             <div className="absolute top-0 right-0 w-32 h-32 rounded-full bg-white/5 -mr-10 -mt-10" />
             <p className="text-white/60 text-xs tracking-[0.15em] uppercase">Bedrijf Saldo</p>
             <p className="text-white text-3xl font-light mt-2">

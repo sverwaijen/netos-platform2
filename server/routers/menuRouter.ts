@@ -1,16 +1,17 @@
 import { z } from "zod";
-import { eq, and, desc, asc, like, or, sql, type SQL } from "drizzle-orm";
+import { eq, and, desc, asc, like, or, sql } from "drizzle-orm";
 import { publicProcedure, protectedProcedure, router } from "../_core/trpc";
 import { getDb } from "../db";
 import { syncMenuToKiosk } from "../syncMenuToKiosk";
-import {
-  menuSeasons,
-  menuCategories,
-  menuItems,
-  menuSeasonItems,
-  menuPreparations,
-  menuArrangements,
-} from "../../drizzle/schema";
+import { getDriver } from "../db";
+import * as pgSchema from "../../drizzle/pg-schema";
+function S(): any { return pgSchema; }
+const menuSeasons = () => S().menuSeasons;
+const menuCategories = () => S().menuCategories;
+const menuItems = () => S().menuItems;
+const menuSeasonItems = () => S().menuSeasonItems;
+const menuPreparations = () => S().menuPreparations;
+const menuArrangements = () => S().menuArrangements;
 
 // ═══════════════════════════════════════════════════════════════════════
 // ─── MENU SEASONS ──────────────────────────────────────────────────
@@ -19,14 +20,14 @@ export const menuSeasonsRouter = router({
   list: publicProcedure.query(async () => {
     const db = await getDb();
     if (!db) return [];
-    return db.select().from(menuSeasons).orderBy(desc(menuSeasons.year), desc(menuSeasons.quarter));
+    return db.select().from(menuSeasons()).orderBy(desc(menuSeasons().year), desc(menuSeasons().quarter));
   }),
 
   active: publicProcedure.query(async () => {
     const db = await getDb();
     if (!db) return null;
-    const [season] = await db.select().from(menuSeasons)
-      .where(eq(menuSeasons.isActive, true))
+    const [season] = await db.select().from(menuSeasons())
+      .where(eq(menuSeasons().isActive, true))
       .limit(1);
     return season || null;
   }),
@@ -42,10 +43,10 @@ export const menuSeasonsRouter = router({
   })).mutation(async ({ input }) => {
     const db = await getDb();
     if (!db) throw new Error("DB unavailable");
-    const [result] = await db.insert(menuSeasons).values({
+    const [result] = await db.insert(menuSeasons()).values({
       ...input,
       isActive: false,
-    }).$returningId();
+    }).returning();
     return { id: result.id };
   }),
 
@@ -53,9 +54,9 @@ export const menuSeasonsRouter = router({
     const db = await getDb();
     if (!db) throw new Error("DB unavailable");
     // Deactivate all
-    await db.update(menuSeasons).set({ isActive: false });
+    await db.update(menuSeasons()).set({ isActive: false });
     // Activate selected
-    await db.update(menuSeasons).set({ isActive: true }).where(eq(menuSeasons.id, input.id));
+    await db.update(menuSeasons()).set({ isActive: true }).where(eq(menuSeasons().id, input.id));
     // Auto-sync to kiosk products
     try {
       const syncResult = await syncMenuToKiosk();
@@ -87,7 +88,7 @@ export const menuSeasonsRouter = router({
       if (v !== undefined) setObj[k] = v;
     }
     if (Object.keys(setObj).length > 0) {
-      await db.update(menuSeasons).set(setObj).where(eq(menuSeasons.id, id));
+      await db.update(menuSeasons()).set(setObj).where(eq(menuSeasons().id, id));
     }
     return { success: true };
   }),
@@ -95,8 +96,8 @@ export const menuSeasonsRouter = router({
   delete: protectedProcedure.input(z.object({ id: z.number() })).mutation(async ({ input }) => {
     const db = await getDb();
     if (!db) throw new Error("DB unavailable");
-    await db.delete(menuSeasonItems).where(eq(menuSeasonItems.seasonId, input.id));
-    await db.delete(menuSeasons).where(eq(menuSeasons.id, input.id));
+    await db.delete(menuSeasonItems()).where(eq(menuSeasonItems().seasonId, input.id));
+    await db.delete(menuSeasons()).where(eq(menuSeasons().id, input.id));
     return { success: true };
   }),
 
@@ -112,12 +113,12 @@ export const menuSeasonsRouter = router({
     const db = await getDb();
     if (!db) throw new Error("DB unavailable");
     const { sourceSeasonId, ...seasonData } = input;
-    const [newSeason] = await db.insert(menuSeasons).values({ ...seasonData, isActive: false }).$returningId();
+    const [newSeason] = await db.insert(menuSeasons()).values({ ...seasonData, isActive: false }).returning();
     // Copy season items
-    const sourceItems = await db.select().from(menuSeasonItems)
-      .where(eq(menuSeasonItems.seasonId, sourceSeasonId));
+    const sourceItems = await db.select().from(menuSeasonItems())
+      .where(eq(menuSeasonItems().seasonId, sourceSeasonId));
     for (const item of sourceItems) {
-      await db.insert(menuSeasonItems).values({
+      await db.insert(menuSeasonItems()).values({
         seasonId: newSeason.id,
         menuItemId: item.menuItemId,
         locationId: item.locationId,
@@ -138,9 +139,9 @@ export const menuCategoriesRouter = router({
   list: publicProcedure.query(async () => {
     const db = await getDb();
     if (!db) return [];
-    return db.select().from(menuCategories)
-      .where(eq(menuCategories.isActive, true))
-      .orderBy(asc(menuCategories.sortOrder));
+    return db.select().from(menuCategories())
+      .where(eq(menuCategories().isActive, true))
+      .orderBy(asc(menuCategories().sortOrder));
   }),
 
   create: protectedProcedure.input(z.object({
@@ -151,7 +152,7 @@ export const menuCategoriesRouter = router({
   })).mutation(async ({ input }) => {
     const db = await getDb();
     if (!db) throw new Error("DB unavailable");
-    const [result] = await db.insert(menuCategories).values(input).$returningId();
+    const [result] = await db.insert(menuCategories()).values(input).returning();
     return { id: result.id };
   }),
 });
@@ -167,15 +168,15 @@ export const menuItemsRouter = router({
   }).optional()).query(async ({ input }) => {
     const db = await getDb();
     if (!db) return [];
-    const conditions = [eq(menuItems.isActive, true)];
-    if (input?.categoryId) conditions.push(eq(menuItems.categoryId, input.categoryId));
+    const conditions = [eq(menuItems().isActive, true)];
+    if (input?.categoryId) conditions.push(eq(menuItems().categoryId, input.categoryId));
     if (input?.search) conditions.push(or(
-      like(menuItems.name, `%${input.search}%`),
-      like(menuItems.subtitle, `%${input.search}%`),
+      like(menuItems().name, `%${input.search}%`),
+      like(menuItems().subtitle, `%${input.search}%`),
     )!);
-    return db.select().from(menuItems)
+    return db.select().from(menuItems())
       .where(and(...conditions))
-      .orderBy(asc(menuItems.sortOrder));
+      .orderBy(asc(menuItems().sortOrder));
   }),
 
   // Get all items for a specific season (with season-specific overrides)
@@ -185,11 +186,11 @@ export const menuItemsRouter = router({
   })).query(async ({ input }) => {
     const db = await getDb();
     if (!db) return [];
-    const conditions: (SQL | undefined)[] = [eq(menuSeasonItems.seasonId, input.seasonId)];
+    const conditions: any[] = [eq(menuSeasonItems().seasonId, input.seasonId)];
     if (input.locationId) {
       conditions.push(or(
-        eq(menuSeasonItems.locationId, input.locationId),
-        sql`${menuSeasonItems.locationId} IS NULL`,
+        eq(menuSeasonItems().locationId, input.locationId),
+        sql`${menuSeasonItems().locationId} IS NULL`,
       ));
     }
     const rows = await db.select({
@@ -197,13 +198,13 @@ export const menuItemsRouter = router({
       item: menuItems,
       category: menuCategories,
     })
-      .from(menuSeasonItems)
-      .innerJoin(menuItems, eq(menuSeasonItems.menuItemId, menuItems.id))
-      .innerJoin(menuCategories, eq(menuItems.categoryId, menuCategories.id))
+      .from(menuSeasonItems())
+      .innerJoin(menuItems, eq(menuSeasonItems().menuItemId, menuItems().id))
+      .innerJoin(menuCategories, eq(menuItems().categoryId, menuCategories().id))
       .where(and(...conditions))
-      .orderBy(asc(menuCategories.sortOrder), asc(menuSeasonItems.sortOrder));
+      .orderBy(asc(menuCategories().sortOrder), asc(menuSeasonItems().sortOrder));
 
-    return rows.map((r) => ({
+    return rows.map((r: any) => ({
       ...r.item,
       seasonItemId: r.seasonItem.id,
       priceEur: r.seasonItem.priceOverrideEur || r.item.priceEur,
@@ -223,19 +224,19 @@ export const menuItemsRouter = router({
     if (!db) return { season: null, items: [], arrangements: [] };
 
     // Get active season
-    const [season] = await db.select().from(menuSeasons)
-      .where(eq(menuSeasons.isActive, true)).limit(1);
+    const [season] = await db.select().from(menuSeasons())
+      .where(eq(menuSeasons().isActive, true)).limit(1);
     if (!season) return { season: null, items: [], arrangements: [] };
 
     // Get items
-    const conditions: (SQL | undefined)[] = [
-      eq(menuSeasonItems.seasonId, season.id),
-      eq(menuSeasonItems.isAvailable, true),
+    const conditions: any[] = [
+      eq(menuSeasonItems().seasonId, season.id),
+      eq(menuSeasonItems().isAvailable, true),
     ];
     if (input?.locationId) {
       conditions.push(or(
-        eq(menuSeasonItems.locationId, input.locationId),
-        sql`${menuSeasonItems.locationId} IS NULL`,
+        eq(menuSeasonItems().locationId, input.locationId),
+        sql`${menuSeasonItems().locationId} IS NULL`,
       ));
     }
 
@@ -244,13 +245,13 @@ export const menuItemsRouter = router({
       item: menuItems,
       category: menuCategories,
     })
-      .from(menuSeasonItems)
-      .innerJoin(menuItems, eq(menuSeasonItems.menuItemId, menuItems.id))
-      .innerJoin(menuCategories, eq(menuItems.categoryId, menuCategories.id))
+      .from(menuSeasonItems())
+      .innerJoin(menuItems, eq(menuSeasonItems().menuItemId, menuItems().id))
+      .innerJoin(menuCategories, eq(menuItems().categoryId, menuCategories().id))
       .where(and(...conditions))
-      .orderBy(asc(menuCategories.sortOrder), asc(menuSeasonItems.sortOrder));
+      .orderBy(asc(menuCategories().sortOrder), asc(menuSeasonItems().sortOrder));
 
-    const items = rows.map((r) => ({
+    const items = rows.map((r: any) => ({
       ...r.item,
       seasonItemId: r.seasonItem.id,
       priceEur: r.seasonItem.priceOverrideEur || r.item.priceEur,
@@ -261,9 +262,9 @@ export const menuItemsRouter = router({
     }));
 
     // Get arrangements
-    const arrangements = await db.select().from(menuArrangements)
-      .where(and(eq(menuArrangements.seasonId, season.id), eq(menuArrangements.isActive, true)))
-      .orderBy(asc(menuArrangements.sortOrder));
+    const arrangements = await db.select().from(menuArrangements())
+      .where(and(eq(menuArrangements().seasonId, season.id), eq(menuArrangements().isActive, true)))
+      .orderBy(asc(menuArrangements().sortOrder));
 
     return { season, items, arrangements };
   }),
@@ -284,7 +285,7 @@ export const menuItemsRouter = router({
   })).mutation(async ({ input }) => {
     const db = await getDb();
     if (!db) throw new Error("DB unavailable");
-    const [result] = await db.insert(menuItems).values(input).$returningId();
+    const [result] = await db.insert(menuItems()).values(input).returning();
     return { id: result.id };
   }),
 
@@ -312,7 +313,7 @@ export const menuItemsRouter = router({
       if (v !== undefined) setObj[k] = v;
     }
     if (Object.keys(setObj).length > 0) {
-      await db.update(menuItems).set(setObj).where(eq(menuItems.id, id));
+      await db.update(menuItems()).set(setObj).where(eq(menuItems().id, id));
     }
     return { success: true };
   }),
@@ -332,14 +333,14 @@ export const menuSeasonItemsRouter = router({
   })).mutation(async ({ input }) => {
     const db = await getDb();
     if (!db) throw new Error("DB unavailable");
-    const [result] = await db.insert(menuSeasonItems).values(input).$returningId();
+    const [result] = await db.insert(menuSeasonItems()).values(input).returning();
     return { id: result.id };
   }),
 
   remove: protectedProcedure.input(z.object({ id: z.number() })).mutation(async ({ input }) => {
     const db = await getDb();
     if (!db) throw new Error("DB unavailable");
-    await db.delete(menuSeasonItems).where(eq(menuSeasonItems.id, input.id));
+    await db.delete(menuSeasonItems()).where(eq(menuSeasonItems().id, input.id));
     return { success: true };
   }),
 
@@ -349,9 +350,9 @@ export const menuSeasonItemsRouter = router({
     const db = await getDb();
     if (!db) throw new Error("DB unavailable");
     for (const item of input.items) {
-      await db.update(menuSeasonItems)
+      await db.update(menuSeasonItems())
         .set({ sortOrder: item.sortOrder })
-        .where(eq(menuSeasonItems.id, item.id));
+        .where(eq(menuSeasonItems().id, item.id));
     }
     return { success: true };
   }),
@@ -362,9 +363,9 @@ export const menuSeasonItemsRouter = router({
   })).mutation(async ({ input }) => {
     const db = await getDb();
     if (!db) throw new Error("DB unavailable");
-    await db.update(menuSeasonItems)
+    await db.update(menuSeasonItems())
       .set({ isAvailable: input.isAvailable })
-      .where(eq(menuSeasonItems.id, input.id));
+      .where(eq(menuSeasonItems().id, input.id));
     return { success: true };
   }),
 });
@@ -379,11 +380,11 @@ export const menuPreparationsRouter = router({
   })).query(async ({ input }) => {
     const db = await getDb();
     if (!db) return null;
-    const conditions = [eq(menuPreparations.menuItemId, input.menuItemId)];
-    if (input.seasonId) conditions.push(eq(menuPreparations.seasonId, input.seasonId));
-    const [prep] = await db.select().from(menuPreparations)
+    const conditions = [eq(menuPreparations().menuItemId, input.menuItemId)];
+    if (input.seasonId) conditions.push(eq(menuPreparations().seasonId, input.seasonId));
+    const [prep] = await db.select().from(menuPreparations())
       .where(and(...conditions))
-      .orderBy(desc(menuPreparations.seasonId)) // prefer season-specific
+      .orderBy(desc(menuPreparations().seasonId)) // prefer season-specific
       .limit(1);
     return prep || null;
   }),
@@ -392,8 +393,8 @@ export const menuPreparationsRouter = router({
   allActive: publicProcedure.query(async () => {
     const db = await getDb();
     if (!db) return [];
-    const [season] = await db.select().from(menuSeasons)
-      .where(eq(menuSeasons.isActive, true)).limit(1);
+    const [season] = await db.select().from(menuSeasons())
+      .where(eq(menuSeasons().isActive, true)).limit(1);
     if (!season) return [];
 
     const rows = await db.select({
@@ -401,13 +402,13 @@ export const menuPreparationsRouter = router({
       item: menuItems,
       category: menuCategories,
     })
-      .from(menuPreparations)
-      .innerJoin(menuItems, eq(menuPreparations.menuItemId, menuItems.id))
-      .innerJoin(menuCategories, eq(menuItems.categoryId, menuCategories.id))
-      .where(eq(menuPreparations.seasonId, season.id))
-      .orderBy(asc(menuCategories.sortOrder), asc(menuItems.sortOrder));
+      .from(menuPreparations())
+      .innerJoin(menuItems, eq(menuPreparations().menuItemId, menuItems().id))
+      .innerJoin(menuCategories, eq(menuItems().categoryId, menuCategories().id))
+      .where(eq(menuPreparations().seasonId, season.id))
+      .orderBy(asc(menuCategories().sortOrder), asc(menuItems().sortOrder));
 
-    return rows.map((r) => ({
+    return rows.map((r: any) => ({
       ...r.prep,
       itemName: r.item.name,
       itemSubtitle: r.item.subtitle,
@@ -431,27 +432,27 @@ export const menuPreparationsRouter = router({
     const db = await getDb();
     if (!db) throw new Error("DB unavailable");
     // Check if exists
-    const conditions = [eq(menuPreparations.menuItemId, input.menuItemId)];
-    if (input.seasonId) conditions.push(eq(menuPreparations.seasonId, input.seasonId));
-    const [existing] = await db.select().from(menuPreparations)
+    const conditions = [eq(menuPreparations().menuItemId, input.menuItemId)];
+    if (input.seasonId) conditions.push(eq(menuPreparations().seasonId, input.seasonId));
+    const [existing] = await db.select().from(menuPreparations())
       .where(and(...conditions)).limit(1);
     if (existing) {
-      await db.update(menuPreparations).set({
+      await db.update(menuPreparations()).set({
         steps: input.steps,
         ingredients: input.ingredients || null,
         prepTimeMinutes: input.prepTimeMinutes || null,
         notes: input.notes || null,
-      }).where(eq(menuPreparations.id, existing.id));
+      }).where(eq(menuPreparations().id, existing.id));
       return { id: existing.id, updated: true };
     }
-    const [result] = await db.insert(menuPreparations).values({
+    const [result] = await db.insert(menuPreparations()).values({
       menuItemId: input.menuItemId,
       seasonId: input.seasonId || null,
       steps: input.steps,
       ingredients: input.ingredients || null,
       prepTimeMinutes: input.prepTimeMinutes || null,
       notes: input.notes || null,
-    }).$returningId();
+    }).returning();
     return { id: result.id, updated: false };
   }),
 });
@@ -465,11 +466,11 @@ export const menuArrangementsRouter = router({
   }).optional()).query(async ({ input }) => {
     const db = await getDb();
     if (!db) return [];
-    const conditions: (SQL | undefined)[] = [eq(menuArrangements.isActive, true)];
-    if (input?.seasonId) conditions.push(eq(menuArrangements.seasonId, input.seasonId));
-    return db.select().from(menuArrangements)
+    const conditions: any[] = [eq(menuArrangements().isActive, true)];
+    if (input?.seasonId) conditions.push(eq(menuArrangements().seasonId, input.seasonId));
+    return db.select().from(menuArrangements())
       .where(and(...conditions))
-      .orderBy(asc(menuArrangements.sortOrder));
+      .orderBy(asc(menuArrangements().sortOrder));
   }),
 
   create: protectedProcedure.input(z.object({
@@ -481,7 +482,7 @@ export const menuArrangementsRouter = router({
   })).mutation(async ({ input }) => {
     const db = await getDb();
     if (!db) throw new Error("DB unavailable");
-    const [result] = await db.insert(menuArrangements).values(input).$returningId();
+    const [result] = await db.insert(menuArrangements()).values(input).returning();
     return { id: result.id };
   }),
 
@@ -502,7 +503,7 @@ export const menuArrangementsRouter = router({
       if (v !== undefined) setObj[k] = v;
     }
     if (Object.keys(setObj).length > 0) {
-      await db.update(menuArrangements).set(setObj).where(eq(menuArrangements.id, id));
+      await db.update(menuArrangements()).set(setObj).where(eq(menuArrangements().id, id));
     }
     return { success: true };
   }),

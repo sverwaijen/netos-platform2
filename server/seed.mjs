@@ -8,13 +8,13 @@ async function seed() {
 
   // ─── Locations ───
   const locationData = [
-    { name: "Mr. Green Apeldoorn", slug: "apeldoorn", address: "Lange Amerikaweg 55/61/67", city: "Apeldoorn", postalCode: "7332 BP", lat: "52.184200", lng: "5.981600", totalResources: 169 },
-    { name: "Mr. Green Klarenbeek", slug: "klarenbeek", address: "Oudhuizerstraat 31", city: "Klarenbeek", postalCode: "7382 BS", lat: "52.160000", lng: "6.080000", totalResources: 152 },
-    { name: "Mr. Green Amsterdam", slug: "amsterdam", address: "Stationsplein 9", city: "Amsterdam", postalCode: "1012 AB", lat: "52.378900", lng: "4.900300", totalResources: 140 },
-    { name: "Mr. Green Zwolle", slug: "zwolle", address: "Ceintuurbaan 28", city: "Zwolle", postalCode: "8024 AA", lat: "52.516700", lng: "6.116700", totalResources: 135 },
-    { name: "Mr. Green Rotterdam", slug: "rotterdam", address: "Hofplein 19", city: "Rotterdam", postalCode: "3032 AC", lat: "51.925000", lng: "4.479200", totalResources: 124 },
-    { name: "Mr. Green Ede", slug: "ede", address: "Achterdoelen 5", city: "Ede", postalCode: "6711 AV", lat: "52.048100", lng: "5.670000", totalResources: 101 },
-    { name: "Mr. Green Spijkenisse", slug: "spijkenisse", address: "Plaatweg 15", city: "Spijkenisse", postalCode: "3202 LB", lat: "51.860000", lng: "4.320000", totalResources: 96 },
+    { name: "The Green Apeldoorn", slug: "apeldoorn", address: "Lange Amerikaweg 55/61/67", city: "Apeldoorn", postalCode: "7332 BP", lat: "52.184200", lng: "5.981600", totalResources: 169 },
+    { name: "The Green Klarenbeek", slug: "klarenbeek", address: "Oudhuizerstraat 31", city: "Klarenbeek", postalCode: "7382 BS", lat: "52.160000", lng: "6.080000", totalResources: 152 },
+    { name: "The Green Amsterdam", slug: "amsterdam", address: "Stationsplein 9", city: "Amsterdam", postalCode: "1012 AB", lat: "52.378900", lng: "4.900300", totalResources: 140 },
+    { name: "The Green Zwolle", slug: "zwolle", address: "Ceintuurbaan 28", city: "Zwolle", postalCode: "8024 AA", lat: "52.516700", lng: "6.116700", totalResources: 135 },
+    { name: "The Green Rotterdam", slug: "rotterdam", address: "Hofplein 19", city: "Rotterdam", postalCode: "3032 AC", lat: "51.925000", lng: "4.479200", totalResources: 124 },
+    { name: "The Green Ede", slug: "ede", address: "Achterdoelen 5", city: "Ede", postalCode: "6711 AV", lat: "52.048100", lng: "5.670000", totalResources: 101 },
+    { name: "The Green Spijkenisse", slug: "spijkenisse", address: "Plaatweg 15", city: "Spijkenisse", postalCode: "3202 LB", lat: "51.860000", lng: "4.320000", totalResources: 96 },
   ];
 
   for (const loc of locationData) {
@@ -129,7 +129,7 @@ async function seed() {
     for (let i = 1; i <= 25; i++) {
       await connection.execute(
         `INSERT INTO devices (locationId, name, type, serialNumber, status, firmwareVersion) VALUES (?, ?, ?, ?, ?, ?)`,
-        [loc.id, `SKYNET-NL-${loc.id}-${String(i).padStart(3, "0")}`, "netlink", `NL${loc.id}${String(i).padStart(4, "0")}`, i <= 23 ? "online" : "offline", "3.2.1"]
+        [loc.id, `NETOS-NL-${loc.id}-${String(i).padStart(3, "0")}`, "netlink", `NL${loc.id}${String(i).padStart(4, "0")}`, i <= 23 ? "online" : "offline", "3.2.1"]
       );
     }
   }

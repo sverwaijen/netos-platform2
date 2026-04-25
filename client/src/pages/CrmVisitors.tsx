@@ -29,12 +29,12 @@ export default function CrmVisitors() {
   });
 
   const analyzeMut = trpc.crmVisitors.analyze.useMutation({
-    onSuccess: (data) => {
+    onSuccess: (data: any) => {
       setAnalysisResult(data);
       setAnalyzingId(null);
       toast.success("AI analyse compleet");
     },
-    onError: (e) => {
+    onError: (e: any) => {
       setAnalyzingId(null);
       toast.error(e.message);
     },
@@ -46,13 +46,13 @@ export default function CrmVisitors() {
       setConvertingId(null);
       toast.success("Bezoeker omgezet naar lead in pipeline");
     },
-    onError: (e) => {
+    onError: (e: any) => {
       setConvertingId(null);
       toast.error(e.message);
     },
   });
 
-  function handleAnalyze(visitor: { id: number }) {
+  function handleAnalyze(visitor: any) {
     setAnalyzingId(visitor.id);
     setAnalysisResult(null);
     analyzeMut.mutate({ id: visitor.id });
@@ -76,10 +76,10 @@ export default function CrmVisitors() {
       {/* Stats */}
       <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
         {[
-          { label: "Totaal bezoekers", value: visitors?.reduce((sum, v) => sum + v.visitCount, 0) || 0, color: "text-purple-400" },
+          { label: "Totaal bezoekers", value: visitors?.reduce((sum: number, v: any) => sum + v.visitCount, 0) || 0, color: "text-purple-400" },
           { label: "Unieke bedrijven", value: visitors?.length || 0, color: "text-red-400" },
-          { label: "Geidenticeerd", value: visitors?.filter((v) => v.company && !v.company.startsWith("Unknown")).length || 0, color: "text-green-400" },
-          { label: "Linked to leads", value: visitors?.filter((v) => v.leadId).length || 0, color: "text-blue-400" },
+          { label: "Geidenticeerd", value: visitors?.filter((v: any) => v.company && !v.company.startsWith("Unknown")).length || 0, color: "text-green-400" },
+          { label: "Linked to leads", value: visitors?.filter((v: any) => v.leadId).length || 0, color: "text-blue-400" },
         ].map(s => (
           <Card key={s.label} className="bg-zinc-900/50 border-zinc-800">
             <CardContent className="p-3 text-center">

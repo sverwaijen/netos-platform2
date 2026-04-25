@@ -17,11 +17,11 @@ import {
 } from "lucide-react";
 
 const STAGES = [
-  { key: "new", label: "New", color: "#627653" },
-  { key: "qualified", label: "Qualified", color: "#b8a472" },
+  { key: "new", label: "New", color: "#C4B89E" },
+  { key: "qualified", label: "Qualified", color: "#C4B89E" },
   { key: "tour_scheduled", label: "Tour", color: "#8B7355" },
-  { key: "proposal", label: "Proposal", color: "#627653" },
-  { key: "negotiation", label: "Negotiation", color: "#b8a472" },
+  { key: "proposal", label: "Proposal", color: "#C4B89E" },
+  { key: "negotiation", label: "Negotiation", color: "#C4B89E" },
   { key: "won", label: "Won", color: "#4a7c3f" },
   { key: "lost", label: "Lost", color: "#8a4444" },
 ] as const;
@@ -45,7 +45,7 @@ export default function CrmPipeline() {
   const leadsByStage = useMemo(() => {
     const map: Record<string, typeof leads> = {};
     STAGES.forEach(s => { map[s.key] = []; });
-    leads.forEach(l => { if (map[l.stage]) map[l.stage].push(l); });
+    leads.forEach((l: any) => { if (map[l.stage]) map[l.stage].push(l); });
     return map;
   }, [leads]);
 
@@ -75,7 +75,7 @@ export default function CrmPipeline() {
           </Button>
           <Dialog open={showCreate} onOpenChange={setShowCreate}>
             <DialogTrigger asChild>
-              <Button size="sm" className="bg-[#627653] hover:bg-[#3a4a34] text-white">
+              <Button size="sm" className="bg-[#C4B89E] hover:bg-[#1C1C1C] text-white">
                 <Plus className="w-4 h-4 mr-2" /> New Lead
               </Button>
             </DialogTrigger>
@@ -141,7 +141,7 @@ export default function CrmPipeline() {
                   <Textarea value={newLead.notes} onChange={e => setNewLead(p => ({ ...p, notes: e.target.value }))} className="mt-1 bg-white/5 border-white/10 text-white placeholder:text-white/30" rows={2} />
                 </div>
               </div>
-              <Button className="w-full mt-4 bg-[#627653] hover:bg-[#3a4a34] text-white" onClick={() => createLead.mutate(newLead)} disabled={!newLead.companyName || createLead.isPending}>
+              <Button className="w-full mt-4 bg-[#C4B89E] hover:bg-[#1C1C1C] text-white" onClick={() => createLead.mutate(newLead)} disabled={!newLead.companyName || createLead.isPending}>
                 {createLead.isPending ? "Creating..." : "Create Lead"}
               </Button>
             </DialogContent>
@@ -162,7 +162,7 @@ export default function CrmPipeline() {
           ].map((s, i) => (
             <Card key={i} className="p-3 bg-white/[0.03] border-white/[0.06]">
               <div className="flex items-center gap-2 mb-1">
-                <s.icon className="w-3.5 h-3.5 text-[#627653]" />
+                <s.icon className="w-3.5 h-3.5 text-[#C4B89E]" />
                 <span className="text-[10px] uppercase tracking-wider text-white/40 font-medium">{s.label}</span>
               </div>
               <p className="text-lg font-semibold text-white">{s.value}</p>
@@ -211,7 +211,7 @@ export default function CrmPipeline() {
 
             {/* Cards */}
             <div className="space-y-2">
-              {(leadsByStage[stage.key] || []).map(lead => (
+              {(leadsByStage[stage.key] || []).map((lead: any) => (
                 <Card
                   key={lead.id}
                   draggable
@@ -221,14 +221,14 @@ export default function CrmPipeline() {
                 >
                   <div className="flex items-start justify-between mb-2">
                     <h4 className="text-sm font-semibold text-white leading-tight">{lead.companyName}</h4>
-                    <ChevronRight className="w-3.5 h-3.5 text-white/20 group-hover:text-[#627653] transition-colors" />
+                    <ChevronRight className="w-3.5 h-3.5 text-white/20 group-hover:text-[#C4B89E] transition-colors" />
                   </div>
                   {lead.contactName && (
                     <p className="text-xs text-white/50 mb-2">{lead.contactName}</p>
                   )}
                   <div className="flex items-center gap-2 flex-wrap">
                     {lead.estimatedValue && (
-                      <Badge variant="outline" className="text-[10px] border-[#627653]/30 text-[#627653]">
+                      <Badge variant="outline" className="text-[10px] border-[#C4B89E]/30 text-[#C4B89E]">
                         €{Number(lead.estimatedValue).toLocaleString()}
                       </Badge>
                     )}
@@ -238,7 +238,7 @@ export default function CrmPipeline() {
                       </Badge>
                     )}
                     {(lead.score ?? 0) > 0 && (
-                      <Badge variant="secondary" className="text-[10px] bg-[#627653]/10 text-[#627653]">
+                      <Badge variant="secondary" className="text-[10px] bg-[#C4B89E]/10 text-[#C4B89E]">
                         <Zap className="w-2.5 h-2.5 mr-0.5" />{lead.score}
                       </Badge>
                     )}

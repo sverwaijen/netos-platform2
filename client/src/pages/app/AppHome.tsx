@@ -32,7 +32,7 @@ export default function AppHome() {
         </div>
         <button
           onClick={() => navigate("/app/profile")}
-          className="relative w-10 h-10 rounded-full bg-[#627653] flex items-center justify-center"
+          className="relative w-10 h-10 rounded-full bg-[#C4B89E] flex items-center justify-center"
         >
           <span className="text-white font-medium text-sm">{firstName[0]}</span>
           {unreadNotifications > 0 && (
@@ -47,19 +47,19 @@ export default function AppHome() {
       <div className="grid grid-cols-2 gap-3">
         <button
           onClick={() => navigate("/app/access")}
-          className="bg-[#627653]/10 border border-[#627653]/20 rounded-2xl p-4 text-left transition-all active:scale-[0.98]"
+          className="bg-[#C4B89E]/10 border border-[#C4B89E]/20 rounded-2xl p-4 text-left transition-all active:scale-[0.98]"
         >
-          <Key className="w-6 h-6 text-[#627653] mb-3" />
+          <Key className="w-6 h-6 text-[#C4B89E] mb-3" />
           <p className="text-white text-sm font-medium">Digitale Sleutel</p>
           <p className="text-white/40 text-xs mt-1">Open deuren</p>
         </button>
         <button
           onClick={() => navigate("/app/wallet")}
-          className="bg-[#b8a472]/10 border border-[#b8a472]/20 rounded-2xl p-4 text-left transition-all active:scale-[0.98]"
+          className="bg-[#C4B89E]/10 border border-[#C4B89E]/20 rounded-2xl p-4 text-left transition-all active:scale-[0.98]"
         >
-          <Wallet className="w-6 h-6 text-[#b8a472] mb-3" />
+          <Wallet className="w-6 h-6 text-[#C4B89E] mb-3" />
           <p className="text-white text-sm font-medium">Wallet</p>
-          <p className="text-[#b8a472] text-xs mt-1 font-semibold">
+          <p className="text-[#C4B89E] text-xs mt-1 font-semibold">
             {personalWallet ? `${parseFloat(personalWallet.balance).toFixed(0)} credits` : "—"}
           </p>
         </button>
@@ -69,7 +69,7 @@ export default function AppHome() {
       <div>
         <div className="flex items-center justify-between mb-3">
           <h2 className="text-white/60 text-xs tracking-[0.15em] uppercase font-medium">Komende Boekingen</h2>
-          <button onClick={() => navigate("/app/bookings")} className="text-[#627653] text-xs flex items-center gap-1">
+          <button onClick={() => navigate("/app/bookings")} className="text-[#C4B89E] text-xs flex items-center gap-1">
             Alles <ChevronRight className="w-3 h-3" />
           </button>
         </div>
@@ -79,7 +79,7 @@ export default function AppHome() {
             <p className="text-white/30 text-sm">Geen komende boekingen</p>
             <button
               onClick={() => navigate("/app/bookings")}
-              className="mt-3 text-[#627653] text-xs font-medium"
+              className="mt-3 text-[#C4B89E] text-xs font-medium"
             >
               Boek een ruimte
             </button>
@@ -88,8 +88,8 @@ export default function AppHome() {
           <div className="space-y-2">
             {upcomingBookings.map((booking: any) => (
               <div key={booking.id} className="bg-white/[0.03] rounded-xl p-4 flex items-center gap-3">
-                <div className="w-10 h-10 rounded-lg bg-[#627653]/10 flex items-center justify-center flex-shrink-0">
-                  <Calendar className="w-5 h-5 text-[#627653]" />
+                <div className="w-10 h-10 rounded-lg bg-[#C4B89E]/10 flex items-center justify-center flex-shrink-0">
+                  <Calendar className="w-5 h-5 text-[#C4B89E]" />
                 </div>
                 <div className="flex-1 min-w-0">
                   <p className="text-white text-sm font-medium truncate">{booking.resourceName || "Ruimte"}</p>
@@ -116,9 +116,9 @@ export default function AppHome() {
         <h2 className="text-white/60 text-xs tracking-[0.15em] uppercase font-medium mb-3">Snelle Acties</h2>
         <div className="space-y-2">
           {[
-            { icon: Coffee, label: "Butler Bestellen", desc: "Koffie, lunch & meer", path: "/butler", color: "#627653" },
-            { icon: Car, label: "Parkeren", desc: "Reserveer een plek", path: "/app/parking", color: "#b8a472" },
-            { icon: Wifi, label: "WiFi Verbinden", desc: "Mr. Green Network", path: "/app/access", color: "#627653" },
+            { icon: Coffee, label: "Butler Bestellen", desc: "Koffie, lunch & meer", path: "/butler", color: "#C4B89E" },
+            { icon: Car, label: "Parkeren", desc: "Reserveer een plek", path: "/app/parking", color: "#C4B89E" },
+            { icon: Wifi, label: "WiFi Verbinden", desc: "The Green Network", path: "/app/access", color: "#C4B89E" },
             { icon: LifeBuoy, label: "Support", desc: "Hulp nodig?", path: "/app/support", color: "#8B7355" },
           ].map((action) => {
             const Icon = action.icon;

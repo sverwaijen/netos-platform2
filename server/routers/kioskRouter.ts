@@ -16,7 +16,7 @@ import {
   wallets,
   creditLedger,
   users,
-} from "../../drizzle/schema";
+} from "../../drizzle/pg-schema";
 import { scrapeWebsiteBranding } from "../scraper";
 import { nanoid } from "nanoid";
 
@@ -102,6 +102,21 @@ export const productCatalogRouter = router({
       return { success: true };
     }),
 
+  bulkUpdateImages: protectedProcedure
+    .input(z.object({
+      updates: z.array(z.object({ id: z.number(), imageUrl: z.string() }))
+    }))
+    .mutation(async ({ input }) => {
+      const db = await getDb();
+      if (!db) throw new Error("DB unavailable");
+      let updated = 0;
+      for (const { id, imageUrl } of input.updates) {
+        await db.update(products).set({ imageUrl }).where(eq(products.id, id));
+        updated++;
+      }
+      return { success: true, updated };
+    }),
+
   // Products linked to a resource type (for booking add-ons)
   forResourceType: publicProcedure
     .input(z.object({ resourceTypeId: z.number() }))
@@ -167,16 +182,16 @@ export const kioskOrderRouter = router({
       if (!db) throw new Error("DB unavailable");
 
       // Fetch product prices
-      const productIds = input.items.map((i) => i.productId);
-      const prods = await db.select().from(products).where(sql`${products.id} IN (${sql.join(productIds.map(id => sql`${id}`), sql`, `)})`);
-      const prodMap = new Map(prods.map((p) => [p.id, p]));
+      const productIds = input.items.map((i: any) => i.productId);
+      const prods = await db.select().from(products).where(sql`${products.id} IN (${sql.join(productIds.map((id: any) => sql`${id}`), sql`, `)})`);
+      const prodMap = new Map(prods.map((p: any) => [p.id, p]));
 
       let subtotalCredits = 0;
       let subtotalEur = 0;
       let vatTotal = 0;
 
-      const orderItems = input.items.map((item) => {
-        const prod = prodMap.get(item.productId);
+      const orderItems = input.items.map((item: any) => {
+        const prod: any = prodMap.get(item.productId);
         if (!prod) throw new Error(`Product ${item.productId} not found`);
         const credits = parseFloat(prod.priceCredits as string) * item.quantity;
         const eur = parseFloat(prod.priceEur as string) * item.quantity;
@@ -213,7 +228,7 @@ export const kioskOrderRouter = router({
         totalEur: (subtotalEur + vatTotal).toFixed(2),
         notes: input.notes || null,
         status: "completed",
-      }).$returningId();
+      }).returning({ id: kioskOrders.id });
 
       const orderId = result.id;
 
@@ -341,7 +356,7 @@ export const kioskOrderRouter = router({
       // TODO: #30 - N+1 Query: This loads items one-by-one
       // Instead, fetch all items in a single query and group by orderId
       // Get items for each order
-      const enriched = await Promise.all(orders.map(async (order) => {
+      const enriched = await Promise.all(orders.map(async (order: any) => {
         const items = await db.select().from(kioskOrderItems).where(eq(kioskOrderItems.orderId, order.id));
         return { ...order, items };
       }));
@@ -375,7 +390,7 @@ export const kioskOrderRouter = router({
       }
 
       const avgPrepTimeSeconds = countWithPrepTime > 0 ? Math.round(totalPrepTime / countWithPrepTime / 1000) : 0;
-      const readyCount = orders.filter(o => o.kitchenStatus === "ready").length;
+      const readyCount = orders.filter((o: any) => o.kitchenStatus === "ready").length;
 
       return {
         avgPrepTimeSeconds,
@@ -398,7 +413,7 @@ export const signingRouter = router({
         companyId: input.companyId,
         websiteUrl: input.websiteUrl,
         status: "scraping",
-      }).$returningId();
+      }).returning({ id: companyBrandingScraped.id });
 
       try {
         const result = await scrapeWebsiteBranding(input.websiteUrl);
@@ -598,16 +613,16 @@ export const signingRouter = router({
       if (!user || user.qrToken !== token) throw new Error("QR token invalid or expired");
 
       // Fetch product prices
-      const productIds = input.items.map((i) => i.productId);
-      const prods = await db.select().from(products).where(sql`${products.id} IN (${sql.join(productIds.map(id => sql`${id}`), sql`, `)})`);
-      const prodMap = new Map(prods.map((p) => [p.id, p]));
+      const productIds = input.items.map((i: any) => i.productId);
+      const prods = await db.select().from(products).where(sql`${products.id} IN (${sql.join(productIds.map((id: any) => sql`${id}`), sql`, `)})`);
+      const prodMap = new Map(prods.map((p: any) => [p.id, p]));
 
       let subtotalCredits = 0;
       let subtotalEur = 0;
       let vatTotal = 0;
 
-      const orderItems = input.items.map((item) => {
-        const prod = prodMap.get(item.productId);
+      const orderItems = input.items.map((item: any) => {
+        const prod: any = prodMap.get(item.productId);
         if (!prod) throw new Error(`Product ${item.productId} not found`);
         const credits = parseFloat(prod.priceCredits as string) * item.quantity;
         const eur = parseFloat(prod.priceEur as string) * item.quantity;
@@ -643,7 +658,7 @@ export const signingRouter = router({
         totalEur: (subtotalEur + vatTotal).toFixed(2),
         notes: input.notes || null,
         status: "completed",
-      }).$returningId();
+      }).returning({ id: kioskOrders.id });
 
       const orderId = result.id;
 

@@ -162,7 +162,7 @@ describe("SensorSimulator", () => {
       simulator.setTargetTemperature(1, 25);
       simulator.start();
 
-      let temp1 = simulator.getReadings(1).find(r => r.type === "temperature")?.value || 20;
+      const temp1 = simulator.getReadings(1).find(r => r.type === "temperature")?.value || 20;
 
       // After multiple updates, temperature should tend towards 25
       for (let i = 0; i < 30; i++) {

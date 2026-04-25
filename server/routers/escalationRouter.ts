@@ -1,10 +1,10 @@
 import { z } from "zod";
-import { eq, and, desc, lte, isNull, ne, sql, type SQL } from "drizzle-orm";
+import { eq, and, desc, lte, isNull, ne, sql } from "drizzle-orm";
 import { protectedProcedure, router } from "../_core/trpc";
 import { getDb } from "../db";
 import {
   escalationRules, escalationLog, tickets, ticketSlaPolicies, users,
-} from "../../drizzle/schema";
+} from "../../drizzle/pg-schema";
 
 const adminProcedure = protectedProcedure.use(({ ctx, next }) => {
   if (ctx.user.role !== "administrator" && ctx.user.role !== "host") {
@@ -69,7 +69,7 @@ export const escalationRulesRouter = router({
         autoPriorityBump: input.autoPriorityBump ?? false,
       });
 
-      return { success: true, id: (result as { insertId: number }[])[0]?.insertId };
+      return { success: true, id: result.insertId };
     }),
 
   // Update escalation rule
@@ -132,7 +132,7 @@ export const escalationLogRouter = router({
       const db = await getDb();
       if (!db) return [];
 
-      const conditions: (SQL | undefined)[] = [];
+      const conditions: any[] = [];
       if (input?.ticketId) conditions.push(eq(escalationLog.ticketId, input.ticketId));
       if (input?.status) conditions.push(eq(escalationLog.status, input.status));
 
@@ -263,7 +263,7 @@ export const escalationLogRouter = router({
       resolvedToday,
       avgAcknowledgeMinutes: 0, // Simplified — compute in production
       breachedSla,
-      byLevel: byLevel.map((r) => ({ level: r.level, count: r.count })),
+      byLevel: byLevel.map((r: any) => ({ level: r.level, count: r.count })),
     };
   }),
 

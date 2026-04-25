@@ -19,21 +19,23 @@ vi.mock("./scraper", () => ({
   ),
 }));
 
-describe.skipIf(!process.env.DATABASE_URL)("Signing/Branding Auto-Scrape", () => {
+describe("Signing/Branding Auto-Scrape", () => {
   let db: any;
   let testCompanyId: number;
 
   beforeAll(async () => {
     db = await getDb();
+    if (!db) throw new Error("DB unavailable");
 
     // Create a test company
     const [company] = await db.insert(companies).values({
       name: `Test-Co-${nanoid(6)}`,
+      slug: `test-co-${nanoid(6)}`,
       displayName: "Test Company",
       industry: "Technology",
       website: "https://example.com",
       email: "test@example.com",
-    }).$returningId();
+    }).returning();
     testCompanyId = company.id;
   });
 
@@ -46,7 +48,7 @@ describe.skipIf(!process.env.DATABASE_URL)("Signing/Branding Auto-Scrape", () =>
       secondaryColor: "#111111",
       accentColor: "#b8a472",
       fontFamily: "Montserrat",
-    }).$returningId();
+    }).returning();
 
     const [retrieved] = await db.select().from(companyBranding)
       .where(eq(companyBranding.id, branding.id)).limit(1);
@@ -68,7 +70,7 @@ describe.skipIf(!process.env.DATABASE_URL)("Signing/Branding Auto-Scrape", () =>
       scrapedTitle: "Test Company",
       scrapedDescription: "A test company",
       lastScrapedAt: new Date(),
-    }).$returningId();
+    }).returning();
 
     const [retrieved] = await db.select().from(companyBrandingScraped)
       .where(eq(companyBrandingScraped.id, scraped.id)).limit(1);
@@ -83,7 +85,7 @@ describe.skipIf(!process.env.DATABASE_URL)("Signing/Branding Auto-Scrape", () =>
       companyId: testCompanyId,
       websiteUrl: "https://example.com",
       status: "scraping",
-    }).$returningId();
+    }).returning();
 
     // Update to completed
     await db.update(companyBrandingScraped).set({
@@ -154,7 +156,7 @@ describe.skipIf(!process.env.DATABASE_URL)("Signing/Branding Auto-Scrape", () =>
       companyId: testCompanyId,
       websiteUrl: "https://example.com",
       status: "scraping",
-    }).$returningId();
+    }).returning();
 
     // Mark as failed
     await db.update(companyBrandingScraped).set({

@@ -43,7 +43,7 @@ export default function EscalationDashboard() {
       utils.escalationLog.list.invalidate();
       utils.escalationLog.dashboard.invalidate();
     },
-    onError: (err) => toast.error(err.message),
+    onError: (err: any) => toast.error(err.message),
   });
 
   const resolveMutation = trpc.escalationLog.resolve.useMutation({
@@ -52,7 +52,7 @@ export default function EscalationDashboard() {
       utils.escalationLog.list.invalidate();
       utils.escalationLog.dashboard.invalidate();
     },
-    onError: (err) => toast.error(err.message),
+    onError: (err: any) => toast.error(err.message),
   });
 
   const checkEscalationsMutation = trpc.escalationLog.checkEscalations.useMutation({
@@ -65,7 +65,7 @@ export default function EscalationDashboard() {
       utils.escalationLog.list.invalidate();
       utils.escalationLog.dashboard.invalidate();
     },
-    onError: (err) => toast.error(err.message),
+    onError: (err: any) => toast.error(err.message),
   });
 
   const createRuleMutation = trpc.escalationRules.create.useMutation({
@@ -74,7 +74,7 @@ export default function EscalationDashboard() {
       setCreateRuleOpen(false);
       utils.escalationRules.list.invalidate();
     },
-    onError: (err) => toast.error(err.message),
+    onError: (err: any) => toast.error(err.message),
   });
 
   // Form state for creating rules
@@ -170,7 +170,7 @@ export default function EscalationDashboard() {
       {stats?.byLevel && stats.byLevel.length > 0 && (
         <div className="grid grid-cols-3 gap-[1px] bg-white/[0.04]">
           {[1, 2, 3].map((level) => {
-            const data = stats.byLevel.find((b) => b.level === level);
+            const data = stats.byLevel.find((b: any) => b.level === level);
             return (
               <div key={level} className="bg-[#111] p-4">
                 <div className="text-[9px] text-[#888] tracking-[1px] uppercase mb-1">{levelLabel(level)}</div>
@@ -195,7 +195,7 @@ export default function EscalationDashboard() {
             </div>
           ) : (
             <div className="space-y-0">
-              {escalations.map((esc) => (
+              {escalations.map((esc: any) => (
                 <div key={esc.id} className="flex items-center justify-between py-3 border-b border-white/[0.03] last:border-0">
                   <div className="flex items-center gap-3">
                     <div className={`w-8 h-8 rounded flex items-center justify-center ${statusBg[esc.status as EscalationStatus]}`}>
@@ -267,7 +267,7 @@ export default function EscalationDashboard() {
             </div>
           ) : (
             <div className="space-y-0">
-              {rules.map((rule) => (
+              {rules.map((rule: any) => (
                 <div key={rule.id} className="flex items-center justify-between py-3 border-b border-white/[0.03] last:border-0">
                   <div>
                     <p className="text-sm font-light">{rule.name}</p>

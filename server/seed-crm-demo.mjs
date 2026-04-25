@@ -71,7 +71,7 @@ for (let i = 0; i < leads.length; i++) {
   
   if (["qualified","tour_scheduled","proposal","negotiation","won","lost"].includes(l.stage)) {
     activities.push({ leadId: lid, type: "score_change", title: "AI doelgroepanalyse voltooid", desc: `Score: ${l.score}. Industrie match: hoog. Budget fit: ${l.budget}. Locatievoorkeur: ${l.location}`, time: baseTime + 1 * dayMs });
-    activities.push({ leadId: lid, type: "email_sent", title: "Eerste outreach email verzonden", desc: `Onderwerp: "Exclusieve werkplek voor ${l.company}" — Gepersonaliseerde intro met Mr. Green USPs`, time: baseTime + 2 * dayMs });
+    activities.push({ leadId: lid, type: "email_sent", title: "Eerste outreach email verzonden", desc: `Onderwerp: "Exclusieve werkplek voor ${l.company}" — Gepersonaliseerde intro met The Green USPs`, time: baseTime + 2 * dayMs });
     activities.push({ leadId: lid, type: "stage_change", title: "Stage → Qualified", desc: "Lead gekwalificeerd na doelgroepanalyse en eerste contact", time: baseTime + 3 * dayMs });
   }
   
@@ -133,11 +133,11 @@ console.log(`Inserted ${campaignIds.length} campaigns`);
 // ─── Campaign Steps ─────────────────────────────────────────────────
 const steps = [
   // Campaign 1: Amsterdam Tech
-  { campaignId: campaignIds[0], order: 1, delay: 0, subject: "Exclusieve werkplek voor {company} in hartje Amsterdam", body: "Beste {name},\n\nMr. Green Members is een besloten community van geselecteerde bedrijven. Met locaties aan de Keizersgracht en Herengracht bieden we meer dan een werkplek.\n\nGraag nodig ik u uit voor een persoonlijke rondleiding.\n\nMet vriendelijke groet" },
+  { campaignId: campaignIds[0], order: 1, delay: 0, subject: "Exclusieve werkplek voor {company} in hartje Amsterdam", body: "Beste {name},\n\nThe Green is een besloten community van geselecteerde bedrijven. Met locaties aan de Keizersgracht en Herengracht bieden we meer dan een werkplek.\n\nGraag nodig ik u uit voor een persoonlijke rondleiding.\n\nMet vriendelijke groet" },
   { campaignId: campaignIds[0], order: 2, delay: 3, subject: "Re: Werkplek {company} — Wat onze leden zeggen", body: "Beste {name},\n\nOnze leden waarderen vooral de rust, het netwerk en de faciliteiten. Mollie, TomTom en Adyen gingen u voor.\n\nHeeft u 15 minuten voor een kort gesprek?\n\nGroet" },
   { campaignId: campaignIds[0], order: 3, delay: 7, subject: "Laatste kans: Exclusieve aanbieding voor {company}", body: "Beste {name},\n\nDeze maand bieden we nieuwe leden 10% korting op het eerste kwartaal. Slechts 3 plekken beschikbaar op onze Amsterdam locatie.\n\nPlan direct uw rondleiding.\n\nGroet" },
   // Campaign 2: Rotterdam
-  { campaignId: campaignIds[1], order: 1, delay: 0, subject: "Mr. Green opent in Rotterdam — Eerste kijkdag", body: "Beste {name},\n\nWij openen onze nieuwste locatie in Rotterdam. Als eerste kunt u een exclusieve rondleiding boeken.\n\nGroet" },
+  { campaignId: campaignIds[1], order: 1, delay: 0, subject: "The Green opent in Rotterdam — Eerste kijkdag", body: "Beste {name},\n\nWij openen onze nieuwste locatie in Rotterdam. Als eerste kunt u een exclusieve rondleiding boeken.\n\nGroet" },
 ];
 
 for (const s of steps) {
@@ -150,9 +150,9 @@ console.log(`Inserted ${steps.length} campaign steps`);
 
 // ─── Email Templates ────────────────────────────────────────────────
 const templates = [
-  { name: "Eerste Contact - Tech", subject: "Exclusieve werkplek voor {company}", body: "Beste {name},\n\nMr. Green Members is een besloten community...", category: "outreach", ai: false },
+  { name: "Eerste Contact - Tech", subject: "Exclusieve werkplek voor {company}", body: "Beste {name},\n\nThe Green is een besloten community...", category: "outreach", ai: false },
   { name: "Follow-up na Tour", subject: "Bedankt voor uw bezoek, {name}", body: "Beste {name},\n\nBedankt voor de prettige rondleiding...", category: "follow-up", ai: false },
-  { name: "AI: Gepersonaliseerde Intro", subject: "Waarom {company} past bij Mr. Green", body: "AI-gegenereerd template op basis van bedrijfsprofiel...", category: "outreach", ai: true },
+  { name: "AI: Gepersonaliseerde Intro", subject: "Waarom {company} past bij The Green", body: "AI-gegenereerd template op basis van bedrijfsprofiel...", category: "outreach", ai: true },
   { name: "Voorstel Begeleidend", subject: "Uw maatwerk voorstel — {company}", body: "Beste {name},\n\nBijgaand vindt u ons voorstel...", category: "proposal", ai: false },
   { name: "Win-back Verloren Lead", subject: "We missen u, {name}", body: "Beste {name},\n\nEen tijdje geleden spraken we over...", category: "win-back", ai: true },
 ];

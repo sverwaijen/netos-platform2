@@ -4,6 +4,7 @@ import * as db from "../db";
 import { getSessionCookieOptions } from "./cookies";
 import { sdk } from "./sdk";
 import { createLogger } from "./logger";
+import { logAudit } from "../auditLogger";
 
 const log = createLogger("OAuth");
 
@@ -46,6 +47,17 @@ export function registerOAuthRoutes(app: Express) {
 
       const cookieOptions = getSessionCookieOptions(req);
       res.cookie(COOKIE_NAME, sessionToken, { ...cookieOptions, maxAge: ONE_YEAR_MS });
+
+      // Audit: login event
+      logAudit({
+        userName: userInfo.name || null,
+        userEmail: userInfo.email ?? null,
+        action: "LOGIN",
+        entity: "User Session",
+        details: `Login via ${userInfo.loginMethod ?? userInfo.platform ?? "OAuth"}`,
+        severity: "low",
+        ipAddress: (req.headers["x-forwarded-for"] as string) || req.ip || null,
+      });
 
       res.redirect(302, "/");
     } catch (error) {

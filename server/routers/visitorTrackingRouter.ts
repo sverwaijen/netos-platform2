@@ -1,8 +1,6 @@
 import { z } from "zod";
-import { eq } from "drizzle-orm";
 import { publicProcedure, protectedProcedure, router } from "../_core/trpc";
-import { getDb, getCrmWebsiteVisitors, createCrmWebsiteVisitor, updateCrmWebsiteVisitor } from "../db";
-import { crmWebsiteVisitors, type CrmWebsiteVisitor, type InsertCrmWebsiteVisitor } from "../../drizzle/schema";
+import * as db from "../db";
 import visitorTrackingService from "../integrations/visitorTrackingService";
 import { createLogger } from "../_core/logger";
 
@@ -44,13 +42,10 @@ export const visitorTrackingRouter = router({
         const companyInfo = await visitorTrackingService.lookupCompanyByIp(clientIp);
 
         // Check for duplicate visit (same IP within 30 minutes)
-        const recentVisitors = await getCrmWebsiteVisitors({ isIdentified: true }, 100);
+        const recentVisitors = await db.getRecentWebsiteVisitors(50);
         const isNewVisit = await visitorTrackingService.shouldTrackAsNewVisit(
           clientIp,
-          recentVisitors.map(v => ({
-            ip: v.ipAddress ?? "",
-            visitedAt: v.lastVisitAt ? new Date(v.lastVisitAt).getTime() : 0,
-          }))
+          recentVisitors as any
         );
 
         if (!isNewVisit) {
@@ -58,25 +53,22 @@ export const visitorTrackingRouter = router({
         }
 
         // Store visit in database
-        const visitId = await createCrmWebsiteVisitor({
-          sessionId: `visit_${Date.now()}_${clientIp.replace(/\./g, "_")}`,
-          ipAddress: clientIp,
+        const visitId = await db.createWebsiteVisitor({
+          ip: clientIp,
           companyName: companyInfo.companyName,
           companyDomain: companyInfo.companyDomain,
           city: companyInfo.city,
           country: companyInfo.country,
-          pagesViewed: [input.page],
+          pageUrl: input.page,
           referrer: input.referrer,
-          utmSource: input.utmSource,
-          utmMedium: input.utmMedium,
-          utmCampaign: input.utmCampaign,
-          isIdentified: !!companyInfo.companyName,
-        });
+          userAgent: input.userAgent,
+          visitedAt: Date.now(),
+        } as any);
 
         return { success: true, visitId, isDuplicate: false };
       } catch (error) {
         log.error("Visitor tracking error", error);
-        return { success: false, error: error instanceof Error ? error.message : String(error) };
+        return { success: false, error: (error as any).message };
       }
     }),
 
@@ -95,21 +87,20 @@ export const visitorTrackingRouter = router({
       const hoursInMs = input.hoursBack * 60 * 60 * 1000;
       const timeThreshold = Date.now() - hoursInMs;
 
-      let visitors = await getCrmWebsiteVisitors(
-        { isIdentified: true },
-        input.limit
-      );
+      let visitors = await db.getWebsiteVisitors({
+        limit: input.limit,
+        minDate: timeThreshold,
+      } as any);
 
       // Filter by company name if provided
       if (input.companyName) {
-        const searchName = input.companyName.toLowerCase();
-        visitors = visitors.filter(v =>
-          v.companyName?.toLowerCase().includes(searchName)
+        visitors = visitors.filter((v: any) =>
+          v.companyName?.toLowerCase().includes(input.companyName!.toLowerCase())
         );
       }
 
       // Group by company and get stats
-      const grouped = groupVisitorsByCompany(visitors);
+      const grouped = groupVisitorsByCompany(visitors as any);
 
       return grouped;
     }),
@@ -156,9 +147,9 @@ The script will automatically:
       })
     )
     .mutation(async ({ input }) => {
-      await updateCrmWebsiteVisitor(input.visitorId, {
-        matchedLeadId: input.leadId,
-      });
+      await db.updateWebsiteVisitor(input.visitorId, {
+        leadId: input.leadId,
+      } as any);
 
       return { success: true };
     }),
@@ -179,17 +170,10 @@ The script will automatically:
       })
     )
     .mutation(async ({ input }) => {
-      const visitId = await createCrmWebsiteVisitor({
-        sessionId: `manual_${Date.now()}`,
-        ipAddress: input.ip,
-        companyName: input.companyName,
-        companyDomain: input.companyDomain,
-        city: input.city,
-        country: input.country,
-        pagesViewed: [input.pageUrl],
-        matchedLeadId: input.leadId,
-        isIdentified: !!input.companyName,
-      });
+      const visitId = await db.createWebsiteVisitor({
+        ...input,
+        visitedAt: Date.now(),
+      } as any);
 
       return { success: true, visitId };
     }),
@@ -200,8 +184,8 @@ The script will automatically:
   getVisitorById: adminProcedure
     .input(z.object({ id: z.number() }))
     .query(async ({ input }) => {
-      const visitors = await getCrmWebsiteVisitors();
-      return visitors.find(v => v.id === input.id);
+      const visitor = await db.getWebsiteVisitorById(input.id);
+      return visitor;
     }),
 
   /**
@@ -210,9 +194,8 @@ The script will automatically:
   getVisitorHistory: adminProcedure
     .input(z.object({ ip: z.string(), limit: z.number().default(20) }))
     .query(async ({ input }) => {
-      const visitors = await getCrmWebsiteVisitors({}, 100);
-      const ipVisitors = visitors.slice(0, input.limit);
-      return ipVisitors;
+      const visitors = await db.getVisitorsByIp(input.ip);
+      return visitors;
     }),
 
   /**
@@ -221,10 +204,7 @@ The script will automatically:
   deleteVisitor: adminProcedure
     .input(z.object({ id: z.number() }))
     .mutation(async ({ input }) => {
-      const db_instance = await getDb();
-      if (db_instance) {
-        await db_instance.delete(crmWebsiteVisitors).where(eq(crmWebsiteVisitors.id, input.id));
-      }
+      await db.deleteWebsiteVisitor(input.id);
       return { success: true };
     }),
 
@@ -241,17 +221,17 @@ The script will automatically:
       const hoursInMs = input.hoursBack * 60 * 60 * 1000;
       const timeThreshold = Date.now() - hoursInMs;
 
-      const visitors = await getCrmWebsiteVisitors({}, 100);
+      const visitors = await db.getWebsiteVisitors({
+        minDate: timeThreshold,
+      } as any);
 
       const uniqueCompanies = new Set(
-        visitors.filter(v => v.companyName).map(v => v.companyName)
+        visitors.filter((v: any) => v.companyName).map((v: any) => v.companyName)
       ).size;
 
-      const uniqueIps = new Set(visitors.map(v => v.ipAddress)).size;
+      const uniqueIps = new Set(visitors.map((v: any) => v.ip)).size;
 
-      const withLeadMatches = visitors.filter(v => v.matchedLeadId).length;
-
-      const identifiedCount = visitors.filter(v => v.companyName).length;
+      const withLeadMatches = visitors.filter((v: any) => v.leadId).length;
 
       return {
         totalVisits: visitors.length,
@@ -259,10 +239,11 @@ The script will automatically:
         uniqueCompanies,
         matchedToLeads: withLeadMatches,
         conversions: {
-          identified: identifiedCount,
-          rate: visitors.length > 0
-            ? ((identifiedCount / visitors.length) * 100).toFixed(1)
-            : "0.0",
+          identified: visitors.filter((v: any) => v.companyName).length,
+          rate: (
+            (visitors.filter((v: any) => v.companyName).length / visitors.length) *
+            100
+          ).toFixed(1),
         },
       };
     }),
@@ -271,35 +252,35 @@ The script will automatically:
 /**
  * Group visitors by company and aggregate stats
  */
-function groupVisitorsByCompany(visitors: CrmWebsiteVisitor[]) {
+function groupVisitorsByCompany(visitors: any[]) {
   const grouped: Record<
     string,
     {
       company: string;
-      domain?: string | null;
-      city?: string | null;
-      country?: string | null;
+      domain?: string;
+      city?: string;
+      country?: string;
       visitCount: number;
       lastVisit: number;
-      leadId?: number | null;
+      leadId?: number;
       pages: string[];
       ips: string[];
-      visitors: CrmWebsiteVisitor[];
+      visitors: any[];
     }
   > = {};
 
   for (const visitor of visitors) {
-    const key = visitor.companyName || visitor.ipAddress || "unknown";
+    const key = visitor.companyName || visitor.ip;
 
     if (!grouped[key]) {
       grouped[key] = {
-        company: visitor.companyName || `Unknown (${visitor.ipAddress})`,
+        company: visitor.companyName || `Unknown (${visitor.ip})`,
         domain: visitor.companyDomain,
         city: visitor.city,
         country: visitor.country,
         visitCount: 0,
         lastVisit: 0,
-        leadId: visitor.matchedLeadId,
+        leadId: visitor.leadId,
         pages: [],
         ips: [],
         visitors: [],
@@ -307,24 +288,18 @@ function groupVisitorsByCompany(visitors: CrmWebsiteVisitor[]) {
     }
 
     grouped[key].visitCount++;
-    const visitTime = visitor.lastVisitAt ? new Date(visitor.lastVisitAt).getTime() : 0;
-    grouped[key].lastVisit = Math.max(grouped[key].lastVisit, visitTime);
+    grouped[key].lastVisit = Math.max(grouped[key].lastVisit, visitor.visitedAt);
 
-    // Collect pages from pagesViewed array
-    if (visitor.pagesViewed) {
-      for (const page of visitor.pagesViewed) {
-        if (!grouped[key].pages.includes(page)) {
-          grouped[key].pages.push(page);
-        }
-      }
+    if (!grouped[key].pages.includes(visitor.pageUrl)) {
+      grouped[key].pages.push(visitor.pageUrl);
     }
 
-    if (visitor.ipAddress && !grouped[key].ips.includes(visitor.ipAddress)) {
-      grouped[key].ips.push(visitor.ipAddress);
+    if (!grouped[key].ips.includes(visitor.ip)) {
+      grouped[key].ips.push(visitor.ip);
     }
 
     grouped[key].visitors.push(visitor);
   }
 
-  return Object.values(grouped).sort((a, b) => b.visitCount - a.visitCount);
+  return Object.values(grouped).sort((a: any, b: any) => b.visitCount - a.visitCount);
 }

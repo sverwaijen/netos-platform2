@@ -1,23 +1,23 @@
-import { createLogger } from "../_core/logger";
-
-const log = createLogger("Supabase");
-
 /**
- * Supabase Integration Module for NET OS Platform
- *
- * This module provides a bridge between the NET OS Platform and Supabase,
+ * Supabase Integration Module for Skynet Platform
+ * 
+ * This module provides a bridge between the Skynet Platform and Supabase,
  * enabling realtime sync, external database access, and Supabase Auth integration.
- *
+ * 
  * Configuration:
  * - SUPABASE_URL: Your Supabase project URL
  * - SUPABASE_ANON_KEY: Public anon key for client-side access
  * - SUPABASE_SERVICE_KEY: Service role key for server-side operations
- *
+ * 
  * Features:
  * - Realtime event broadcasting (parking, tickets, presence)
- * - External data sync (push NET OS data to Supabase for mobile app)
- * - Supabase Auth bridge (link Supabase users to NET OS users)
+ * - External data sync (push Skynet data to Supabase for mobile app)
+ * - Supabase Auth bridge (link Supabase users to Skynet users)
  */
+
+import { createLogger } from "../_core/logger";
+import { ENV } from "../_core/env";
+const log = createLogger("Supabase");
 
 interface SupabaseConfig {
   url: string;
@@ -101,7 +101,6 @@ export async function supabaseBroadcast(channel: string, event: string, payload:
     return;
   }
   try {
-    // Use Supabase Realtime REST API
     const res = await fetch(`${config.url}/realtime/v1/api/broadcast`, {
       method: "POST",
       headers: {
@@ -118,14 +117,13 @@ export async function supabaseBroadcast(channel: string, event: string, payload:
       }),
     });
     if (!res.ok) log.warn("Broadcast failed:", { status: res.status });
-  } catch (e) {
-    log.warn("Broadcast error:", { error: String(e) });
+  } catch (e: any) {
+    log.warn("Broadcast error:", { error: e?.message });
   }
 }
 
 /**
- * Sync NET OS user to Supabase users table
- * Creates a mirror record for mobile app access
+ * Sync Skynet user to Supabase users table
  */
 export async function syncUserToSupabase(user: {
   id: number;
@@ -146,8 +144,8 @@ export async function syncUserToSupabase(user: {
       role: user.role,
       synced_at: new Date().toISOString(),
     }], "skynet_id");
-  } catch (e) {
-    log.warn("User sync failed:", { error: String(e) });
+  } catch (e: any) {
+    log.warn("User sync failed:", { error: e?.message });
   }
 }
 
@@ -163,7 +161,7 @@ export async function syncParkingEvent(event: {
   data?: Record<string, unknown>;
 }) {
   if (!config) return;
-  await supabaseBroadcast("parking", event.type, event);
+  await supabaseBroadcast("parking", event.type, event as any);
 }
 
 /**
@@ -177,17 +175,15 @@ export async function syncTicketEvent(event: {
   data?: Record<string, unknown>;
 }) {
   if (!config) return;
-  await supabaseBroadcast("tickets", event.type, event);
+  await supabaseBroadcast("tickets", event.type, event as any);
 }
 
 /**
  * Generate Supabase SQL schema for mirror tables
- * Run this in Supabase SQL editor to set up the mirror tables
  */
 export function getSupabaseMigrationSQL(): string {
   return `
--- NET OS Platform Mirror Tables for Supabase
--- Run this in your Supabase SQL Editor
+-- Skynet Platform Mirror Tables for Supabase
 
 CREATE TABLE IF NOT EXISTS skynet_users (
   id BIGSERIAL PRIMARY KEY,
@@ -231,25 +227,22 @@ CREATE TABLE IF NOT EXISTS skynet_tickets (
 CREATE TABLE IF NOT EXISTS skynet_access_tokens (
   id BIGSERIAL PRIMARY KEY,
   user_id INTEGER REFERENCES skynet_users(skynet_id),
-  token_type TEXT NOT NULL, -- 'salto', 'unifi', 'parking'
+  token_type TEXT NOT NULL,
   token_value TEXT NOT NULL,
   expires_at TIMESTAMPTZ,
   created_at TIMESTAMPTZ DEFAULT NOW()
 );
 
--- Enable Row Level Security
 ALTER TABLE skynet_users ENABLE ROW LEVEL SECURITY;
 ALTER TABLE skynet_parking_sessions ENABLE ROW LEVEL SECURITY;
 ALTER TABLE skynet_tickets ENABLE ROW LEVEL SECURITY;
 ALTER TABLE skynet_access_tokens ENABLE ROW LEVEL SECURITY;
 
--- RLS Policies: users can only see their own data
 CREATE POLICY "Users can view own profile" ON skynet_users FOR SELECT USING (auth.uid()::text = open_id);
 CREATE POLICY "Users can view own parking" ON skynet_parking_sessions FOR SELECT USING (user_id IN (SELECT skynet_id FROM skynet_users WHERE open_id = auth.uid()::text));
 CREATE POLICY "Users can view own tickets" ON skynet_tickets FOR SELECT USING (requester_id IN (SELECT skynet_id FROM skynet_users WHERE open_id = auth.uid()::text));
 CREATE POLICY "Users can view own tokens" ON skynet_access_tokens FOR SELECT USING (user_id IN (SELECT skynet_id FROM skynet_users WHERE open_id = auth.uid()::text));
 
--- Enable Realtime
 ALTER PUBLICATION supabase_realtime ADD TABLE skynet_parking_sessions;
 ALTER PUBLICATION supabase_realtime ADD TABLE skynet_tickets;
 `;

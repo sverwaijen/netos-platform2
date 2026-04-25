@@ -3,21 +3,6 @@ import { publicProcedure, protectedProcedure, router } from "../_core/trpc";
 import * as db from "../db";
 import { invokeLLM } from "../_core/llm";
 import { createLogger } from "../_core/logger";
-import type { CrmLead, CrmWebsiteVisitor, InsertCrmTrigger, InsertCrmWebsiteVisitor, InsertMemberProfile, InsertReengagementEntry, ReengagementEntry } from "../../drizzle/schema";
-
-/** Shape of an action within a CRM trigger */
-interface TriggerAction {
-  type: "ai_enrich" | "ai_score" | "ai_outreach" | "assign_user" | "change_stage" | "add_tag" | "send_email" | "notify_owner" | "create_task" | "ai_analyze";
-  config: Record<string, string>;
-}
-
-/** Result of executing a single trigger action */
-interface ActionResult {
-  type: string;
-  status: "success" | "failed" | "skipped";
-  result?: Record<string, unknown>;
-  error?: string;
-}
 
 const log = createLogger("CRM");
 
@@ -50,7 +35,7 @@ export const crmTriggersRouter = router({
     })),
     isActive: z.boolean().optional(),
   })).mutation(async ({ ctx, input }) => {
-    const id = await db.createCrmTrigger({ ...input, createdByUserId: ctx.user.id } as InsertCrmTrigger);
+    const id = await db.createCrmTrigger({ ...input, createdByUserId: ctx.user.id } as any);
     return { success: true, id };
   }),
 
@@ -66,7 +51,7 @@ export const crmTriggersRouter = router({
     })).optional(),
   })).mutation(async ({ input }) => {
     const { id, ...data } = input;
-    await db.updateCrmTrigger(id, data as Partial<InsertCrmTrigger>);
+    await db.updateCrmTrigger(id, data as any);
     return { success: true };
   }),
 
@@ -90,9 +75,9 @@ export const crmTriggersRouter = router({
     const trigger = await db.getCrmTriggerById(input.triggerId);
     if (!trigger) throw new Error("Trigger not found");
 
-    const results: ActionResult[] = [];
+    const results: Array<{ type: string; status: string; result?: any; error?: string }> = [];
 
-    for (const action of (trigger.actions || []) as TriggerAction[]) {
+    for (const action of (trigger.actions || []) as any[]) {
       try {
         if (action.type === "ai_enrich" && input.leadId) {
           const lead = await db.getCrmLeadById(input.leadId);
@@ -121,7 +106,7 @@ export const crmTriggersRouter = router({
             results.push({ type: "ai_analyze", status: "success", result: analysis });
           }
         } else if (action.type === "change_stage" && input.leadId) {
-          await db.updateCrmLead(input.leadId, { stage: action.config.stage as CrmLead["stage"] });
+          await db.updateCrmLead(input.leadId, { stage: action.config.stage });
           results.push({ type: "change_stage", status: "success" });
         } else if (action.type === "add_tag" && input.leadId) {
           const lead = await db.getCrmLeadById(input.leadId);
@@ -133,8 +118,8 @@ export const crmTriggersRouter = router({
         } else {
           results.push({ type: action.type, status: "skipped" });
         }
-      } catch (e: unknown) {
-        results.push({ type: action.type, status: "failed", error: e instanceof Error ? e.message : String(e) });
+      } catch (e: any) {
+        results.push({ type: action.type, status: "failed", error: e.message });
       }
     }
 
@@ -143,7 +128,7 @@ export const crmTriggersRouter = router({
       leadId: input.leadId,
       eventData: { manual: true },
       actionsExecuted: results,
-      status: results.every(r => r.status === "success") ? "success" : results.some(r => r.status === "success") ? "partial" : "failed",
+      status: results.every((r: any) => r.status === "success") ? "success" : results.some((r: any) => r.status === "success") ? "partial" : "failed",
     });
 
     return { success: true, results };
@@ -176,13 +161,13 @@ export const crmVisitorsRouter = router({
       utmSource: input.utmSource,
       utmMedium: input.utmMedium,
       utmCampaign: input.utmCampaign,
-    } as InsertCrmWebsiteVisitor);
+    } as any);
     return { success: true };
   }),
 
   analyze: adminProcedure.input(z.object({ id: z.number() })).mutation(async ({ input }) => {
     const visitors = await db.getCrmWebsiteVisitors();
-    const visitor = visitors.find(v => v.id === input.id);
+    const visitor = visitors.find((v: any) => v.id === input.id);
     if (!visitor) throw new Error("Visitor not found");
 
     // AI deep analysis of visitor
@@ -190,7 +175,7 @@ export const crmVisitorsRouter = router({
 
     // Check if visitor matches existing pipeline
     const leads = await db.getCrmLeads();
-    const matchedLead = leads.find(l =>
+    const matchedLead = leads.find((l: any) =>
       (visitor.companyDomain && l.website?.includes(visitor.companyDomain)) ||
       (visitor.companyName && l.companyName.toLowerCase() === visitor.companyName.toLowerCase())
     );
@@ -200,18 +185,18 @@ export const crmVisitorsRouter = router({
       isIdentified: true,
       status: matchedLead ? "matched" : "identified",
       matchedLeadId: matchedLead?.id,
-    } as Partial<InsertCrmWebsiteVisitor>);
+    } as any);
 
     return { success: true, analysis, matchedLead: matchedLead ? { id: matchedLead.id, companyName: matchedLead.companyName, stage: matchedLead.stage } : null };
   }),
 
   generateOutreach: adminProcedure.input(z.object({ id: z.number() })).mutation(async ({ input }) => {
     const visitors = await db.getCrmWebsiteVisitors();
-    const visitor = visitors.find(v => v.id === input.id);
+    const visitor = visitors.find((v: any) => v.id === input.id);
     if (!visitor) throw new Error("Visitor not found");
 
     const outreach = await aiGenerateVisitorOutreach(visitor);
-    await db.updateCrmWebsiteVisitor(input.id, { status: "outreach_sent" } as Partial<InsertCrmWebsiteVisitor>);
+    await db.updateCrmWebsiteVisitor(input.id, { status: "outreach_sent" } as any);
     return { success: true, outreach };
   }),
 });
@@ -249,7 +234,7 @@ export const memberProfilesRouter = router({
     notes: z.string().optional(),
     tags: z.array(z.string()).optional(),
   })).mutation(async ({ input }) => {
-    const id = await db.createMemberProfile(input as InsertMemberProfile);
+    const id = await db.createMemberProfile(input as any);
     return { success: true, id };
   }),
 
@@ -273,7 +258,7 @@ export const memberProfilesRouter = router({
     ballotSponsor: z.string().optional(),
   })).mutation(async ({ input }) => {
     const { id, ...data } = input;
-    await db.updateMemberProfile(id, data as Partial<InsertMemberProfile>);
+    await db.updateMemberProfile(id, data as any);
     return { success: true };
   }),
 
@@ -312,7 +297,7 @@ export const reengagementRouter = router({
     previousRelationship: z.string().optional(),
     notes: z.string().optional(),
   })).mutation(async ({ input }) => {
-    const id = await db.createReengagementEntry(input as InsertReengagementEntry);
+    const id = await db.createReengagementEntry(input as any);
     return { success: true, id };
   }),
 
@@ -323,7 +308,7 @@ export const reengagementRouter = router({
     notes: z.string().optional(),
   })).mutation(async ({ input }) => {
     const { id, ...data } = input;
-    const updateData: Partial<InsertReengagementEntry> = { ...data };
+    const updateData: any = { ...data };
     if (data.stage === "invited") updateData.inviteSentAt = new Date();
     if (data.stage === "opened") updateData.inviteOpenedAt = new Date();
     if (data.stage === "applied") updateData.applicationDate = new Date();
@@ -333,7 +318,7 @@ export const reengagementRouter = router({
 
   generateInvite: adminProcedure.input(z.object({ id: z.number() })).mutation(async ({ input }) => {
     const entries = await db.getReengagementEntries();
-    const entry = entries.find(e => e.id === input.id);
+    const entry = entries.find((e: any) => e.id === input.id);
     if (!entry) throw new Error("Entry not found");
 
     const invite = await aiGenerateReengagementInvite(entry);
@@ -343,7 +328,7 @@ export const reengagementRouter = router({
 });
 
 // ─── AI Helper Functions ───
-async function aiEnrichLead(lead: CrmLead) {
+async function aiEnrichLead(lead: any) {
   try {
     const response = await invokeLLM({
       messages: [
@@ -379,7 +364,7 @@ async function aiEnrichLead(lead: CrmLead) {
   return {};
 }
 
-function calculateLeadScore(lead: CrmLead): number {
+function calculateLeadScore(lead: any): number {
   let score = 0;
   if (lead.contactEmail) score += 15;
   if (lead.contactPhone) score += 10;
@@ -403,7 +388,7 @@ function calculateLeadScore(lead: CrmLead): number {
   return Math.min(100, score);
 }
 
-async function aiGenerateOutreach(lead: CrmLead) {
+async function aiGenerateOutreach(lead: any) {
   try {
     const response = await invokeLLM({
       messages: [
@@ -436,7 +421,7 @@ async function aiGenerateOutreach(lead: CrmLead) {
   return { subject: "Uitnodiging Mr. Green", body: "Kon geen gepersonaliseerd bericht genereren.", followUpSuggestion: "Bel na 3 dagen op." };
 }
 
-async function aiAnalyzeLead(lead: CrmLead) {
+async function aiAnalyzeLead(lead: any) {
   try {
     const response = await invokeLLM({
       messages: [
@@ -471,7 +456,7 @@ async function aiAnalyzeLead(lead: CrmLead) {
   return { strengths: [], risks: [], recommendedApproach: "Neem contact op", estimatedCloseTime: "Onbekend", suggestedNextStep: "Bel op" };
 }
 
-async function aiAnalyzeVisitor(visitor: CrmWebsiteVisitor) {
+async function aiAnalyzeVisitor(visitor: any) {
   try {
     const response = await invokeLLM({
       messages: [
@@ -508,7 +493,7 @@ async function aiAnalyzeVisitor(visitor: CrmWebsiteVisitor) {
   return { companyName: "Onbekend", industry: "Onbekend", companySize: "Onbekend", revenue: "Onbekend", intent: "medium", interestAreas: [], recommendedAction: "Monitor" };
 }
 
-async function aiGenerateVisitorOutreach(visitor: CrmWebsiteVisitor) {
+async function aiGenerateVisitorOutreach(visitor: any) {
   try {
     const response = await invokeLLM({
       messages: [
@@ -541,7 +526,7 @@ async function aiGenerateVisitorOutreach(visitor: CrmWebsiteVisitor) {
   return { subject: "Welkom bij Mr. Green", body: "Kon geen gepersonaliseerd bericht genereren.", channel: "email" };
 }
 
-async function aiGenerateReengagementInvite(entry: ReengagementEntry) {
+async function aiGenerateReengagementInvite(entry: any) {
   try {
     const response = await invokeLLM({
       messages: [

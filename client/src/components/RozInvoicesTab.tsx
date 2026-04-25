@@ -7,8 +7,8 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { toast } from "sonner";
 import {
-  Receipt, Plus, CreditCard, CheckCircle2, Clock, AlertTriangle,
-  FileText, Send, Ban,
+  Receipt, Plus, CreditCard, CheckCircle2, Download,
+  FileText, Send, Ban, Loader2,
 } from "lucide-react";
 
 const STATUS_COLORS: Record<string, string> = {
@@ -27,6 +27,37 @@ const STATUS_LABELS: Record<string, string> = {
   cancelled: "Geannuleerd",
 };
 
+function downloadInvoicePdf(invoiceId: number, invoiceNumber: string) {
+  const link = document.createElement("a");
+  link.href = `/api/invoice/${invoiceId}/pdf`;
+  link.download = `factuur-${invoiceNumber}.pdf`;
+  document.body.appendChild(link);
+  link.click();
+  document.body.removeChild(link);
+}
+
+async function downloadBatchPdf(invoiceIds: number[]) {
+  try {
+    const response = await fetch("/api/invoices/batch-pdf", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ invoiceIds }),
+    });
+    if (!response.ok) throw new Error("Batch PDF generation failed");
+    const blob = await response.blob();
+    const url = URL.createObjectURL(blob);
+    const link = document.createElement("a");
+    link.href = url;
+    link.download = `facturen-batch-${new Date().toISOString().slice(0, 10)}.pdf`;
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+    URL.revokeObjectURL(url);
+  } catch {
+    toast.error("Batch PDF generatie mislukt");
+  }
+}
+
 export default function RozInvoicesTab() {
   const { data: invoices, isLoading } = trpc.rozInvoices.list.useQuery({});
   const { data: contracts } = trpc.rozContracts.list.useQuery({ status: "active" });
@@ -34,6 +65,8 @@ export default function RozInvoicesTab() {
 
   const [showGenerate, setShowGenerate] = useState(false);
   const [selectedContractId, setSelectedContractId] = useState<number | null>(null);
+  const [downloadingId, setDownloadingId] = useState<number | null>(null);
+  const [batchDownloading, setBatchDownloading] = useState(false);
 
   const generateMut = trpc.rozInvoices.generate.useMutation({
     onSuccess: (data) => {
@@ -68,11 +101,25 @@ export default function RozInvoicesTab() {
     generateMut.mutate({ contractId: selectedContractId, periodStart, periodEnd });
   }
 
+  function handleDownloadPdf(invoiceId: number, invoiceNumber: string) {
+    setDownloadingId(invoiceId);
+    downloadInvoicePdf(invoiceId, invoiceNumber);
+    setTimeout(() => setDownloadingId(null), 2000);
+  }
+
+  async function handleBatchDownload() {
+    if (!invoices?.length) return;
+    setBatchDownloading(true);
+    const ids = invoices.map((i: any) => i.id);
+    await downloadBatchPdf(ids);
+    setBatchDownloading(false);
+  }
+
   // Summary stats
   const totalInvoices = invoices?.length || 0;
-  const paidInvoices = invoices?.filter((i) => i.status === "paid").length || 0;
-  const overdueInvoices = invoices?.filter((i) => i.status === "overdue").length || 0;
-  const totalRevenue = invoices?.filter((i) => i.status === "paid").reduce((sum, i) => sum + parseFloat(i.totalCredits), 0) || 0;
+  const paidInvoices = invoices?.filter((i: any) => i.status === "paid").length || 0;
+  const overdueInvoices = invoices?.filter((i: any) => i.status === "overdue").length || 0;
+  const totalRevenue = invoices?.filter((i: any) => i.status === "paid").reduce((sum: number, i: any) => sum + parseFloat(i.totalCredits), 0) || 0;
 
   return (
     <div className="space-y-6">
@@ -86,13 +133,26 @@ export default function RozInvoicesTab() {
             Maandelijkse credit-facturatie voor actieve ROZ-contracten.
           </p>
         </div>
-        <Button
-          onClick={() => setShowGenerate(true)}
-          disabled={!contracts?.length}
-          className="bg-amber-500 text-white hover:bg-amber-600"
-        >
-          <Plus className="w-4 h-4 mr-1.5" /> Factuur genereren
-        </Button>
+        <div className="flex gap-2">
+          {totalInvoices > 1 && (
+            <Button
+              variant="outline"
+              onClick={handleBatchDownload}
+              disabled={batchDownloading}
+              className="text-amber-500 border-amber-500/30"
+            >
+              {batchDownloading ? <Loader2 className="w-4 h-4 mr-1.5 animate-spin" /> : <Download className="w-4 h-4 mr-1.5" />}
+              Alle PDF's
+            </Button>
+          )}
+          <Button
+            onClick={() => setShowGenerate(true)}
+            disabled={!contracts?.length}
+            className="bg-amber-500 text-white hover:bg-amber-600"
+          >
+            <Plus className="w-4 h-4 mr-1.5" /> Factuur genereren
+          </Button>
+        </div>
       </div>
 
       {/* Stats */}
@@ -136,7 +196,7 @@ export default function RozInvoicesTab() {
         </Card>
       ) : (
         <div className="space-y-2">
-          {invoices.map((inv) => (
+          {invoices.map((inv: any) => (
             <Card key={inv.id} className="bg-white/[0.02] border-border/30">
               <CardContent className="p-4">
                 <div className="flex items-start justify-between">
@@ -154,7 +214,7 @@ export default function RozInvoicesTab() {
                       </span>
                       {parseFloat(inv.serviceChargeCredits || "0") > 0 && (
                         <span className="flex items-center gap-1">
-                          Service: +{parseFloat(inv.serviceChargeCredits || "0").toFixed(0)}c
+                          Service: +{parseFloat(inv.serviceChargeCredits).toFixed(0)}c
                         </span>
                       )}
                       <span className="font-medium text-foreground">
@@ -167,6 +227,20 @@ export default function RozInvoicesTab() {
                     </p>
                   </div>
                   <div className="flex gap-1">
+                    {/* PDF Download button — always visible */}
+                    <Button
+                      size="sm"
+                      variant="outline"
+                      className="text-amber-500 border-amber-500/30"
+                      onClick={() => handleDownloadPdf(inv.id, inv.invoiceNumber)}
+                      disabled={downloadingId === inv.id}
+                    >
+                      {downloadingId === inv.id ? (
+                        <Loader2 className="w-3 h-3 animate-spin" />
+                      ) : (
+                        <><Download className="w-3 h-3 mr-1" /> PDF</>
+                      )}
+                    </Button>
                     {inv.status === "draft" && (
                       <Button
                         size="sm"
@@ -225,7 +299,7 @@ export default function RozInvoicesTab() {
                   <SelectValue placeholder="Kies een contract..." />
                 </SelectTrigger>
                 <SelectContent>
-                  {contracts?.map((c) => (
+                  {contracts?.map((c: any) => (
                     <SelectItem key={c.id} value={c.id.toString()}>
                       {c.contractNumber} — {parseFloat(c.monthlyRentCredits).toFixed(0)}c/mnd
                     </SelectItem>

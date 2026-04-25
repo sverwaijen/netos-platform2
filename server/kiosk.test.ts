@@ -173,10 +173,10 @@ describe("Butler Kiosk System", () => {
       const branding = {
         companyId: 1,
         logoUrl: "https://example.com/logo.png",
-        primaryColor: "#627653",
+        primaryColor: "#C4B89E",
         secondaryColor: "#111111",
-        accentColor: "#b8a472",
-        fontFamily: "Montserrat",
+        accentColor: "#C4B89E",
+        fontFamily: "Inter",
         welcomeMessage: "Welcome to our office",
         backgroundImageUrl: null,
       };
@@ -185,16 +185,16 @@ describe("Butler Kiosk System", () => {
       expect(branding.accentColor).toMatch(/^#[0-9a-fA-F]{6}$/);
     });
 
-    it("should fall back to Mr. Green defaults when no branding", () => {
+    it("should fall back to The Green defaults when no branding", () => {
       const branding = null;
-      const primary = branding?.primaryColor || "#627653";
+      const primary = branding?.primaryColor || "#C4B89E";
       const secondary = branding?.secondaryColor || "#111111";
-      const accent = branding?.accentColor || "#b8a472";
-      const font = branding?.fontFamily || "Montserrat";
-      expect(primary).toBe("#627653");
+      const accent = branding?.accentColor || "#C4B89E";
+      const font = branding?.fontFamily || "Inter";
+      expect(primary).toBe("#C4B89E");
       expect(secondary).toBe("#111111");
-      expect(accent).toBe("#b8a472");
-      expect(font).toBe("Montserrat");
+      expect(accent).toBe("#C4B89E");
+      expect(font).toBe("Inter");
     });
 
     it("should generate unique kiosk URLs per company", () => {
@@ -245,10 +245,10 @@ describe("Butler Kiosk System", () => {
       };
       const branding = {
         logoUrl: scraped.logoUrl,
-        primaryColor: scraped.colors[0] || "#627653",
+        primaryColor: scraped.colors[0] || "#C4B89E",
         secondaryColor: scraped.colors[1] || "#111111",
-        accentColor: scraped.colors[2] || "#b8a472",
-        fontFamily: scraped.fonts[0] || "Montserrat",
+        accentColor: scraped.colors[2] || "#C4B89E",
+        fontFamily: scraped.fonts[0] || "Inter",
       };
       expect(branding.primaryColor).toBe("#ff6600");
       expect(branding.fontFamily).toBe("Roboto");

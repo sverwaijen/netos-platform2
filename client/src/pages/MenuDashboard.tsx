@@ -20,7 +20,7 @@ export default function MenuDashboard() {
   const { data: seasons, refetch: refetchSeasons } = trpc.menuSeasons.list.useQuery();
   const { data: categories } = trpc.menuCategories.list.useQuery();
   const { data: allItems, refetch: refetchItems } = trpc.menuItems.list.useQuery({});
-  const activeSeason = seasons?.find((s) => s.isActive);
+  const activeSeason = seasons?.find((s: any) => s.isActive);
   const effectiveSeasonId = selectedSeasonId || activeSeason?.id;
 
   const { data: seasonItems, refetch: refetchSeasonItems } = trpc.menuItems.bySeason.useQuery(
@@ -67,11 +67,11 @@ export default function MenuDashboard() {
   // ─── Items NOT in current season (for drag source) ───────────────
   const availableItems = useMemo(() => {
     if (!allItems || !seasonItems) return allItems || [];
-    const inSeason = new Set(seasonItems.map((si) => si.id));
-    let filtered = allItems.filter((item) => !inSeason.has(item.id));
+    const inSeason = new Set(seasonItems.map((si: any) => si.id));
+    let filtered = allItems.filter((item: any) => !inSeason.has(item.id));
     if (searchQuery) {
       const q = searchQuery.toLowerCase();
-      filtered = filtered.filter((item) =>
+      filtered = filtered.filter((item: any) =>
         item.name.toLowerCase().includes(q) || item.subtitle?.toLowerCase().includes(q)
       );
     }
@@ -102,7 +102,7 @@ export default function MenuDashboard() {
     setDraggedItem(null);
   };
 
-  const selectedSeason = seasons?.find((s) => s.id === effectiveSeasonId);
+  const selectedSeason = seasons?.find((s: any) => s.id === effectiveSeasonId);
 
   const tabs = [
     { id: "seasons" as const, label: "Seizoenen", icon: Calendar },
@@ -167,7 +167,7 @@ export default function MenuDashboard() {
       {/* ═══ SEASONS TAB ═══ */}
       {activeTab === "seasons" && (
         <div className="space-y-4">
-          {seasons?.map((season) => (
+          {seasons?.map((season: any) => (
             <div key={season.id}
               className={`glass-card rounded-xl p-5 border-l-4 transition-all cursor-pointer ${
                 season.isActive ? "border-l-[#627653]" : "border-l-transparent"
@@ -177,7 +177,7 @@ export default function MenuDashboard() {
                 <div className="flex items-center gap-4">
                   <div>
                     <h3 className="text-lg font-medium text-white">{season.name}</h3>
-                    <p className="text-sm text-white/40">{season.quarter} {season.year} &middot; {season.startDate} — {season.endDate}</p>
+                    <p className="text-sm text-white/40">{season.quarter} {season.year} &middot; {new Date(Number(season.startDate)).toLocaleDateString('nl-NL')} — {new Date(Number(season.endDate)).toLocaleDateString('nl-NL')}</p>
                   </div>
                   {season.isActive && (
                     <span className="px-2 py-0.5 rounded-full text-[10px] font-semibold uppercase tracking-wider bg-[#627653]/20 text-[#627653]">
@@ -225,7 +225,7 @@ export default function MenuDashboard() {
                 className="w-full pl-9 pr-3 py-2 rounded-lg bg-white/[0.05] border border-white/[0.08] text-sm text-white placeholder:text-white/30 focus:outline-none focus:ring-1 focus:ring-[#627653]/50" />
             </div>
             <div className="space-y-1 max-h-[600px] overflow-y-auto">
-              {availableItems.map((item) => (
+              {availableItems.map((item: any) => (
                 <div key={item.id}
                   draggable
                   onDragStart={() => handleDragStart(item)}
@@ -324,7 +324,7 @@ export default function MenuDashboard() {
               </tr>
             </thead>
             <tbody>
-              {arrangements?.map((arr) => (
+              {arrangements?.map((arr: any) => (
                 <tr key={arr.id} className="border-b border-white/[0.04] hover:bg-white/[0.02]">
                   <td className="px-5 py-3">
                     <p className="text-sm text-white">{arr.name}</p>

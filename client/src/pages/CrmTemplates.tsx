@@ -30,7 +30,7 @@ export default function CrmTemplates() {
   };
 
   const handleAiGenerate = async () => {
-    const result = await aiGenerate.mutateAsync({ tone: "professional", context: form.category || "coworking introduction" });
+    const result = await aiGenerate.mutateAsync({ tone: "professional", context: form.category || "private members introduction" });
     setForm(p => ({ ...p, subject: result.subject, body: result.body }));
   };
 
@@ -43,7 +43,7 @@ export default function CrmTemplates() {
         </div>
         <Dialog open={showCreate} onOpenChange={v => { setShowCreate(v); if (!v) { setEditingId(null); resetForm(); } }}>
           <DialogTrigger asChild>
-            <Button size="sm" className="bg-[#627653] hover:bg-[#3a4a34] text-white">
+            <Button size="sm" className="bg-[#C4B89E] hover:bg-[#1C1C1C] text-white">
               <Plus className="w-4 h-4 mr-2" /> New Template
             </Button>
           </DialogTrigger>
@@ -65,7 +65,7 @@ export default function CrmTemplates() {
               <div>
                 <div className="flex items-center justify-between">
                   <Label className="text-xs uppercase tracking-wider text-white/50">Subject *</Label>
-                  <Button size="sm" variant="ghost" onClick={handleAiGenerate} disabled={aiGenerate.isPending} className="text-[#627653] h-6 text-xs">
+                  <Button size="sm" variant="ghost" onClick={handleAiGenerate} disabled={aiGenerate.isPending} className="text-[#C4B89E] h-6 text-xs">
                     <Sparkles className="w-3 h-3 mr-1" /> {aiGenerate.isPending ? "Generating..." : "AI Generate"}
                   </Button>
                 </div>
@@ -76,7 +76,7 @@ export default function CrmTemplates() {
                 <Textarea value={form.body} onChange={e => setForm(p => ({ ...p, body: e.target.value }))} className="mt-1 bg-white/[0.04] border-white/[0.08] font-mono text-xs" rows={10} />
               </div>
               <Button
-                className="w-full bg-[#627653] hover:bg-[#3a4a34] text-white"
+                className="w-full bg-[#C4B89E] hover:bg-[#1C1C1C] text-white"
                 onClick={() => editingId ? updateTemplate.mutate({ id: editingId, ...form }) : createTemplate.mutate(form)}
                 disabled={!form.name || !form.subject || !form.body}
               >
@@ -105,10 +105,10 @@ export default function CrmTemplates() {
                   )}
                 </div>
                 <div className="flex items-center gap-1">
-                  <Button size="sm" variant="ghost" onClick={() => startEdit(t)} className="h-7 w-7 p-0 text-white/30 hover:text-[#627653]">
+                  <Button size="sm" variant="ghost" onClick={() => startEdit(t)} className="h-7 w-7 p-0 text-white/30 hover:text-[#C4B89E]">
                     <Edit3 className="w-3.5 h-3.5" />
                   </Button>
-                  <Button size="sm" variant="ghost" onClick={() => { navigator.clipboard.writeText(t.body); toast.success("Copied to clipboard"); }} className="h-7 w-7 p-0 text-white/30 hover:text-[#627653]">
+                  <Button size="sm" variant="ghost" onClick={() => { navigator.clipboard.writeText(t.body); toast.success("Copied to clipboard"); }} className="h-7 w-7 p-0 text-white/30 hover:text-[#C4B89E]">
                     <Copy className="w-3.5 h-3.5" />
                   </Button>
                   <Button size="sm" variant="ghost" onClick={() => { if (confirm("Delete?")) deleteTemplate.mutate({ id: t.id }); }} className="h-7 w-7 p-0 text-white/30 hover:text-red-500">
@@ -122,8 +122,8 @@ export default function CrmTemplates() {
               </div>
               {t.isAiGenerated && (
                 <div className="flex items-center gap-1 mt-2">
-                  <Sparkles className="w-3 h-3 text-[#b8a472]" />
-                  <span className="text-[10px] text-[#b8a472]">AI generated</span>
+                  <Sparkles className="w-3 h-3 text-[#C4B89E]" />
+                  <span className="text-[10px] text-[#C4B89E]">AI generated</span>
                 </div>
               )}
             </Card>

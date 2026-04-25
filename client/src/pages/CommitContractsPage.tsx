@@ -36,7 +36,7 @@ export default function CommitContractsPage() {
   const utils = trpc.useUtils();
   const createMutation = trpc.commitContracts.create.useMutation({
     onSuccess: () => { toast.success("Commit contract created."); setCreateOpen(false); utils.commitContracts.byCompany.invalidate(); },
-    onError: (err) => toast.error(err.message),
+    onError: (err: any) => toast.error(err.message),
   });
 
   if (!selectedCompanyId && companies && companies.length > 0) {
@@ -58,7 +58,7 @@ export default function CommitContractsPage() {
             onChange={(e) => setSelectedCompanyId(Number(e.target.value))}
             className="bg-[#111] border border-white/10 text-sm px-3 py-2 rounded-sm text-white"
           >
-            {(companies ?? []).map((c) => (
+            {(companies ?? []).map((c: any) => (
               <option key={c.id} value={c.id}>{c.name}</option>
             ))}
           </select>
@@ -80,7 +80,7 @@ export default function CommitContractsPage() {
         </Card>
       ) : (
         <div className="space-y-4">
-          {(contracts ?? []).map((contract) => {
+          {(contracts ?? []).map((contract: any) => {
             const used = parseFloat(contract.drawdownUsed ?? "0");
             const total = parseFloat(contract.totalCommitCredits);
             const utilPct = total > 0 ? (used / total) * 100 : 0;
@@ -101,7 +101,7 @@ export default function CommitContractsPage() {
                         </span>
                         <span className="text-[11px] text-[#888] font-light">{contract.commitPeriodMonths} months</span>
                         {parseFloat(contract.discountPercent ?? "0") > 0 && (
-                          <span className="text-[11px] text-[#627653] font-medium">{parseFloat(contract.discountPercent ?? "0").toFixed(0)}% discount</span>
+                          <span className="text-[11px] text-[#627653] font-medium">{parseFloat(contract.discountPercent).toFixed(0)}% discount</span>
                         )}
                       </div>
                     </div>
@@ -151,7 +151,7 @@ export default function CommitContractsPage() {
                       </div>
                     )}
                     {parseFloat(contract.prepaidAmount ?? "0") > 0 && (
-                      <div className="text-[#888]">Prepaid: \u20AC{parseFloat(contract.prepaidAmount ?? "0").toLocaleString()}</div>
+                      <div className="text-[#888]">Prepaid: \u20AC{parseFloat(contract.prepaidAmount).toLocaleString()}</div>
                     )}
                   </div>
                 </CardContent>

@@ -191,19 +191,17 @@ describe("Member App - Booking Flow", () => {
         description: "Cannot connect to WiFi network",
         category: "wifi" as const,
         priority: "normal" as const,
-        userId: mockUserId,
       };
 
-      // Create a mock function since createTicket doesn't exist in db.ts yet
-      const createTicketMock = vi.fn().mockResolvedValue({
+      vi.spyOn(db, "createTicket").mockResolvedValue({
         id: 1,
         userId: mockUserId,
         subject: ticketData.subject,
         status: "open",
-      });
+      } as any);
 
       // Act
-      const ticket = await createTicketMock(ticketData);
+      const ticket = await db.createTicket(ticketData as any);
 
       // Assert
       expect(ticket).toBeDefined();
@@ -230,11 +228,12 @@ describe("Member App - Booking Flow", () => {
         },
       ];
 
-      // Create a mock function since getTicketsByUser doesn't exist in db.ts yet
-      const getTicketsByUserMock = vi.fn().mockResolvedValue(mockTickets);
+      vi.spyOn(db, "getTicketsByUser").mockResolvedValue(
+        mockTickets as any
+      );
 
       // Act
-      const tickets = await getTicketsByUserMock(mockUserId);
+      const tickets = await db.getTicketsByUser(mockUserId);
 
       // Assert
       expect(tickets).toHaveLength(2);

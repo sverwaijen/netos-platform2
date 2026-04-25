@@ -127,10 +127,6 @@ export const reviewerRoles: Record<UserRole, { label: string; focus: string }> =
     label: "Receptionist / Community Host",
     focus: "Dagelijkse operatie: bezoekers, kiosk, signing, ticketing",
   },
-  company_owner: {
-    label: "Company Owner",
-    focus: "Bedrijfsbeheer, teamleden, boekingen, contracten",
-  },
   teamadmin: {
     label: "Boss / Bedrijfsleider",
     focus: "Boekingen, wallet, contracten, teamleden beheren",
@@ -147,8 +143,20 @@ export const reviewerRoles: Record<UserRole, { label: string; focus: string }> =
     label: "Facility Manager",
     focus: "Room control, sensoren, parkeren, onderhoud, energie",
   },
-  developer: {
-    label: "Developer / AI Agent",
-    focus: "API endpoints, tests, performance, foutafhandeling",
+  ceo: {
+    label: "CEO / Directeur",
+    focus: "Strategisch overzicht, KPI's, executive dashboard",
+  },
+  cfo: {
+    label: "CFO / Financieel Directeur",
+    focus: "Financiën, credits, budgetten, omzet rapportages",
+  },
+  company_owner: {
+    label: "Bedrijfseigenaar",
+    focus: "Eigen bedrijf beheren, leden, boekingen, wallet",
+  },
+  cleaner: {
+    label: "Schoonmaakster",
+    focus: "Schoonmaaktaken, checklists, ruimte-inspectie",
   },
 };

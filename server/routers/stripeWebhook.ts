@@ -1,9 +1,10 @@
 import type { Express, Request, Response } from "express";
 import { ENV } from "../_core/env";
 import { createLogger } from "../_core/logger";
+import Stripe from "stripe";
+import express from "express";
+const logger = createLogger("stripeWebhook");
 import { fulfillCheckoutSession } from "./walletPaymentRouter";
-
-const logger = createLogger("StripeWebhook");
 
 /**
  * Register the Stripe webhook endpoint on the Express app.
@@ -13,21 +14,20 @@ const logger = createLogger("StripeWebhook");
  */
 export function registerStripeWebhook(app: Express) {
   // Only register if Stripe is configured
-  if (!ENV.STRIPE_SECRET_KEY) {
+  if (!ENV.stripeSecretKey) {
     logger.info("Stripe not configured — webhook route skipped");
     return;
   }
 
-  const Stripe = require("stripe");
-  const stripe = (Stripe.default || Stripe)(ENV.STRIPE_SECRET_KEY, {
-    apiVersion: "2024-06-20",
+  const stripe = new Stripe(ENV.stripeSecretKey!, {
+    apiVersion: "2024-06-20" as any,
     maxNetworkRetries: 3,
   });
 
   app.post(
     "/api/stripe/webhook",
     // Use raw body parser for Stripe signature verification
-    require("express").raw({ type: "application/json" }),
+    express.raw({ type: "application/json" }),
     async (req: Request, res: Response) => {
       const sig = req.headers["stripe-signature"];
 
@@ -40,12 +40,12 @@ export function registerStripeWebhook(app: Express) {
       let event;
 
       try {
-        if (ENV.STRIPE_WEBHOOK_SECRET) {
+        if (ENV.stripeWebhookSecret) {
           // Verify signature in production
           event = stripe.webhooks.constructEvent(
             req.body,
             sig,
-            ENV.STRIPE_WEBHOOK_SECRET
+            ENV.stripeWebhookSecret
           );
         } else {
           // In development, parse without signature verification
@@ -96,15 +96,15 @@ export function registerStripeWebhook(app: Express) {
             const session = event.data.object;
             const transactionId = parseInt(session.client_reference_id || "0", 10);
             if (transactionId) {
-              const { getDb } = require("../db");
-              const { walletTransactions } = require("../../drizzle/schema");
-              const { eq } = require("drizzle-orm");
-              const db = await getDb();
+              const { getDb: getDbLocal } = await import("../db");
+              const { walletTransactions: wt } = await import("../../drizzle/schema");
+              const { eq: eqOp } = await import("drizzle-orm");
+              const db = await getDbLocal();
               if (db) {
                 await db
-                  .update(walletTransactions)
+                  .update(wt)
                   .set({ status: "failed" })
-                  .where(eq(walletTransactions.id, transactionId));
+                  .where(eqOp(wt.id, transactionId));
                 logger.info("Async payment failed, transaction marked", { transactionId });
               }
             }

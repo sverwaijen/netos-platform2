@@ -26,15 +26,10 @@ export default function KitchenPrepDisplay() {
     refetchInterval: 120000,
   });
 
-  const { data: selectedPrepRaw } = trpc.menuPreparations.byItem.useQuery(
+  const { data: selectedPrep } = trpc.menuPreparations.byItem.useQuery(
     { menuItemId: selectedItemId! },
     { enabled: !!selectedItemId }
   );
-
-  // Enrich selectedPrepRaw with item data from preparations list
-  const selectedPrep = selectedPrepRaw && preparations
-    ? preparations.find(p => p.id === selectedPrepRaw.id)
-    : selectedPrepRaw as any;
 
   // Real-time orders polling every 3 seconds
   const { data: activeOrders, refetch: refetchOrders } = trpc.kioskOrders.getActiveOrders.useQuery(
@@ -104,7 +99,7 @@ export default function KitchenPrepDisplay() {
     let items = activeCategory ? (prepGrouped[activeCategory] || []) : (preparations || []);
     if (searchQuery) {
       const q = searchQuery.toLowerCase();
-      items = items.filter((p) =>
+      items = items.filter((p: any) =>
         p.itemName.toLowerCase().includes(q) || p.itemSubtitle?.toLowerCase().includes(q)
       );
     }
@@ -167,9 +162,9 @@ export default function KitchenPrepDisplay() {
             <span className="text-lg">Terug</span>
           </button>
           <div className="text-center">
-            <h1 className="text-3xl font-light text-white">{selectedPrep.itemName || "Bereiding"}</h1>
-            {selectedPrep.itemSubtitle && (
-              <p className="text-sm text-white/30 mt-1">{selectedPrep.itemSubtitle}</p>
+            <h1 className="text-3xl font-light text-white">{(selectedPrep as any).itemName || "Bereiding"}</h1>
+            {(selectedPrep as any).itemSubtitle && (
+              <p className="text-sm text-white/30 mt-1">{(selectedPrep as any).itemSubtitle}</p>
             )}
           </div>
           <div className="flex items-center gap-4">
@@ -276,7 +271,7 @@ export default function KitchenPrepDisplay() {
             <h2 className="text-lg font-semibold text-[#dc2626]">Nieuw ({grouped.new.length})</h2>
           </div>
           <div className="flex-1 overflow-y-auto space-y-3 pr-4">
-            {grouped.new.map((order) => (
+            {grouped.new.map((order: any) => (
               <button
                 key={order.id}
                 onClick={() => bumpOrderStatus(order.id, "new")}
@@ -285,7 +280,7 @@ export default function KitchenPrepDisplay() {
                   <div className="min-w-0 flex-1">
                     <p className="font-semibold text-white truncate">{order.orderNumber}</p>
                     <p className="text-xs text-white/50 mt-1">
-                      {order.items?.map((item) => item.productName).join(", ") || "Geen items"}
+                      {order.items?.map((item: any) => item.productName).join(", ") || "Geen items"}
                     </p>
                   </div>
                   <div className="text-right ml-2">
@@ -309,7 +304,7 @@ export default function KitchenPrepDisplay() {
             <h2 className="text-lg font-semibold text-[#f59e0b]">Bereiden ({grouped.preparing.length})</h2>
           </div>
           <div className="flex-1 overflow-y-auto space-y-3 pr-4">
-            {grouped.preparing.map((order) => (
+            {grouped.preparing.map((order: any) => (
               <button
                 key={order.id}
                 onClick={() => bumpOrderStatus(order.id, "preparing")}
@@ -318,7 +313,7 @@ export default function KitchenPrepDisplay() {
                   <div className="min-w-0 flex-1">
                     <p className="font-semibold text-white truncate">{order.orderNumber}</p>
                     <p className="text-xs text-white/50 mt-1">
-                      {order.items?.map((item) => item.productName).join(", ") || "Geen items"}
+                      {order.items?.map((item: any) => item.productName).join(", ") || "Geen items"}
                     </p>
                   </div>
                   <div className="text-right ml-2">
@@ -342,7 +337,7 @@ export default function KitchenPrepDisplay() {
             <h2 className="text-lg font-semibold text-[#22c55e]">Klaar ({grouped.ready.length})</h2>
           </div>
           <div className="flex-1 overflow-y-auto space-y-3 pr-4">
-            {grouped.ready.map((order) => (
+            {grouped.ready.map((order: any) => (
               <button
                 key={order.id}
                 onClick={() => bumpOrderStatus(order.id, "ready")}
@@ -351,7 +346,7 @@ export default function KitchenPrepDisplay() {
                   <div className="min-w-0 flex-1">
                     <p className="font-semibold text-white truncate">{order.orderNumber}</p>
                     <p className="text-xs text-white/50 mt-1">
-                      {order.items?.map((item) => item.productName).join(", ") || "Geen items"}
+                      {order.items?.map((item: any) => item.productName).join(", ") || "Geen items"}
                     </p>
                   </div>
                   <div className="text-right ml-2">
@@ -389,7 +384,7 @@ export default function KitchenPrepDisplay() {
             }`}>
             Alles
           </button>
-          {prepCategories.map((cat) => (
+          {prepCategories.map((cat: any) => (
             <button key={cat} onClick={() => setActiveCategory(cat)}
               className={`px-4 py-2 rounded-lg text-sm font-medium transition-all whitespace-nowrap ${
                 activeCategory === cat ? "bg-[#627653] text-white" : "bg-white/[0.04] text-white/50 hover:bg-white/[0.06]"
@@ -402,7 +397,7 @@ export default function KitchenPrepDisplay() {
         {/* Preps grid */}
         <div className="flex-1 overflow-y-auto px-10 py-3">
           <div className="grid grid-cols-6 gap-2">
-            {visiblePreps.map((prep) => (
+            {visiblePreps.map((prep: any) => (
               <button key={prep.id} onClick={() => selectPrep(prep.menuItemId)}
                 className="p-2 rounded-lg bg-white/[0.03] border border-white/[0.06] hover:bg-white/[0.06] transition-all text-left group">
                 <p className="text-xs font-medium text-white truncate">{prep.itemName}</p>

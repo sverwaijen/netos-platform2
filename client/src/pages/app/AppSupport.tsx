@@ -48,7 +48,7 @@ export default function AppSupport() {
         <h1 className="text-xl font-light text-white">Support</h1>
         <button
           onClick={() => setShowNew(!showNew)}
-          className="w-9 h-9 rounded-full bg-[#627653] flex items-center justify-center"
+          className="w-9 h-9 rounded-full bg-[#C4B89E] flex items-center justify-center"
         >
           <Plus className="w-5 h-5 text-white" />
         </button>
@@ -63,7 +63,7 @@ export default function AppSupport() {
             <select
               value={category}
               onChange={(e) => setCategory(e.target.value)}
-              className="w-full bg-white/[0.05] border border-white/[0.08] rounded-xl px-4 py-3 text-white text-sm focus:outline-none focus:border-[#627653]/50 appearance-none"
+              className="w-full bg-white/[0.05] border border-white/[0.08] rounded-xl px-4 py-3 text-white text-sm focus:outline-none focus:border-[#C4B89E]/50 appearance-none"
             >
             <option value="general">Algemeen</option>
             <option value="maintenance">Onderhoud</option>
@@ -80,7 +80,7 @@ export default function AppSupport() {
               value={title}
               onChange={(e) => setTitle(e.target.value)}
               placeholder="Kort omschrijven..."
-              className="w-full bg-white/[0.05] border border-white/[0.08] rounded-xl px-4 py-3 text-white text-sm placeholder:text-white/20 focus:outline-none focus:border-[#627653]/50"
+              className="w-full bg-white/[0.05] border border-white/[0.08] rounded-xl px-4 py-3 text-white text-sm placeholder:text-white/20 focus:outline-none focus:border-[#C4B89E]/50"
             />
           </div>
           <div>
@@ -90,13 +90,13 @@ export default function AppSupport() {
               onChange={(e) => setDesc(e.target.value)}
               placeholder="Beschrijf het probleem..."
               rows={3}
-              className="w-full bg-white/[0.05] border border-white/[0.08] rounded-xl px-4 py-3 text-white text-sm placeholder:text-white/20 focus:outline-none focus:border-[#627653]/50 resize-none"
+              className="w-full bg-white/[0.05] border border-white/[0.08] rounded-xl px-4 py-3 text-white text-sm placeholder:text-white/20 focus:outline-none focus:border-[#C4B89E]/50 resize-none"
             />
           </div>
           <button
             onClick={() => createTicket.mutate({ subject: title, description: desc, category: category as any, priority: "normal" })}
             disabled={!title.trim() || createTicket.isPending}
-            className="w-full py-3 rounded-xl bg-[#627653] text-white text-sm font-medium flex items-center justify-center gap-2 disabled:opacity-50"
+            className="w-full py-3 rounded-xl bg-[#C4B89E] text-white text-sm font-medium flex items-center justify-center gap-2 disabled:opacity-50"
           >
             <Send className="w-4 h-4" />
             {createTicket.isPending ? "Verzenden..." : "Verstuur Ticket"}

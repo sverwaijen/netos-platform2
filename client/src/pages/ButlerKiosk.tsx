@@ -1,6 +1,7 @@
 import { trpc } from "@/lib/trpc";
 import { useState, useMemo, useRef, useCallback } from "react";
 import { useAuth } from "@/_core/hooks/useAuth";
+import { useSearch } from "wouter";
 import {
   Coffee, ShoppingCart, CreditCard, Wallet, Building2, X, Plus, Minus,
   ChevronLeft, Search, Leaf, Check, QrCode, User
@@ -33,6 +34,10 @@ type MemberInfo = {
 
 export default function ButlerKiosk() {
   const { user } = useAuth();
+  const search = useSearch();
+  const urlParams = new URLSearchParams(search);
+  const urlBookingId = urlParams.get("bookingId") ? parseInt(urlParams.get("bookingId")!) : undefined;
+  const urlResourceName = urlParams.get("resource") || undefined;
   const [selectedCategory, setSelectedCategory] = useState<number | null>(null);
   const [cart, setCart] = useState<CartItem[]>([]);
   const [searchQuery, setSearchQuery] = useState("");
@@ -55,26 +60,26 @@ export default function ButlerKiosk() {
     if (!allProducts) return [];
     let filtered = allProducts;
     if (selectedCategory) {
-      filtered = filtered.filter((p) => p.categoryId === selectedCategory);
+      filtered = filtered.filter((p: any) => p.categoryId === selectedCategory);
     }
     if (searchQuery) {
       const q = searchQuery.toLowerCase();
-      filtered = filtered.filter((p) => p.name.toLowerCase().includes(q) || p.description?.toLowerCase().includes(q));
+      filtered = filtered.filter((p: any) => p.name.toLowerCase().includes(q) || p.description?.toLowerCase().includes(q));
     }
     return filtered;
   }, [allProducts, selectedCategory, searchQuery]);
 
   const cartTotal = useMemo(() => {
-    const credits = cart.reduce((sum, item) => sum + parseFloat(item.priceCredits) * item.quantity, 0);
-    const eur = cart.reduce((sum, item) => sum + parseFloat(item.priceEur) * item.quantity, 0);
+    const credits = cart.reduce((sum: any, item: any) => sum + parseFloat(item.priceCredits) * item.quantity, 0);
+    const eur = cart.reduce((sum: any, item: any) => sum + parseFloat(item.priceEur) * item.quantity, 0);
     return { credits: credits.toFixed(2), eur: eur.toFixed(2) };
   }, [cart]);
 
   const addToCart = (product: NonNullable<typeof allProducts>[0]) => {
     setCart((prev) => {
-      const existing = prev.find((i) => i.productId === product.id);
+      const existing = prev.find((i: any) => i.productId === product.id);
       if (existing) {
-        return prev.map((i) =>
+        return prev.map((i: any) =>
           i.productId === product.id ? { ...i, quantity: i.quantity + 1 } : i
         );
       }
@@ -92,8 +97,8 @@ export default function ButlerKiosk() {
   const updateQuantity = (productId: number, delta: number) => {
     setCart((prev) =>
       prev
-        .map((i) => i.productId === productId ? { ...i, quantity: i.quantity + delta } : i)
-        .filter((i) => i.quantity > 0)
+        .map((i: any) => i.productId === productId ? { ...i, quantity: i.quantity + delta } : i)
+        .filter((i: any) => i.quantity > 0)
     );
   };
 
@@ -105,7 +110,7 @@ export default function ButlerKiosk() {
         const result = await createOrderWithMember.mutateAsync({
           token,
           locationId: 1,
-          items: cart.map((i) => ({ productId: i.productId, quantity: i.quantity })),
+          items: cart.map((i: any) => ({ productId: i.productId, quantity: i.quantity })),
         });
         if (result.success && result.order) {
           setLastOrder({ orderNumber: result.order.orderNumber, totalCredits: result.order.totalCredits, totalEur: result.order.totalEur });
@@ -120,8 +125,9 @@ export default function ButlerKiosk() {
         const result = await createOrder.mutateAsync({
           locationId: 1,
           userId: user?.id,
+          bookingId: urlBookingId,
           paymentMethod: method,
-          items: cart.map((i) => ({ productId: i.productId, quantity: i.quantity })),
+          items: cart.map((i: any) => ({ productId: i.productId, quantity: i.quantity })),
         });
         setLastOrder({ orderNumber: result.orderNumber, totalCredits: result.totalCredits, totalEur: result.totalEur });
         setCart([]);
@@ -187,7 +193,7 @@ export default function ButlerKiosk() {
       const result = await createOrderWithMember.mutateAsync({
         token,
         locationId: 1,
-        items: cart.map((i) => ({ productId: i.productId, quantity: i.quantity })),
+        items: cart.map((i: any) => ({ productId: i.productId, quantity: i.quantity })),
       });
 
       if (result.success && result.order) {
@@ -309,7 +315,7 @@ export default function ButlerKiosk() {
                     <div className="grid grid-cols-2 gap-4 text-center">
                       <div>
                         <p className="text-white/40 text-xs uppercase mb-1">Items</p>
-                        <p className="text-lg font-semibold text-white">{cart.reduce((s, i) => s + i.quantity, 0)}</p>
+                        <p className="text-lg font-semibold text-white">{cart.reduce((s: any, i: any) => s + i.quantity, 0)}</p>
                       </div>
                       <div>
                         <p className="text-white/40 text-xs uppercase mb-1">Total</p>
@@ -372,6 +378,16 @@ export default function ButlerKiosk() {
           </div>
         </div>
 
+        {/* Booking context banner */}
+        {urlBookingId && (
+          <div className="px-4 md:px-8 py-2 bg-[#627653]/10 border-b border-[#627653]/20 flex items-center gap-2">
+            <Coffee className="w-4 h-4 text-[#627653]" />
+            <span className="text-[#627653] text-xs font-medium">
+              Bestelling voor boeking #{urlBookingId}{urlResourceName ? ` — ${urlResourceName}` : ""}
+            </span>
+          </div>
+        )}
+
         {/* Categories */}
         <div className="px-4 md:px-8 py-3 md:py-4 flex gap-2 md:gap-3 overflow-x-auto border-b border-white/[0.04]">
           <button
@@ -384,7 +400,7 @@ export default function ButlerKiosk() {
           >
             All Items
           </button>
-          {categories?.map((cat) => (
+          {categories?.map((cat: any) => (
             <button
               key={cat.id}
               onClick={() => setSelectedCategory(cat.id)}
@@ -403,8 +419,8 @@ export default function ButlerKiosk() {
         {/* Products grid */}
         <div className="flex-1 overflow-y-auto p-4 md:p-8">
           <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-3 md:gap-4">
-            {filteredProducts.map((product) => {
-              const inCart = cart.find((i) => i.productId === product.id);
+            {filteredProducts.map((product: any) => {
+              const inCart = cart.find((i: any) => i.productId === product.id);
               return (
                 <button
                   key={product.id}
@@ -418,12 +434,12 @@ export default function ButlerKiosk() {
                   )}
                   <div className="w-full aspect-square rounded-lg bg-white/[0.04] mb-3 overflow-hidden">
                     <img
-                      src={getProductImageUrl(product.imageUrl, product.name, String(product.categoryId))}
+                      src={getProductImageUrl(product.imageUrl, product.name, product.category)}
                       alt={product.name}
                       className="w-full h-full object-cover"
                       onError={(e) => {
                         const img = e.target as HTMLImageElement;
-                        img.src = getProductImageUrl(null, product.name, String(product.categoryId));
+                        img.src = getProductImageUrl(null, product.name, product.category);
                       }}
                     />
                   </div>
@@ -512,7 +528,7 @@ export default function ButlerKiosk() {
           <ShoppingCart className="w-5 h-5 text-[#627653]" />
           <h2 className="text-white font-semibold">Your Order</h2>
           {cart.length > 0 && (
-            <span className="ml-auto text-xs text-white/40">{cart.reduce((s, i) => s + i.quantity, 0)} items</span>
+            <span className="ml-auto text-xs text-white/40">{cart.reduce((s: any, i: any) => s + i.quantity, 0)} items</span>
           )}
         </div>
 
@@ -524,7 +540,7 @@ export default function ButlerKiosk() {
         ) : (
           <>
             <div className="flex-1 overflow-y-auto px-6 py-4 space-y-3">
-              {cart.map((item) => (
+              {cart.map((item: any) => (
                 <div key={item.productId} className="flex items-center gap-3 bg-white/[0.03] rounded-lg p-3">
                   <div className="flex-1 min-w-0">
                     <p className="text-white text-sm font-medium truncate">{item.name}</p>

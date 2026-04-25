@@ -8,41 +8,25 @@ import { useState, useMemo } from "react";
 import { Link } from "wouter";
 import { Calendar, Clock, MapPin, X, Plus, AlertCircle, CheckCircle } from "lucide-react";
 
-/** Booking record shape (inferred from drizzle schema) */
-interface BookingRecord {
-  id: number;
-  resourceId: number;
-  locationId: number;
-  startTime: string | number | Date;
-  endTime: string | number | Date;
-  status: string;
-  creditsCost: string | null;
-  resourceName: string | undefined;
-  resourceType: string | undefined;
-  locationName: string | undefined;
-  locationCity: string | undefined;
-  notes: string | null;
-}
-
 type Tab = "upcoming" | "past" | "all";
 
 export default function Bookings() {
   const { isAuthenticated } = useAuth();
   const { data: bookings, isLoading } = trpc.bookings.mine.useQuery(undefined, { enabled: isAuthenticated });
-  const [cancelTarget, setCancelTarget] = useState<BookingRecord | null>(null);
+  const [cancelTarget, setCancelTarget] = useState<any>(null);
   const [tab, setTab] = useState<Tab>("upcoming");
-  const [showConfirmation, setShowConfirmation] = useState<BookingRecord | null>(null);
+  const [showConfirmation, setShowConfirmation] = useState<any>(null);
   const [confirmationTimer, setConfirmationTimer] = useState(0);
 
   const utils = trpc.useUtils();
-  const cancelMutation = trpc.bookings.cancelBooking.useMutation({
-    onSuccess: (data) => {
+  const cancelMutation = (trpc.bookings as any).cancel?.useMutation || (trpc.bookings as any).cancel.useMutation({
+    onSuccess: (data: any) => {
       toast.success(`Booking cancelled. ${data.refundedCredits} credits refunded.`);
       setCancelTarget(null);
       utils.bookings.mine.invalidate();
       utils.wallets.mine.invalidate();
     },
-    onError: (err: { message: string }) => {
+    onError: (err: any) => {
       const errorMsg = err?.message || "Failed to cancel booking";
       // User-friendly error messages
       if (errorMsg.includes("1 hour")) {
@@ -58,21 +42,21 @@ export default function Bookings() {
   const now = Date.now();
   const CANCEL_THRESHOLD_MS = 60 * 60 * 1000; // 1 hour
 
-  const upcoming = useMemo(() => (bookings ?? []).filter((b: BookingRecord) => new Date(b.startTime).getTime() > now && b.status !== "cancelled"), [bookings, now]);
-  const past = useMemo(() => (bookings ?? []).filter((b: BookingRecord) => new Date(b.startTime).getTime() <= now || b.status === "cancelled"), [bookings, now]);
+  const upcoming = useMemo(() => (bookings ?? []).filter((b: any) => new Date(b.startTime).getTime() > now && b.status !== "cancelled"), [bookings, now]);
+  const past = useMemo(() => (bookings ?? []).filter((b: any) => new Date(b.startTime).getTime() <= now || b.status === "cancelled"), [bookings, now]);
   const filtered = tab === "upcoming" ? upcoming : tab === "past" ? past : (bookings ?? []);
-  const totalSpent = (bookings ?? []).filter((b: BookingRecord) => b.status !== "cancelled").reduce((sum: number, b: BookingRecord) => sum + parseFloat(b.creditsCost || "0"), 0);
-  const totalHours = (bookings ?? []).filter((b: BookingRecord) => b.status !== "cancelled").reduce((sum: number, b: BookingRecord) => {
+  const totalSpent = (bookings ?? []).filter((b: any) => b.status !== "cancelled").reduce((sum: number, b: any) => sum + parseFloat(b.creditsCost || "0"), 0);
+  const totalHours = (bookings ?? []).filter((b: any) => b.status !== "cancelled").reduce((sum: number, b: any) => {
     return sum + (new Date(b.endTime).getTime() - new Date(b.startTime).getTime()) / 3600000;
   }, 0);
 
-  const canCancelBooking = (booking: BookingRecord) => {
+  const canCancelBooking = (booking: any) => {
     const start = new Date(booking.startTime).getTime();
     const timeUntilStart = start - now;
     return booking.status !== "cancelled" && timeUntilStart >= CANCEL_THRESHOLD_MS;
   };
 
-  const getCancelButtonTooltip = (booking: BookingRecord) => {
+  const getCancelButtonTooltip = (booking: any) => {
     if (booking.status === "cancelled") return "Already cancelled";
     const start = new Date(booking.startTime).getTime();
     const timeUntilStart = start - now;
@@ -119,7 +103,7 @@ export default function Bookings() {
 
       {/* Tabs */}
       <div className="flex gap-0 border-b border-white/[0.06] overflow-x-auto">
-        {(["upcoming", "past", "all"] as Tab[]).map((t) => {
+        {(["upcoming", "past", "all"] as Tab[]).map((t: any) => {
           const count = t === "upcoming" ? upcoming.length : t === "past" ? past.length : (bookings ?? []).length;
           return (
             <button
@@ -146,7 +130,7 @@ export default function Bookings() {
         </div>
       ) : (
         <div className="space-y-0">
-          {filtered.map((b: BookingRecord) => {
+          {filtered.map((b: any) => {
             const start = new Date(b.startTime);
             const end = new Date(b.endTime);
             const isPast = start.getTime() <= now;
@@ -261,7 +245,7 @@ export default function Bookings() {
                   Credits will be refunded to your wallet
                 </p>
               </div>
-              {Date.now() > new Date(cancelTarget.startTime).getTime() - (60 * 60 * 1000) && (
+              {Date.now() > cancelTarget.startTime - (60 * 60 * 1000) && (
                 <div className="bg-orange-500/10 border border-orange-500/20 rounded-lg p-3">
                   <p className="text-[12px] text-orange-300 font-light">
                     <AlertCircle className="w-3.5 h-3.5 inline mr-1.5" />
@@ -275,8 +259,8 @@ export default function Bookings() {
             <Button variant="outline" onClick={() => setCancelTarget(null)} className="border-white/10 bg-transparent hover:bg-white/5">Keep</Button>
             <Button
               variant="destructive"
-              disabled={cancelMutation.isPending || (cancelTarget ? Date.now() > new Date(cancelTarget.startTime).getTime() - (60 * 60 * 1000) : false)}
-              onClick={() => cancelMutation.mutate({ id: cancelTarget?.id ?? 0 })}
+              disabled={cancelMutation.isPending || (cancelTarget && Date.now() > cancelTarget.startTime - (60 * 60 * 1000))}
+              onClick={() => cancelMutation.mutate({ id: cancelTarget?.id })}
             >
               {cancelMutation.isPending ? "Cancelling..." : "Cancel booking"}
             </Button>

@@ -1,7 +1,7 @@
 import { z } from "zod";
 import { publicProcedure, protectedProcedure, router } from "../_core/trpc";
 import { getDb } from "../db";
-import { accessLog } from "../../drizzle/schema";
+import { accessLog } from "../../drizzle/pg-schema";
 import { eq, and, desc, sql, gte, count } from "drizzle-orm";
 import {
   listAccessPoints, getAccessPoint, remoteOpenDoor, getAuditTrail,
@@ -36,8 +36,8 @@ function ensureSaltoInit(): void {
 }
 
 const adminProcedure = protectedProcedure.use(({ ctx, next }) => {
-  if (ctx.user.role !== "administrator" && ctx.user.role !== "facility") {
-    throw new Error("Forbidden: admin or facility role required");
+  if (ctx.user.role !== "administrator" && ctx.user.role !== "host") {
+    throw new Error("Forbidden: admin or host role required");
   }
   return next({ ctx });
 });

@@ -17,7 +17,7 @@ export default function NotFound() {
         </p>
         <Button
           onClick={() => setLocation("/")}
-          className="mt-8 bg-[#627653] hover:bg-[#3a4a34] text-white px-8"
+          className="mt-8 bg-[#C4B89E] hover:bg-[#1C1C1C] text-white px-8"
         >
           <Home className="w-4 h-4 mr-2" />
           Naar Home

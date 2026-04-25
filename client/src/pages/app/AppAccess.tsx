@@ -30,7 +30,7 @@ export default function AppAccess() {
 
   const handleConnectWifi = () => {
     setWifiConnected(true);
-    toast.success("Verbonden met Mr. Green WiFi", { description: "Netwerk: MrGreen-Members" });
+    toast.success("Verbonden met The Green WiFi", { description: "Netwerk: TheGreen-Members" });
   };
 
   return (
@@ -38,7 +38,7 @@ export default function AppAccess() {
       <h1 className="text-xl font-light text-white">Toegang</h1>
 
       {/* Digital Key Card */}
-      <div className="bg-gradient-to-br from-[#627653] to-[#4a5c3f] rounded-2xl p-5 relative overflow-hidden">
+      <div className="bg-gradient-to-br from-[#C4B89E] to-[#4a5c3f] rounded-2xl p-5 relative overflow-hidden">
         <div className="absolute top-0 right-0 w-40 h-40 rounded-full bg-white/5 -mr-16 -mt-16" />
         <div className="absolute bottom-0 left-0 w-24 h-24 rounded-full bg-white/5 -ml-8 -mb-8" />
         <div className="flex items-center gap-3 mb-4">
@@ -101,20 +101,20 @@ export default function AppAccess() {
           className="w-full flex items-center gap-4 bg-white/[0.03] rounded-xl p-4 transition-all active:scale-[0.99]"
         >
           <div className={`w-10 h-10 rounded-lg flex items-center justify-center flex-shrink-0 ${
-            wifiConnected ? "bg-[#627653]/10" : "bg-white/[0.05]"
+            wifiConnected ? "bg-[#C4B89E]/10" : "bg-white/[0.05]"
           }`}>
-            <Wifi className={`w-5 h-5 ${wifiConnected ? "text-[#627653]" : "text-white/40"}`} />
+            <Wifi className={`w-5 h-5 ${wifiConnected ? "text-[#C4B89E]" : "text-white/40"}`} />
           </div>
           <div className="flex-1 text-left">
-            <p className="text-white text-sm font-medium">MrGreen-Members</p>
+            <p className="text-white text-sm font-medium">TheGreen-Members</p>
             <p className="text-white/30 text-xs">
               {wifiConnected ? "Verbonden · UniFi Identity" : "Beveiligd netwerk"}
             </p>
           </div>
           {wifiConnected ? (
-            <CheckCircle2 className="w-5 h-5 text-[#627653]" />
+            <CheckCircle2 className="w-5 h-5 text-[#C4B89E]" />
           ) : (
-            <span className="text-[#627653] text-xs font-medium">Verbinden</span>
+            <span className="text-[#C4B89E] text-xs font-medium">Verbinden</span>
           )}
         </button>
 
@@ -123,7 +123,7 @@ export default function AppAccess() {
             <Signal className="w-5 h-5 text-white/40" />
           </div>
           <div className="flex-1 text-left">
-            <p className="text-white text-sm font-medium">MrGreen-Guest</p>
+            <p className="text-white text-sm font-medium">TheGreen-Guest</p>
             <p className="text-white/30 text-xs">Open netwerk voor bezoekers</p>
           </div>
         </div>
@@ -133,8 +133,8 @@ export default function AppAccess() {
       <div>
         <h2 className="text-white/60 text-xs tracking-[0.15em] uppercase font-medium mb-3">Parkeren</h2>
         <div className="bg-white/[0.03] rounded-xl p-4 flex items-center gap-4">
-          <div className="w-10 h-10 rounded-lg bg-[#b8a472]/10 flex items-center justify-center flex-shrink-0">
-            <Car className="w-5 h-5 text-[#b8a472]" />
+          <div className="w-10 h-10 rounded-lg bg-[#C4B89E]/10 flex items-center justify-center flex-shrink-0">
+            <Car className="w-5 h-5 text-[#C4B89E]" />
           </div>
           <div className="flex-1">
             <p className="text-white text-sm font-medium">Parkeerplaats</p>

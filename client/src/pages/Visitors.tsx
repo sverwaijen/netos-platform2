@@ -16,7 +16,7 @@ export default function Visitors() {
   const utils = trpc.useUtils();
   const createVisitor = trpc.visitors.create.useMutation({
     onSuccess: () => { toast.success("Visitor invited!"); setOpen(false); setForm({ name: "", email: "", phone: "", licensePlate: "", locationId: "" }); utils.visitors.mine.invalidate(); },
-    onError: (e) => toast.error(e.message),
+    onError: (e: any) => toast.error(e.message),
   });
   const updateStatus = trpc.visitors.updateStatus.useMutation({
     onSuccess: () => { toast.success("Status updated."); utils.visitors.mine.invalidate(); },
@@ -25,11 +25,11 @@ export default function Visitors() {
   const [tab, setTab] = useState<"all" | "today" | "active">("all");
   const [form, setForm] = useState({ name: "", email: "", phone: "", licensePlate: "", locationId: "" });
 
-  const today = (visitors ?? []).filter((v) => {
+  const today = (visitors ?? []).filter((v: any) => {
     const d = new Date(Number(v.visitDate));
     return d.toDateString() === new Date().toDateString();
   });
-  const checkedIn = (visitors ?? []).filter((v) => v.status === "checked_in");
+  const checkedIn = (visitors ?? []).filter((v: any) => v.status === "checked_in");
   const items = tab === "today" ? today : tab === "active" ? checkedIn : (visitors ?? []);
 
   if (isLoading) return <div className="space-y-4 p-1">{Array.from({ length: 4 }).map((_, i) => <Skeleton key={i} className="h-20" />)}</div>;
@@ -38,12 +38,12 @@ export default function Visitors() {
     <div className="space-y-8 p-1">
       <div className="flex items-end justify-between">
         <div>
-          <div className="text-[9px] font-semibold tracking-[4px] uppercase text-[#627653] mb-3">Hospitality</div>
+          <div className="text-[9px] font-semibold tracking-[4px] uppercase text-[#C4B89E] mb-3">Hospitality</div>
           <h1 className="text-[clamp(24px,3vw,36px)] font-extralight tracking-[-0.5px]">
             Visitor <strong className="font-semibold">management.</strong>
           </h1>
         </div>
-        <button onClick={() => setOpen(true)} className="flex items-center gap-2 px-5 py-3 bg-[#627653] text-white text-[10px] font-semibold tracking-[3px] uppercase hover:bg-[#4a5a3f] transition-all">
+        <button onClick={() => setOpen(true)} className="flex items-center gap-2 px-5 py-3 bg-[#C4B89E] text-white text-[10px] font-semibold tracking-[3px] uppercase hover:bg-[#4a5a3f] transition-all">
           <UserPlus className="w-3.5 h-3.5" />Invite visitor
         </button>
       </div>
@@ -53,11 +53,11 @@ export default function Visitors() {
           { label: "Total", value: (visitors ?? []).length },
           { label: "Today", value: today.length, accent: true },
           { label: "Checked In", value: checkedIn.length },
-          { label: "With Plate", value: (visitors ?? []).filter((v) => v.licensePlate).length },
+          { label: "With Plate", value: (visitors ?? []).filter((v: any) => v.licensePlate).length },
         ].map((kpi, i) => (
           <div key={i} className="bg-[#111] p-5">
             <div className="text-[10px] font-medium tracking-[2px] uppercase text-[#888] mb-1">{kpi.label}</div>
-            <div className={`text-2xl font-extralight ${kpi.accent ? "text-[#627653]" : ""}`}>{kpi.value}</div>
+            <div className={`text-2xl font-extralight ${kpi.accent ? "text-[#C4B89E]" : ""}`}>{kpi.value}</div>
           </div>
         ))}
       </div>
@@ -68,7 +68,7 @@ export default function Visitors() {
           { key: "today", label: "Today", count: today.length },
           { key: "active", label: "Active", count: checkedIn.length },
         ] as const).map((t) => (
-          <button key={t.key} onClick={() => setTab(t.key)} className={`px-6 py-3 text-[10px] font-semibold tracking-[3px] uppercase transition-all border-b-2 ${tab === t.key ? "border-[#627653] text-white" : "border-transparent text-[#888] hover:text-white"}`}>
+          <button key={t.key} onClick={() => setTab(t.key)} className={`px-6 py-3 text-[10px] font-semibold tracking-[3px] uppercase transition-all border-b-2 ${tab === t.key ? "border-[#C4B89E] text-white" : "border-transparent text-[#888] hover:text-white"}`}>
             {t.label} ({t.count})
           </button>
         ))}
@@ -81,7 +81,7 @@ export default function Visitors() {
         </div>
       ) : (
         <div className="space-y-0">
-          {items.map((v) => {
+          {items.map((v: any) => {
             const isIn = v.status === "checked_in";
             const isPending = v.status === "invited" || !v.status;
             return (
@@ -101,11 +101,11 @@ export default function Visitors() {
                 </div>
                 <div className="flex items-center gap-3">
                   <div className="flex items-center gap-1.5">
-                    {isIn ? <CheckCircle className="w-3.5 h-3.5 text-[#627653]" /> : <Clock className="w-3.5 h-3.5 text-[#888]" />}
-                    <span className={`text-[10px] font-semibold tracking-[2px] uppercase ${isIn ? "text-[#627653]" : "text-[#888]"}`}>{v.status || "invited"}</span>
+                    {isIn ? <CheckCircle className="w-3.5 h-3.5 text-[#C4B89E]" /> : <Clock className="w-3.5 h-3.5 text-[#888]" />}
+                    <span className={`text-[10px] font-semibold tracking-[2px] uppercase ${isIn ? "text-[#C4B89E]" : "text-[#888]"}`}>{v.status || "invited"}</span>
                   </div>
                   {isPending && (
-                    <button onClick={() => updateStatus.mutate({ id: v.id, status: "checked_in" as const })} className="px-3 py-1.5 text-[9px] font-semibold tracking-[2px] uppercase border border-[#627653]/30 text-[#627653] hover:bg-[#627653]/10 transition-all">
+                    <button onClick={() => updateStatus.mutate({ id: v.id, status: "checked_in" as const })} className="px-3 py-1.5 text-[9px] font-semibold tracking-[2px] uppercase border border-[#C4B89E]/30 text-[#C4B89E] hover:bg-[#C4B89E]/10 transition-all">
                       <LogIn className="w-3 h-3 inline mr-1" />Check in
                     </button>
                   )}
@@ -140,7 +140,7 @@ export default function Visitors() {
               <label className="text-[10px] text-[#888] tracking-[2px] uppercase font-medium">Location *</label>
               <Select value={form.locationId} onValueChange={(v) => setForm({ ...form, locationId: v })}>
                 <SelectTrigger className="mt-1 bg-white/[0.03] border-white/[0.06]"><SelectValue placeholder="Select location" /></SelectTrigger>
-                <SelectContent>{(locations ?? []).map((l) => <SelectItem key={l.id} value={String(l.id)}>{l.name}</SelectItem>)}</SelectContent>
+                <SelectContent>{(locations ?? []).map((l: any) => <SelectItem key={l.id} value={String(l.id)}>{l.name}</SelectItem>)}</SelectContent>
               </Select>
             </div>
             <div className="bg-white/[0.03] p-3 text-[11px] text-[#888]">
@@ -152,7 +152,7 @@ export default function Visitors() {
             <Button variant="outline" onClick={() => setOpen(false)} className="border-white/10 bg-transparent">Cancel</Button>
             <Button disabled={createVisitor.isPending || !form.name || !form.locationId} onClick={() => {
               createVisitor.mutate({ name: form.name, email: form.email || undefined, phone: form.phone || undefined, licensePlate: form.licensePlate || undefined, visitDate: Date.now() + 86400000, locationId: parseInt(form.locationId) });
-            }} className="bg-[#627653] text-white hover:bg-[#4a5a3f]">
+            }} className="bg-[#C4B89E] text-white hover:bg-[#4a5a3f]">
               <Send className="w-3.5 h-3.5 mr-2" />{createVisitor.isPending ? "Sending..." : "Send invite"}
             </Button>
           </DialogFooter>

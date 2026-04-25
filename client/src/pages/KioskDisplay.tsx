@@ -36,7 +36,7 @@ export default function KioskDisplay() {
   }, [data?.photos]);
 
   if (!companyId) {
-    return <MrGreenDefaultDisplay time={time} />;
+    return <TheGreenDefaultDisplay time={time} />;
   }
 
   if (!data) {
@@ -50,10 +50,10 @@ export default function KioskDisplay() {
   }
 
   const { company, branding, photos, scraped } = data;
-  const primary = branding?.primaryColor || "#627653";
+  const primary = branding?.primaryColor || "#C4B89E";
   const secondary = branding?.secondaryColor || "#111111";
-  const accent = branding?.accentColor || "#b8a472";
-  const font = branding?.fontFamily || "Montserrat";
+  const accent = branding?.accentColor || "#C4B89E";
+  const font = branding?.fontFamily || "Inter";
   const logo = branding?.logoUrl || scraped?.scrapedLogoUrl;
   const bgImage = branding?.backgroundImageUrl || (scraped?.scrapedImages as string[])?.[0];
 
@@ -64,7 +64,7 @@ export default function KioskDisplay() {
     <div
       className="w-screen h-screen overflow-hidden relative"
       style={{
-        fontFamily: `'${font}', 'Montserrat', sans-serif`,
+        fontFamily: `'${font}', 'Inter', sans-serif`,
         background: bgImage
           ? `linear-gradient(135deg, ${secondary}ee, ${primary}cc), url(${bgImage}) center/cover`
           : `linear-gradient(135deg, ${secondary}, ${primary}88)`,
@@ -96,7 +96,7 @@ export default function KioskDisplay() {
                 className="text-4xl font-semibold tracking-tight"
                 style={{ color: accent }}
               >
-                {company?.name || "Mr. Green"}
+                {company?.name || "The Green"}
               </div>
             )}
           </div>
@@ -109,7 +109,7 @@ export default function KioskDisplay() {
             >
               Welcome to<br />
               <span className="font-semibold" style={{ color: accent }}>
-                {company?.name || "Mr. Green Offices"}
+                {company?.name || "The Green Offices"}
               </span>
             </h1>
             {branding?.welcomeMessage && (
@@ -119,11 +119,11 @@ export default function KioskDisplay() {
             )}
           </div>
 
-          {/* Mr. Green badge */}
+          {/* The Green badge */}
           <div className="flex items-center gap-3 text-white/30">
-            <div className="w-8 h-8 rounded-full" style={{ background: "#627653" }} />
+            <div className="w-8 h-8 rounded-full" style={{ background: "#C4B89E" }} />
             <span className="text-sm tracking-[0.2em] uppercase font-extralight">
-              Powered by Mr. Green Offices
+              Powered by The Green Offices
             </span>
           </div>
         </div>
@@ -132,7 +132,7 @@ export default function KioskDisplay() {
         <div className="w-[40%] h-full flex items-center justify-center p-8">
           {photos && photos.length > 0 ? (
             <div className="relative w-full max-w-[600px] aspect-[3/4] rounded-2xl overflow-hidden">
-              {photos.map((photo, i) => (
+              {photos.map((photo: any, i: any) => (
                 <div
                   key={photo.id}
                   className="absolute inset-0 transition-opacity duration-1000"
@@ -153,7 +153,7 @@ export default function KioskDisplay() {
               ))}
               {/* Photo indicators */}
               <div className="absolute bottom-4 left-1/2 -translate-x-1/2 flex gap-2">
-                {photos.map((_, i) => (
+                {photos.map((_: any, i: any) => (
                   <div
                     key={i}
                     className="w-2 h-2 rounded-full transition-all duration-500"
@@ -198,14 +198,14 @@ export default function KioskDisplay() {
               className="text-sm tracking-[0.3em] uppercase font-extralight"
               style={{ color: accent, writingMode: "vertical-rl" }}
             >
-              {company?.name || "Mr. Green"}
+              {company?.name || "The Green"}
             </div>
           </div>
 
           {/* Location info */}
           <div className="text-white/30 text-sm font-extralight">
-            <p className="tracking-[0.15em] uppercase">Mr. Green Offices</p>
-            <p className="mt-1 text-white/20">NET OS Platform</p>
+            <p className="tracking-[0.15em] uppercase">The Green Offices</p>
+            <p className="mt-1 text-white/20">The Green Platform</p>
           </div>
         </div>
       </div>
@@ -216,7 +216,7 @@ export default function KioskDisplay() {
         style={{ background: `${primary}cc` }}
       >
         <div className="animate-marquee whitespace-nowrap flex items-center gap-16 text-white/70 text-sm tracking-[0.2em] uppercase font-extralight">
-          <span>Welcome to {company?.name || "Mr. Green Offices"}</span>
+          <span>Welcome to {company?.name || "The Green Offices"}</span>
           <span style={{ color: accent }}>●</span>
           <span>Flexible Workspaces</span>
           <span style={{ color: accent }}>●</span>
@@ -224,9 +224,9 @@ export default function KioskDisplay() {
           <span style={{ color: accent }}>●</span>
           <span>Coffee & Lunch at the Butler</span>
           <span style={{ color: accent }}>●</span>
-          <span>Powered by NET OS</span>
+          <span>Powered by The Green</span>
           <span style={{ color: accent }}>●</span>
-          <span>Welcome to {company?.name || "Mr. Green Offices"}</span>
+          <span>Welcome to {company?.name || "The Green Offices"}</span>
           <span style={{ color: accent }}>●</span>
           <span>Flexible Workspaces</span>
           <span style={{ color: accent }}>●</span>
@@ -239,8 +239,8 @@ export default function KioskDisplay() {
   );
 }
 
-/** Default Mr. Green display when no company is specified */
-function MrGreenDefaultDisplay({ time }: { time: Date }) {
+/** Default The Green display when no company is specified */
+function TheGreenDefaultDisplay({ time }: { time: Date }) {
   const dayNames = ["Sunday", "Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday"];
   const monthNames = ["January", "February", "March", "April", "May", "June", "July", "August", "September", "October", "November", "December"];
 
@@ -248,37 +248,37 @@ function MrGreenDefaultDisplay({ time }: { time: Date }) {
     <div
       className="w-screen h-screen overflow-hidden relative"
       style={{
-        fontFamily: "'Montserrat', sans-serif",
+        fontFamily: "'Inter', sans-serif",
         background: "linear-gradient(135deg, #111 0%, #1a2a15 50%, #111 100%)",
       }}
     >
       {/* Grid overlay */}
       <div className="absolute inset-0 opacity-[0.03]" style={{
-        backgroundImage: "linear-gradient(#627653 1px, transparent 1px), linear-gradient(90deg, #627653 1px, transparent 1px)",
+        backgroundImage: "linear-gradient(#C4B89E 1px, transparent 1px), linear-gradient(90deg, #C4B89E 1px, transparent 1px)",
         backgroundSize: "100px 100px",
       }} />
 
       <div className="relative z-10 h-full flex">
         {/* Left: Branding */}
         <div className="w-[35%] h-full flex flex-col justify-between p-16">
-          <div className="text-[#627653] text-3xl font-semibold tracking-tight">
-            Mr. Green<br />
+          <div className="text-[#C4B89E] text-3xl font-semibold tracking-tight">
+            The Green<br />
             <span className="font-extralight text-white/40">Offices</span>
           </div>
 
           <div>
             <h1 className="text-7xl font-extralight text-white leading-[1.1] mb-8">
               Your workspace,<br />
-              <span className="font-semibold text-[#627653]">elevated.</span>
+              <span className="font-semibold text-[#C4B89E]">elevated.</span>
             </h1>
             <p className="text-xl font-extralight text-white/40 max-w-md leading-relaxed">
-              Premium coworking spaces across the Netherlands.
+              Premium private members communitys across the Netherlands.
               Where ambition meets environment.
             </p>
           </div>
 
           <div className="flex items-center gap-4 text-white/20 text-sm tracking-[0.2em] uppercase font-extralight">
-            <div className="w-12 h-px bg-[#627653]/50" />
+            <div className="w-12 h-px bg-[#C4B89E]/50" />
             <span>Invite Only</span>
           </div>
         </div>
@@ -286,16 +286,16 @@ function MrGreenDefaultDisplay({ time }: { time: Date }) {
         {/* Center: Decorative */}
         <div className="w-[30%] h-full flex items-center justify-center">
           <div className="relative">
-            <div className="w-64 h-64 rounded-full border border-[#627653]/20 flex items-center justify-center">
-              <div className="w-48 h-48 rounded-full border border-[#627653]/10 flex items-center justify-center">
-                <div className="w-32 h-32 rounded-full bg-[#627653]/10 flex items-center justify-center">
-                  <div className="w-4 h-4 rounded-full bg-[#627653]" />
+            <div className="w-64 h-64 rounded-full border border-[#C4B89E]/20 flex items-center justify-center">
+              <div className="w-48 h-48 rounded-full border border-[#C4B89E]/10 flex items-center justify-center">
+                <div className="w-32 h-32 rounded-full bg-[#C4B89E]/10 flex items-center justify-center">
+                  <div className="w-4 h-4 rounded-full bg-[#C4B89E]" />
                 </div>
               </div>
             </div>
             {/* Orbiting dots */}
-            <div className="absolute top-0 left-1/2 -translate-x-1/2 -translate-y-2 w-3 h-3 rounded-full bg-[#b8a472] animate-pulse" />
-            <div className="absolute bottom-0 right-0 translate-x-2 translate-y-2 w-2 h-2 rounded-full bg-[#627653] animate-pulse" style={{ animationDelay: "1s" }} />
+            <div className="absolute top-0 left-1/2 -translate-x-1/2 -translate-y-2 w-3 h-3 rounded-full bg-[#C4B89E] animate-pulse" />
+            <div className="absolute bottom-0 right-0 translate-x-2 translate-y-2 w-2 h-2 rounded-full bg-[#C4B89E] animate-pulse" style={{ animationDelay: "1s" }} />
           </div>
         </div>
 
@@ -314,9 +314,9 @@ function MrGreenDefaultDisplay({ time }: { time: Date }) {
           </div>
 
           <div className="flex flex-col items-end gap-6">
-            <div className="w-px h-40 bg-gradient-to-b from-[#627653] to-transparent" />
-            <div className="text-[#b8a472] text-xs tracking-[0.4em] uppercase font-extralight" style={{ writingMode: "vertical-rl" }}>
-              NET OS Platform
+            <div className="w-px h-40 bg-gradient-to-b from-[#C4B89E] to-transparent" />
+            <div className="text-[#C4B89E] text-xs tracking-[0.4em] uppercase font-extralight" style={{ writingMode: "vertical-rl" }}>
+              The Green Platform
             </div>
           </div>
 
@@ -327,21 +327,21 @@ function MrGreenDefaultDisplay({ time }: { time: Date }) {
       </div>
 
       {/* Bottom ticker */}
-      <div className="absolute bottom-0 inset-x-0 h-12 flex items-center overflow-hidden bg-[#627653]/20 backdrop-blur-sm">
+      <div className="absolute bottom-0 inset-x-0 h-12 flex items-center overflow-hidden bg-[#C4B89E]/20 backdrop-blur-sm">
         <div className="animate-marquee whitespace-nowrap flex items-center gap-16 text-white/50 text-sm tracking-[0.2em] uppercase font-extralight">
-          <span>Apeldoorn</span><span className="text-[#b8a472]">●</span>
-          <span>Amsterdam</span><span className="text-[#b8a472]">●</span>
-          <span>Rotterdam</span><span className="text-[#b8a472]">●</span>
-          <span>Zwolle</span><span className="text-[#b8a472]">●</span>
-          <span>Ede</span><span className="text-[#b8a472]">●</span>
-          <span>Klarenbeek</span><span className="text-[#b8a472]">●</span>
-          <span>Spijkenisse</span><span className="text-[#b8a472]">●</span>
-          <span>Apeldoorn</span><span className="text-[#b8a472]">●</span>
-          <span>Amsterdam</span><span className="text-[#b8a472]">●</span>
-          <span>Rotterdam</span><span className="text-[#b8a472]">●</span>
-          <span>Zwolle</span><span className="text-[#b8a472]">●</span>
-          <span>Ede</span><span className="text-[#b8a472]">●</span>
-          <span>Klarenbeek</span><span className="text-[#b8a472]">●</span>
+          <span>Apeldoorn</span><span className="text-[#C4B89E]">●</span>
+          <span>Amsterdam</span><span className="text-[#C4B89E]">●</span>
+          <span>Rotterdam</span><span className="text-[#C4B89E]">●</span>
+          <span>Zwolle</span><span className="text-[#C4B89E]">●</span>
+          <span>Ede</span><span className="text-[#C4B89E]">●</span>
+          <span>Klarenbeek</span><span className="text-[#C4B89E]">●</span>
+          <span>Spijkenisse</span><span className="text-[#C4B89E]">●</span>
+          <span>Apeldoorn</span><span className="text-[#C4B89E]">●</span>
+          <span>Amsterdam</span><span className="text-[#C4B89E]">●</span>
+          <span>Rotterdam</span><span className="text-[#C4B89E]">●</span>
+          <span>Zwolle</span><span className="text-[#C4B89E]">●</span>
+          <span>Ede</span><span className="text-[#C4B89E]">●</span>
+          <span>Klarenbeek</span><span className="text-[#C4B89E]">●</span>
           <span>Spijkenisse</span>
         </div>
       </div>

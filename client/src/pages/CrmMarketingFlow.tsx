@@ -18,7 +18,7 @@ const FLOW_STEPS = [
     title: "1. Lead Scraping",
     subtitle: "Bronnen & Ontdekking",
     icon: Globe,
-    color: "#627653",
+    color: "#C4B89E",
     description: "Automatisch bedrijven vinden via LinkedIn, KvK, websites en events",
     metrics: [
       { label: "Bronnen actief", value: "4" },
@@ -38,7 +38,7 @@ const FLOW_STEPS = [
     title: "2. Doelgroepanalyse",
     subtitle: "AI Scoring & Kwalificatie",
     icon: Brain,
-    color: "#b8a472",
+    color: "#C4B89E",
     description: "AI analyseert bedrijfsprofiel, industrie match, budget fit en locatievoorkeur",
     metrics: [
       { label: "Gekwalificeerd", value: "68%" },
@@ -78,7 +78,7 @@ const FLOW_STEPS = [
     title: "4. Engagement",
     subtitle: "Gesprek & Rondleiding",
     icon: Calendar,
-    color: "#627653",
+    color: "#C4B89E",
     description: "Van eerste reactie naar persoonlijk contact en rondleiding",
     metrics: [
       { label: "Tours gepland", value: "12" },
@@ -98,7 +98,7 @@ const FLOW_STEPS = [
     title: "5. Conversie",
     subtitle: "Voorstel & Afsluiting",
     icon: Handshake,
-    color: "#b8a472",
+    color: "#C4B89E",
     description: "Maatwerk voorstel, onderhandeling en contract afsluiting",
     metrics: [
       { label: "Win rate", value: "34%" },
@@ -138,7 +138,7 @@ export default function CrmMarketingFlow() {
   const leadsPerStep = useMemo(() => {
     const map: Record<string, typeof leads> = {};
     FLOW_STEPS.forEach((s) => (map[s.id] = []));
-    leads.forEach((l) => {
+    leads.forEach((l: any) => {
       const step = stageMapping[l.stage] || "scrape";
       if (map[step]) map[step].push(l);
     });
@@ -172,8 +172,8 @@ export default function CrmMarketingFlow() {
         <Card className="bg-card/50 border-border/30">
           <CardContent className="p-4">
             <div className="flex items-center gap-3">
-              <div className="p-2 rounded-lg bg-[#627653]/10">
-                <Users className="w-5 h-5 text-[#627653]" />
+              <div className="p-2 rounded-lg bg-[#C4B89E]/10">
+                <Users className="w-5 h-5 text-[#C4B89E]" />
               </div>
               <div>
                 <p className="text-xs text-muted-foreground">Totaal Leads</p>
@@ -185,8 +185,8 @@ export default function CrmMarketingFlow() {
         <Card className="bg-card/50 border-border/30">
           <CardContent className="p-4">
             <div className="flex items-center gap-3">
-              <div className="p-2 rounded-lg bg-[#b8a472]/10">
-                <TrendingUp className="w-5 h-5 text-[#b8a472]" />
+              <div className="p-2 rounded-lg bg-[#C4B89E]/10">
+                <TrendingUp className="w-5 h-5 text-[#C4B89E]" />
               </div>
               <div>
                 <p className="text-xs text-muted-foreground">Pipeline Waarde</p>
@@ -227,7 +227,7 @@ export default function CrmMarketingFlow() {
       <Card className="bg-card/50 border-border/30 overflow-hidden">
         <CardHeader className="pb-2">
           <CardTitle className="text-base font-medium flex items-center gap-2">
-            <Sparkles className="w-4 h-4 text-[#b8a472]" />
+            <Sparkles className="w-4 h-4 text-[#C4B89E]" />
             Acquisitie Flow
           </CardTitle>
         </CardHeader>
@@ -350,7 +350,7 @@ export default function CrmMarketingFlow() {
               <ul className="space-y-2">
                 {FLOW_STEPS.find((s) => s.id === selectedStep)?.details.map((d, i) => (
                   <li key={i} className="flex items-start gap-2 text-sm">
-                    <CheckCircle2 className="w-4 h-4 text-[#627653] mt-0.5 flex-shrink-0" />
+                    <CheckCircle2 className="w-4 h-4 text-[#C4B89E] mt-0.5 flex-shrink-0" />
                     <span className="text-muted-foreground">{d}</span>
                   </li>
                 ))}
@@ -377,15 +377,15 @@ export default function CrmMarketingFlow() {
                       onClick={() => navigate(`/crm/leads/${lead.id}`)}
                       className="w-full flex items-center gap-3 p-3 rounded-lg bg-background/50 hover:bg-background/80 transition-colors text-left"
                     >
-                      <div className="w-8 h-8 rounded-full bg-[#627653]/10 flex items-center justify-center flex-shrink-0">
-                        <Building2 className="w-4 h-4 text-[#627653]" />
+                      <div className="w-8 h-8 rounded-full bg-[#C4B89E]/10 flex items-center justify-center flex-shrink-0">
+                        <Building2 className="w-4 h-4 text-[#C4B89E]" />
                       </div>
                       <div className="flex-1 min-w-0">
                         <p className="text-sm font-medium truncate">{lead.companyName}</p>
                         <p className="text-xs text-muted-foreground truncate">{lead.contactName} · {lead.industry}</p>
                       </div>
                       <div className="text-right flex-shrink-0">
-                        <p className="text-xs font-semibold text-[#b8a472]">Score: {lead.score}</p>
+                        <p className="text-xs font-semibold text-[#C4B89E]">Score: {lead.score}</p>
                         <p className="text-[10px] text-muted-foreground">€{((lead.estimatedValue || 0) / 1000).toFixed(0)}k</p>
                       </div>
                       <ChevronRight className="w-4 h-4 text-muted-foreground/40 flex-shrink-0" />
@@ -402,7 +402,7 @@ export default function CrmMarketingFlow() {
       <Card className="bg-card/50 border-border/30">
         <CardHeader className="pb-2">
           <CardTitle className="text-base font-medium flex items-center gap-2">
-            <Mail className="w-4 h-4 text-[#b8a472]" />
+            <Mail className="w-4 h-4 text-[#C4B89E]" />
             Actieve Campagnes
           </CardTitle>
         </CardHeader>
@@ -454,7 +454,7 @@ export default function CrmMarketingFlow() {
                   </div>
                   <div className="w-full h-1.5 bg-muted rounded-full overflow-hidden">
                     <div
-                      className="h-full rounded-full bg-[#627653] transition-all"
+                      className="h-full rounded-full bg-[#C4B89E] transition-all"
                       style={{ width: `${(campaign.sentCount / Math.max(campaign.totalLeads, 1)) * 100}%` }}
                     />
                   </div>
@@ -480,7 +480,7 @@ export default function CrmMarketingFlow() {
               { trigger: "Huurcontract Afloop", desc: "Huidig kantoor contract loopt af binnen 6 maanden", icon: Calendar, active: true, leads: 5 },
               { trigger: "Team Groei", desc: "LinkedIn toont 20%+ groei in medewerkers afgelopen kwartaal", icon: Users, active: true, leads: 8 },
               { trigger: "Verhuisaankondiging", desc: "Bedrijf kondigt verhuizing of nieuwe locatie aan", icon: Building2, active: false, leads: 0 },
-              { trigger: "Competitor Switch", desc: "Bedrijf verlaat concurrent coworking space", icon: Target, active: true, leads: 2 },
+              { trigger: "Competitor Switch", desc: "Bedrijf verlaat concurrent private members community", icon: Target, active: true, leads: 2 },
               { trigger: "Event Deelname", desc: "Bedrijf bezoekt relevant tech/startup event", icon: Calendar, active: true, leads: 4 },
             ].map((t) => {
               const TIcon = t.icon;

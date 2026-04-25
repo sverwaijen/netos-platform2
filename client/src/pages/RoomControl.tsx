@@ -170,7 +170,7 @@ export default function RoomControl() {
             </Card>
           ) : (
             <div className="space-y-2">
-              {zones.data?.map(zone => (
+              {zones.data?.map((zone: any) => (
                 <Card key={zone.id} className="bg-card/50 border-border/30">
                   <CardContent className="p-4 flex items-center justify-between">
                     <div>
@@ -303,7 +303,7 @@ function ZoneDetail({ zoneId, onBack }: { zoneId: number; onBack: () => void }) 
             <p className="text-sm text-muted-foreground text-center py-4">Geen besturingspunten geconfigureerd</p>
           ) : (
             <div className="space-y-4">
-              {controlPoints.data?.map(cp => (
+              {controlPoints.data?.map((cp: any) => (
                 <div key={cp.id} className="flex items-center justify-between p-3 rounded-lg bg-muted/20 border border-border/20">
                   <div>
                     <p className="text-sm font-medium">{cp.name}</p>
@@ -396,7 +396,7 @@ function AutomationTab() {
         </Card>
       ) : (
         <div className="space-y-2">
-          {rules.data?.map(rule => (
+          {rules.data?.map((rule: any) => (
             <Card key={rule.id} className="bg-card/50 border-border/30">
               <CardContent className="p-4 flex items-center justify-between">
                 <div>
@@ -432,7 +432,7 @@ function AlertsTab() {
         </Card>
       ) : (
         <div className="space-y-2">
-          {alerts.data?.map(alert => (
+          {alerts.data?.map((alert: any) => (
             <Card key={alert.id} className="bg-card/50 border-border/30">
               <CardContent className="p-4 flex items-center justify-between">
                 <div>

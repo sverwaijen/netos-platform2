@@ -11,14 +11,9 @@
  *   Co = cost of denying entry (overbooking/compensation)
  */
 
-export type SlaTier = "platinum" | "gold" | "silver" | "bronze";
-
-import { getDb } from "../db";
-import {
-  parkingZones, parkingSpots, parkingSessions, parkingPermits,
-  parkingPools, parkingPoolMembers, parkingAccessLog,
-  parkingVisitorPermits, parkingSlaViolations, parkingCapacitySnapshots,
-} from "../../drizzle/schema";
+import { getDb, getDriver } from "../db";
+import * as pgSchema from "../../drizzle/pg-schema";
+function S(): any { return pgSchema; }
 import { eq, and, sql, gte, lte, desc, count } from "drizzle-orm";
 
 // ─── Types ────────────────────────────────────────────────────────
@@ -58,7 +53,7 @@ export interface AccessDecision {
   sessionId?: number;
   pricePerHour?: number;
   priceDayCap?: number;
-  slaTier?: SlaTier;
+  slaTier?: string;
   fallbackZoneId?: number;
   fallbackZoneName?: string;
 }
@@ -83,20 +78,20 @@ export async function getCapacityState(zoneId: number): Promise<CapacityState | 
   const db = await getDb();
   if (!db) return null;
 
-  const zones = await db.select().from(parkingZones).where(eq(parkingZones.id, zoneId));
+  const zones = await db.select().from(S().parkingZones).where(eq(S().parkingZones.id, zoneId));
   const zone = zones[0];
   if (!zone) return null;
 
   // Count active sessions by type
-  const activeSessions = await db.select().from(parkingSessions)
-    .where(and(eq(parkingSessions.zoneId, zoneId), eq(parkingSessions.status, "active")));
+  const activeSessions = await db.select().from(S().parkingSessions)
+    .where(and(eq(S().parkingSessions.zoneId, zoneId), eq(S().parkingSessions.status, "active")));
 
   const occupied = activeSessions.length;
-  const poolGuaranteedUsed = activeSessions.filter(s => s.accessType === "pool_guaranteed").length;
-  const poolOverflowUsed = activeSessions.filter(s => s.accessType === "pool_overflow").length;
-  const payPerUseUsed = activeSessions.filter(s => s.accessType === "pay_per_use").length;
-  const visitorUsed = activeSessions.filter(s => s.accessType === "visitor").length;
-  const memberUsed = activeSessions.filter(s => s.accessType === "member" || s.accessType === "external").length;
+  const poolGuaranteedUsed = activeSessions.filter((s: any) => s.accessType === "pool_guaranteed").length;
+  const poolOverflowUsed = activeSessions.filter((s: any) => s.accessType === "pool_overflow").length;
+  const payPerUseUsed = activeSessions.filter((s: any) => s.accessType === "pay_per_use").length;
+  const visitorUsed = activeSessions.filter((s: any) => s.accessType === "visitor").length;
+  const memberUsed = activeSessions.filter((s: any) => s.accessType === "member" || s.accessType === "external").length;
 
   const reservedSpots = zone.reservedSpots || 0;
   const floatingSpots = zone.totalSpots - reservedSpots;
@@ -104,8 +99,8 @@ export async function getCapacityState(zoneId: number): Promise<CapacityState | 
   const occupancyPercent = zone.totalSpots > 0 ? Math.round((occupied / zone.totalSpots) * 100) : 0;
 
   // Count active permits for this zone
-  const activePermits = await db.select({ cnt: count() }).from(parkingPermits)
-    .where(and(eq(parkingPermits.zoneId, zoneId), eq(parkingPermits.status, "active")));
+  const activePermits = await db.select({ cnt: count() }).from(S().parkingPermits)
+    .where(and(eq(S().parkingPermits.zoneId, zoneId), eq(S().parkingPermits.status, "active")));
   const currentPermitsIssued = activePermits[0]?.cnt || 0;
 
   // Overbooking calculations
@@ -152,31 +147,31 @@ export async function getPoolStatus(poolId: number): Promise<PoolStatus | null> 
   const db = await getDb();
   if (!db) return null;
 
-  const pools = await db.select().from(parkingPools).where(eq(parkingPools.id, poolId));
+  const pools = await db.select().from(S().parkingPools).where(eq(S().parkingPools.id, poolId));
   const pool = pools[0];
   if (!pool) return null;
 
   // Count active guaranteed sessions for this pool
-  const guaranteedSessions = await db.select({ cnt: count() }).from(parkingSessions)
+  const guaranteedSessions = await db.select({ cnt: count() }).from(S().parkingSessions)
     .where(and(
-      eq(parkingSessions.poolId, poolId),
-      eq(parkingSessions.status, "active"),
-      eq(parkingSessions.accessType, "pool_guaranteed"),
+      eq(S().parkingSessions.poolId, poolId),
+      eq(S().parkingSessions.status, "active"),
+      eq(S().parkingSessions.accessType, "pool_guaranteed"),
     ));
   const currentGuaranteedUsed = guaranteedSessions[0]?.cnt || 0;
 
   // Count active overflow sessions
-  const overflowSessions = await db.select({ cnt: count() }).from(parkingSessions)
+  const overflowSessions = await db.select({ cnt: count() }).from(S().parkingSessions)
     .where(and(
-      eq(parkingSessions.poolId, poolId),
-      eq(parkingSessions.status, "active"),
-      eq(parkingSessions.accessType, "pool_overflow"),
+      eq(S().parkingSessions.poolId, poolId),
+      eq(S().parkingSessions.status, "active"),
+      eq(S().parkingSessions.accessType, "pool_overflow"),
     ));
   const overflowActive = overflowSessions[0]?.cnt || 0;
 
   // Count total pool members
-  const members = await db.select({ cnt: count() }).from(parkingPoolMembers)
-    .where(and(eq(parkingPoolMembers.poolId, poolId), eq(parkingPoolMembers.status, "active")));
+  const members = await db.select({ cnt: count() }).from(S().parkingPoolMembers)
+    .where(and(eq(S().parkingPoolMembers.poolId, poolId), eq(S().parkingPoolMembers.status, "active")));
   const totalPoolMembers = members[0]?.cnt || 0;
 
   const guaranteedAvailable = pool.guaranteedSpots - currentGuaranteedUsed;
@@ -227,11 +222,11 @@ export async function makeAccessDecision(
 
   // 1. Check visitor permit (QR token)
   if (qrToken) {
-    const visitorPermits = await db.select().from(parkingVisitorPermits)
+    const visitorPermits = await db.select().from(S().parkingVisitorPermits)
       .where(and(
-        eq(parkingVisitorPermits.qrToken, qrToken),
-        eq(parkingVisitorPermits.status, "active"),
-        eq(parkingVisitorPermits.zoneId, zoneId),
+        eq(S().parkingVisitorPermits.qrToken, qrToken),
+        eq(S().parkingVisitorPermits.status, "active"),
+        eq(S().parkingVisitorPermits.zoneId, zoneId),
       ));
     const vp = visitorPermits[0];
     if (vp) {
@@ -240,9 +235,9 @@ export async function makeAccessDecision(
         if ((vp.usedEntries || 0) < (vp.maxEntries || 1)) {
           if (!physicallyFull) {
             // Update used entries
-            await db.update(parkingVisitorPermits)
+            await db.update(S().parkingVisitorPermits)
               .set({ usedEntries: (vp.usedEntries || 0) + 1 })
-              .where(eq(parkingVisitorPermits.id, vp.id));
+              .where(eq(S().parkingVisitorPermits.id, vp.id));
             return {
               granted: true,
               reason: `Welkom ${vp.visitorName}`,
@@ -258,11 +253,11 @@ export async function makeAccessDecision(
   }
 
   // 2. Check license plate against permits
-  const permits = await db.select().from(parkingPermits)
+  const permits = await db.select().from(S().parkingPermits)
     .where(and(
-      eq(parkingPermits.licensePlate, licensePlate.toUpperCase().replace(/[\s-]/g, "")),
-      eq(parkingPermits.zoneId, zoneId),
-      eq(parkingPermits.status, "active"),
+      eq(S().parkingPermits.licensePlate, licensePlate.toUpperCase().replace(/[\s-]/g, "")),
+      eq(S().parkingPermits.zoneId, zoneId),
+      eq(S().parkingPermits.status, "active"),
     ));
 
   if (permits.length > 0) {
@@ -391,12 +386,12 @@ export async function makeAccessDecision(
   }
 
   // 3. Check pool membership by license plate
-  const poolMembers = await db.select().from(parkingPoolMembers)
+  const poolMembers = await db.select().from(S().parkingPoolMembers)
     .where(and(
-      eq(parkingPoolMembers.status, "active"),
+      eq(S().parkingPoolMembers.status, "active"),
     ));
   // Filter by license plate in application (drizzle doesn't support OR on two columns easily)
-  const matchingPoolMember = poolMembers.find(pm =>
+  const matchingPoolMember = poolMembers.find((pm: any) =>
     pm.licensePlate?.toUpperCase().replace(/[\s-]/g, "") === licensePlate.toUpperCase().replace(/[\s-]/g, "") ||
     pm.licensePlate2?.toUpperCase().replace(/[\s-]/g, "") === licensePlate.toUpperCase().replace(/[\s-]/g, "")
   );
@@ -405,7 +400,7 @@ export async function makeAccessDecision(
     const poolStatus = await getPoolStatus(matchingPoolMember.poolId);
     if (poolStatus) {
       // Check the pool's zone matches
-      const poolData = await db.select().from(parkingPools).where(eq(parkingPools.id, matchingPoolMember.poolId));
+      const poolData = await db.select().from(S().parkingPools).where(eq(S().parkingPools.id, matchingPoolMember.poolId));
       if (poolData[0] && poolData[0].zoneId === zoneId) {
         if (!poolStatus.isGuaranteedFull) {
           return {
@@ -437,19 +432,19 @@ export async function makeAccessDecision(
 
   // 4. Check visitor permits by license plate
   if (licensePlate) {
-    const visitorByPlate = await db.select().from(parkingVisitorPermits)
+    const visitorByPlate = await db.select().from(S().parkingVisitorPermits)
       .where(and(
-        eq(parkingVisitorPermits.licensePlate, licensePlate.toUpperCase().replace(/[\s-]/g, "")),
-        eq(parkingVisitorPermits.status, "active"),
-        eq(parkingVisitorPermits.zoneId, zoneId),
+        eq(S().parkingVisitorPermits.licensePlate, licensePlate.toUpperCase().replace(/[\s-]/g, "")),
+        eq(S().parkingVisitorPermits.status, "active"),
+        eq(S().parkingVisitorPermits.zoneId, zoneId),
       ));
     const vp = visitorByPlate[0];
     if (vp) {
       const now = Date.now();
       if (now >= Number(vp.validFrom) && now <= Number(vp.validUntil) && !physicallyFull) {
-        await db.update(parkingVisitorPermits)
+        await db.update(S().parkingVisitorPermits)
           .set({ usedEntries: (vp.usedEntries || 0) + 1 })
-          .where(eq(parkingVisitorPermits.id, vp.id));
+          .where(eq(S().parkingVisitorPermits.id, vp.id));
         return {
           granted: true,
           reason: `Welkom ${vp.visitorName}`,
@@ -460,7 +455,7 @@ export async function makeAccessDecision(
   }
 
   // 5. Pay-per-use (unknown vehicle)
-  const zone = (await db.select().from(parkingZones).where(eq(parkingZones.id, zoneId)))[0];
+  const zone = (await db.select().from(S().parkingZones).where(eq(S().parkingZones.id, zoneId)))[0];
   if (zone?.payPerUseEnabled && !physicallyFull) {
     const threshold = zone.payPerUseThreshold || 85;
     if (capacity.occupancyPercent < threshold) {
@@ -535,7 +530,7 @@ export async function handleSlaViolation(
   userId: number,
   permitId: number | undefined,
   poolId: number | undefined,
-  slaTier: SlaTier,
+  slaTier: string,
 ): Promise<void> {
   const db = await getDb();
   if (!db) return;
@@ -560,12 +555,12 @@ export async function handleSlaViolation(
       break; // Bronze gets no compensation
   }
 
-  await db.insert(parkingSlaViolations).values({
+  await db.insert(S().parkingSlaViolations).values({
     zoneId,
     userId,
     permitId,
     poolId,
-    slaTier,
+    slaTier: slaTier as any,
     violationType: "denied_entry",
     compensationEur,
     compensationCredits,
@@ -583,7 +578,7 @@ export async function takeCapacitySnapshot(zoneId: number): Promise<void> {
   const capacity = await getCapacityState(zoneId);
   if (!capacity) return;
 
-  await db.insert(parkingCapacitySnapshots).values({
+  await db.insert(S().parkingCapacitySnapshots).values({
     zoneId,
     timestamp: Date.now(),
     totalSpots: capacity.totalSpots,

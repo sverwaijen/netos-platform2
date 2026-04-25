@@ -19,12 +19,12 @@ export const users = mysqlTable("users", {
   email: varchar("email", { length: 320 }),
   phone: varchar("phone", { length: 20 }),
   loginMethod: varchar("loginMethod", { length: 64 }),
-  role: mysqlEnum("role", ["administrator", "host", "teamadmin", "member", "guest"]).default("member").notNull(),
+  role: mysqlEnum("role", ["administrator", "ceo", "cfo", "host", "company_owner", "teamadmin", "member", "facility", "cleaner", "guest"]).default("member").notNull(),
   avatarUrl: text("avatarUrl"),
   companyId: int("companyId"),
   invitedBy: int("invitedBy"),
   onboardingComplete: boolean("onboardingComplete").default(false),
-  qrToken: varchar("qrToken", { length: 128 }).unique(), // For QR code scanning in kiosk
+  qrToken: varchar("qrToken", { length: 128 }).unique(),
   createdAt: timestamp("createdAt").defaultNow().notNull(),
   updatedAt: timestamp("updatedAt").defaultNow().onUpdateNow().notNull(),
   lastSignedIn: timestamp("lastSignedIn").defaultNow().notNull(),
@@ -76,7 +76,6 @@ export const resources = mysqlTable("resources", {
   isActive: boolean("isActive").default(true),
   mapX: decimal("mapX", { precision: 6, scale: 2 }),
   mapY: decimal("mapY", { precision: 6, scale: 2 }),
-  // ROZ fields
   areaM2: decimal("areaM2", { precision: 8, scale: 2 }),
   isRozEligible: boolean("isRozEligible").default(false),
   rozContractType: varchar("rozContractType", { length: 64 }),
@@ -125,6 +124,7 @@ export const creditBundles = mysqlTable("credit_bundles", {
   isActive: boolean("isActive").default(true),
   stripeProductId: varchar("stripeProductId", { length: 128 }),
   stripePriceId: varchar("stripePriceId", { length: 128 }),
+  createdAt: timestamp("createdAt").defaultNow().notNull(),
   // Credit system upgrade fields
   targetAudience: mysqlEnum("targetAudience", [
     "freelancer", "individual", "smb", "business", "corporate",
@@ -142,7 +142,6 @@ export const creditBundles = mysqlTable("credit_bundles", {
   overageRate: decimal("overageRate", { precision: 8, scale: 2 }),
   minCommitMonths: int("minCommitMonths"),
   maxRolloverCredits: int("maxRolloverCredits"),
-  createdAt: timestamp("createdAt").defaultNow().notNull(),
 });
 
 export type CreditBundle = typeof creditBundles.$inferSelect;
@@ -159,10 +158,10 @@ export const wallets = mysqlTable("wallets", {
   maxRollover: int("maxRollover").default(0),
   stripeCustomerId: varchar("stripeCustomerId", { length: 128 }),
   stripeSubscriptionId: varchar("stripeSubscriptionId", { length: 128 }),
+  createdAt: timestamp("createdAt").defaultNow().notNull(),
+  updatedAt: timestamp("updatedAt").defaultNow().onUpdateNow().notNull(),
   // Credit system upgrade fields
-  contractType: mysqlEnum("walletContractType", [
-    "monthly", "semi_annual", "annual", "multi_year",
-  ]),
+  walletContractType: mysqlEnum("walletContractType", ["monthly", "semi_annual", "annual", "multi_year"]),
   contractStartDate: bigint("contractStartDate", { mode: "number" }),
   contractEndDate: bigint("contractEndDate", { mode: "number" }),
   rolloverPercent: int("rolloverPercent").default(0),
@@ -171,13 +170,12 @@ export const wallets = mysqlTable("wallets", {
   autoTopUpThreshold: decimal("autoTopUpThreshold", { precision: 12, scale: 2 }),
   autoTopUpAmount: decimal("autoTopUpAmount", { precision: 12, scale: 2 }),
   creditExpiresAt: bigint("creditExpiresAt", { mode: "number" }),
-  permanentBalance: decimal("permanentBalance", { precision: 12, scale: 2 }).default("0"),
-  monthlySpent: decimal("monthlySpent", { precision: 12, scale: 2 }).default("0"),
-  createdAt: timestamp("createdAt").defaultNow().notNull(),
-  updatedAt: timestamp("updatedAt").defaultNow().onUpdateNow().notNull(),
+  permanentBalance: decimal("permanentBalance", { precision: 12, scale: 2 }).default("0.00"),
+  monthlySpent: decimal("monthlySpent", { precision: 12, scale: 2 }).default("0.00"),
 });
 
 export type Wallet = typeof wallets.$inferSelect;
+export type InsertWallet = typeof wallets.$inferInsert;
 
 // ─── Credit Ledger (Double-Entry) ────────────────────────────────────
 export const creditLedger = mysqlTable("credit_ledger", {
@@ -191,10 +189,6 @@ export const creditLedger = mysqlTable("credit_ledger", {
     "topup",
     "refund",
     "transfer",
-    "package_purchase",
-    "overage",
-    "bonus",
-    "expiration",
   ]).notNull(),
   amount: decimal("amount", { precision: 12, scale: 2 }).notNull(),
   balanceAfter: decimal("balanceAfter", { precision: 12, scale: 2 }).notNull(),
@@ -202,13 +196,11 @@ export const creditLedger = mysqlTable("credit_ledger", {
   referenceType: varchar("referenceType", { length: 64 }),
   referenceId: int("referenceId"),
   multiplier: decimal("multiplier", { precision: 4, scale: 2 }),
+  createdAt: timestamp("createdAt").defaultNow().notNull(),
   // Credit system upgrade fields
-  source: mysqlEnum("source", [
-    "subscription", "package", "topup", "bonus", "manual",
-  ]),
+  source: mysqlEnum("source", ["subscription", "package", "topup", "bonus", "manual"]),
   expiresAt: bigint("expiresAt", { mode: "number" }),
   packageId: int("packageId"),
-  createdAt: timestamp("createdAt").defaultNow().notNull(),
 });
 
 export type CreditLedgerEntry = typeof creditLedger.$inferSelect;
@@ -279,8 +271,8 @@ export const companyBranding = mysqlTable("company_branding", {
   logoUrl: text("logoUrl"),
   primaryColor: varchar("primaryColor", { length: 9 }).default("#1a1a2e"),
   secondaryColor: varchar("secondaryColor", { length: 9 }).default("#e94560"),
-  accentColor: varchar("accentColor", { length: 9 }).default("#b8a472"),
-  fontFamily: varchar("fontFamily", { length: 128 }).default("Montserrat"),
+  accentColor: varchar("accentColor", { length: 9 }).default("#C4B89E"),
+  fontFamily: varchar("fontFamily", { length: 128 }).default("Inter"),
   welcomeMessage: text("welcomeMessage"),
   backgroundImageUrl: text("backgroundImageUrl"),
   isActive: boolean("isActive").default(true),
@@ -302,7 +294,7 @@ export const employeePhotos = mysqlTable("employee_photos", {
 
 export type EmployeePhoto = typeof employeePhotos.$inferSelect;
 
-// ─── Devices (Skynet Netlink IoT) ─────────────────────────────────────
+// ─── Devices (NETOS Netlink IoT) ─────────────────────────────────────
 export const devices = mysqlTable("devices", {
   id: int("id").autoincrement().primaryKey(),
   locationId: int("locationId").notNull(),
@@ -345,7 +337,6 @@ export const accessLog = mysqlTable("access_log", {
 });
 
 export type AccessLogEntry = typeof accessLog.$inferSelect;
-export type InsertAccessLogEntry = typeof accessLog.$inferInsert;
 
 // ─── Notifications ───────────────────────────────────────────────────
 export const notifications = mysqlTable("notifications", {
@@ -360,15 +351,6 @@ export const notifications = mysqlTable("notifications", {
     "booking_reminder",
     "visitor_arrival",
     "system",
-    "credit_threshold_80",
-    "credit_threshold_100",
-    "credit_expired",
-    "auto_topup_triggered",
-    "budget_cap_reached",
-    "approval_required",
-    "commit_milestone",
-    "bonus_awarded",
-    "rollover_processed",
   ]).notNull(),
   title: varchar("title", { length: 256 }).notNull(),
   message: text("message"),
@@ -378,7 +360,6 @@ export const notifications = mysqlTable("notifications", {
 });
 
 export type Notification = typeof notifications.$inferSelect;
-export type InsertNotification = typeof notifications.$inferInsert;
 
 // ─── Invites ─────────────────────────────────────────────────────────
 export const invites = mysqlTable("invites", {
@@ -395,7 +376,6 @@ export const invites = mysqlTable("invites", {
 });
 
 export type Invite = typeof invites.$inferSelect;
-export type InsertInvite = typeof invites.$inferInsert;
 
 // ─── CRM: Leads ─────────────────────────────────────────────────────
 export const crmLeads = mysqlTable("crm_leads", {
@@ -470,7 +450,6 @@ export const crmLeadActivities = mysqlTable("crm_lead_activities", {
 });
 
 export type CrmLeadActivity = typeof crmLeadActivities.$inferSelect;
-export type InsertCrmLeadActivity = typeof crmLeadActivities.$inferInsert;
 
 // ─── CRM: Campaigns ────────────────────────────────────────────────
 export const crmCampaigns = mysqlTable("crm_campaigns", {
@@ -798,7 +777,6 @@ export const kioskOrders = mysqlTable("kiosk_orders", {
   companyId: int("companyId"), // for "on company tab" payments
   bookingId: int("bookingId"), // linked booking (if add-on order)
   status: mysqlEnum("status", ["pending", "processing", "completed", "cancelled", "refunded"]).default("pending"),
-  kitchenStatus: mysqlEnum("kitchenStatus", ["new", "preparing", "ready", "picked_up"]).default("new"),
   paymentMethod: mysqlEnum("paymentMethod", [
     "personal_credits",
     "company_credits",
@@ -813,6 +791,7 @@ export const kioskOrders = mysqlTable("kiosk_orders", {
   totalEur: decimal("totalEur", { precision: 10, scale: 2 }).default("0"),
   stripePaymentIntentId: varchar("stripePaymentIntentId", { length: 256 }),
   notes: text("notes"),
+  kitchenStatus: mysqlEnum("kitchenStatus", ["new", "preparing", "ready", "picked_up"]).default("new"),
   kitchenStartedAt: timestamp("kitchenStartedAt"),
   kitchenReadyAt: timestamp("kitchenReadyAt"),
   kitchenPickedUpAt: timestamp("kitchenPickedUpAt"),
@@ -860,17 +839,16 @@ export const parkingZones = mysqlTable("parking_zones", {
   name: varchar("name", { length: 128 }).notNull(),
   slug: varchar("slug", { length: 64 }).notNull(),
   totalSpots: int("totalSpots").notNull().default(0),
-  reservedSpots: int("reservedSpots").default(0), // platinum/fixed spots excluded from overbooking
   type: mysqlEnum("type", ["indoor", "outdoor", "underground", "rooftop"]).default("outdoor"),
   accessMethod: mysqlEnum("accessMethod", ["barrier", "anpr", "manual", "salto"]).default("barrier"),
-  // Overbooking settings
+  reservedSpots: int("reservedSpots").default(0),
   overbookingEnabled: boolean("overbookingEnabled").default(false),
-  overbookingRatio: decimal("overbookingRatio", { precision: 4, scale: 2 }).default("1.20"), // e.g. 1.20 = 20% overbooked
-  noShowRateAvg: decimal("noShowRateAvg", { precision: 4, scale: 2 }).default("0.25"), // historical avg
-  costUnderbooking: decimal("costUnderbooking", { precision: 8, scale: 2 }).default("75.00"), // Cu
-  costOverbooking: decimal("costOverbooking", { precision: 8, scale: 2 }).default("50.00"), // Co
+  overbookingRatio: decimal("overbookingRatio", { precision: 4, scale: 2 }).default("1.20"),
+  noShowRateAvg: decimal("noShowRateAvg", { precision: 4, scale: 2 }).default("0.25"),
+  costUnderbooking: decimal("costUnderbooking", { precision: 8, scale: 2 }).default("75.00"),
+  costOverbooking: decimal("costOverbooking", { precision: 8, scale: 2 }).default("50.00"),
   payPerUseEnabled: boolean("payPerUseEnabled").default(false),
-  payPerUseThreshold: int("payPerUseThreshold").default(85), // close pay-per-use at this % occupancy
+  payPerUseThreshold: int("payPerUseThreshold").default(85),
   isActive: boolean("isActive").default(true),
   createdAt: timestamp("createdAt").defaultNow().notNull(),
   updatedAt: timestamp("updatedAt").defaultNow().onUpdateNow().notNull(),
@@ -919,16 +897,16 @@ export const parkingPermits = mysqlTable("parking_permits", {
   id: int("id").autoincrement().primaryKey(),
   userId: int("userId"),
   companyId: int("companyId"),
-  poolId: int("poolId"), // link to pool if part of a pool subscription
+  poolId: int("poolId"),
   zoneId: int("zoneId").notNull(),
   licensePlate: varchar("licensePlate", { length: 20 }).notNull(),
   vehicleDescription: varchar("vehicleDescription", { length: 256 }),
-  type: mysqlEnum("type", ["monthly", "annual", "reserved", "visitor", "pool", "external"]).default("monthly"),
-  slaTier: mysqlEnum("slaTier", ["platinum", "gold", "silver", "bronze"]).default("silver"),
+  type: mysqlEnum("type", ["monthly", "annual", "reserved", "visitor"]).default("monthly"),
+  slaTier: text("slaTier").default("silver"),
   status: mysqlEnum("status", ["active", "expired", "suspended", "cancelled"]).default("active"),
   startDate: bigint("startDate", { mode: "number" }).notNull(),
   endDate: bigint("endDate", { mode: "number" }),
-  spotId: int("spotId"), // assigned spot (if reserved/platinum)
+  spotId: int("spotId"),
   noShowCount: int("noShowCount").default(0),
   penaltyPoints: int("penaltyPoints").default(0),
   createdAt: timestamp("createdAt").defaultNow().notNull(),
@@ -944,17 +922,17 @@ export const parkingSessions = mysqlTable("parking_sessions", {
   spotId: int("spotId"),
   userId: int("userId"),
   permitId: int("permitId"),
-  poolId: int("poolId"), // if parked via pool
+  poolId: int("poolId"),
   licensePlate: varchar("licensePlate", { length: 20 }),
-  entryMethod: mysqlEnum("entryMethod", ["anpr", "qr", "manual", "app"]).default("anpr"),
-  accessType: mysqlEnum("accessType", ["member", "visitor", "external", "pay_per_use", "pool_guaranteed", "pool_overflow"]).default("member"),
+  entryMethod: text("entryMethod").default("anpr"),
+  accessType: text("accessType").default("member"),
   entryTime: bigint("entryTime", { mode: "number" }).notNull(),
   exitTime: bigint("exitTime", { mode: "number" }),
   durationMinutes: int("durationMinutes"),
   status: mysqlEnum("status", ["active", "completed", "overstay"]).default("active"),
   amountEur: decimal("amountEur", { precision: 10, scale: 2 }),
   amountCredits: decimal("amountCredits", { precision: 10, scale: 2 }),
-  paymentMethod: mysqlEnum("paymentMethod", ["credits", "stripe", "permit", "free", "pool"]),
+  paymentMethod: mysqlEnum("paymentMethod", ["credits", "stripe", "permit", "free"]),
   paymentStatus: mysqlEnum("paymentStatus", ["pending", "paid", "waived"]).default("pending"),
   createdAt: timestamp("createdAt").defaultNow().notNull(),
 });
@@ -1042,19 +1020,17 @@ export const ticketSlaPolicies = mysqlTable("ticket_sla_policies", {
 
 export type TicketSlaPolicy = typeof ticketSlaPolicies.$inferSelect;
 
-// ─── Escalation Rules ──────────────────────────────────────────────
+// ─── Escalation Rules ─────────────────────────────────────────────
 export const escalationRules = mysqlTable("escalation_rules", {
   id: int("id").autoincrement().primaryKey(),
-  name: varchar("name", { length: 128 }).notNull(),
+  name: varchar("name", { length: 256 }).notNull(),
   description: text("description"),
-  priority: mysqlEnum("escalationPriority", ["low", "normal", "high", "urgent"]),
-  category: varchar("escalationCategory", { length: 64 }),
-  escalateAfterMinutes: int("escalateAfterMinutes").notNull(),
-  triggerType: mysqlEnum("triggerType", [
-    "no_response", "no_resolution", "sla_breach", "priority_change",
-  ]).default("no_response").notNull(),
-  escalationLevel: int("escalationLevel").default(1).notNull(),
-  escalateToRole: mysqlEnum("escalateToRole", ["administrator", "host", "teamadmin", "member", "guest"]).default("host"),
+  priority: varchar("priority", { length: 32 }).default("normal"),
+  category: varchar("category", { length: 64 }),
+  escalateAfterMinutes: int("escalateAfterMinutes").notNull().default(60),
+  triggerType: varchar("triggerType", { length: 64 }).notNull().default("no_response"),
+  escalationLevel: int("escalationLevel").notNull().default(1),
+  escalateToRole: varchar("escalateToRole", { length: 32 }).default("host"),
   escalateToUserId: int("escalateToUserId"),
   notifyEmail: boolean("notifyEmail").default(true),
   notifyInApp: boolean("notifyInApp").default(true),
@@ -1062,35 +1038,23 @@ export const escalationRules = mysqlTable("escalation_rules", {
   autoPriorityBump: boolean("autoPriorityBump").default(false),
   isActive: boolean("isActive").default(true),
   createdAt: timestamp("createdAt").defaultNow().notNull(),
-  updatedAt: timestamp("updatedAt").defaultNow().onUpdateNow().notNull(),
+  updatedAt: timestamp("updatedAt").defaultNow(),
 });
 
-export type EscalationRule = typeof escalationRules.$inferSelect;
-export type InsertEscalationRule = typeof escalationRules.$inferInsert;
-
-// ─── Escalation Log ────────────────────────────────────────────────
 export const escalationLog = mysqlTable("escalation_log", {
   id: int("id").autoincrement().primaryKey(),
   ticketId: int("ticketId").notNull(),
-  ruleId: int("ruleId").notNull(),
-  escalationLevel: int("escalationLevel").notNull(),
-  previousAssigneeId: int("previousAssigneeId"),
-  newAssigneeId: int("newAssigneeId"),
-  previousPriority: varchar("previousPriority", { length: 16 }),
-  newPriority: varchar("newPriority", { length: 16 }),
-  reason: text("reason").notNull(),
-  workaround: text("workaround"),
-  status: mysqlEnum("escalationStatus", [
-    "triggered", "acknowledged", "resolved", "expired",
-  ]).default("triggered").notNull(),
-  acknowledgedById: int("acknowledgedById"),
-  acknowledgedAt: bigint("acknowledgedAt", { mode: "number" }),
+  ruleId: int("ruleId"),
+  escalationLevel: int("escalationLevel").notNull().default(1),
+  previousAssignee: int("previousAssignee"),
+  newAssignee: int("newAssignee"),
+  previousPriority: varchar("previousPriority", { length: 32 }),
+  newPriority: varchar("newPriority", { length: 32 }),
+  reason: text("reason"),
   slaBreach: boolean("slaBreach").default(false),
+  status: varchar("status", { length: 32 }).default("pending"),
   createdAt: timestamp("createdAt").defaultNow().notNull(),
 });
-
-export type EscalationLogEntry = typeof escalationLog.$inferSelect;
-export type InsertEscalationLogEntry = typeof escalationLog.$inferInsert;
 
 // ─── Canned Responses ──────────────────────────────────────────────
 export const cannedResponses = mysqlTable("canned_responses", {
@@ -1260,7 +1224,6 @@ export const crmTriggerLogs = mysqlTable("crm_trigger_logs", {
 });
 
 export type CrmTriggerLog = typeof crmTriggerLogs.$inferSelect;
-export type InsertCrmTriggerLog = typeof crmTriggerLogs.$inferInsert;
 
 // ─── CRM: Website Visitors (LeadInfo-style) ─────────────────────────
 export const crmWebsiteVisitors = mysqlTable("crm_website_visitors", {
@@ -1361,193 +1324,131 @@ export const reengagementFunnel = mysqlTable("reengagement_funnel", {
 export type ReengagementEntry = typeof reengagementFunnel.$inferSelect;
 export type InsertReengagementEntry = typeof reengagementFunnel.$inferInsert;
 
+
 // ═══════════════════════════════════════════════════════════════════════
 // ─── SIGNAGE MODULE ─────────────────────────────────────────────────
 // ═══════════════════════════════════════════════════════════════════════
 
-// ─── Signage Screens (Physical display devices) ────────────────────
 export const signageScreens = mysqlTable("signage_screens", {
   id: int("id").autoincrement().primaryKey(),
   locationId: int("locationId").notNull(),
-  name: varchar("name", { length: 256 }).notNull(),
-  screenType: mysqlEnum("screenType", [
-    "reception",
-    "gym",
-    "kitchen",
-    "wayfinding",
-    "general",
-    "meeting_room",
-    "elevator",
-    "parking",
-    "menu",
-  ]).notNull(),
+  name: text("name").notNull(),
+  screenType: mysqlEnum("screenType", ["reception", "gym", "kitchen", "wayfinding", "general", "meeting_room", "elevator", "parking"]).notNull(),
   orientation: mysqlEnum("orientation", ["portrait", "landscape"]).default("portrait"),
-  resolution: varchar("resolution", { length: 32 }).default("1080x1920"), // WxH
-  floor: varchar("floor", { length: 16 }),
-  zone: varchar("zone", { length: 64 }),
-  provisioningToken: varchar("provisioningToken", { length: 128 }).unique(),
+  resolution: text("resolution"),
+  floor: text("floor"),
+  zone: text("zone"),
+  provisioningToken: varchar("provisioningToken", { length: 64 }).unique(),
   status: mysqlEnum("status", ["online", "offline", "provisioning", "maintenance", "error"]).default("provisioning"),
   lastHeartbeat: timestamp("lastHeartbeat"),
   currentPlaylistId: int("currentPlaylistId"),
-  ipAddress: varchar("ipAddress", { length: 45 }),
-  macAddress: varchar("macAddress", { length: 17 }),
+  ipAddress: text("ipAddress"),
+  macAddress: text("macAddress"),
   userAgent: text("userAgent"),
-  firmwareVersion: varchar("firmwareVersion", { length: 32 }),
+  firmwareVersion: text("firmwareVersion"),
   brightness: int("brightness").default(100),
   volume: int("volume").default(0),
   isActive: boolean("isActive").default(true),
-  tags: json("tags").$type<string[]>(),
-  metadata: json("metadata").$type<Record<string, unknown>>(),
+  tags: json("tags"),
+  metadata: json("metadata"),
   createdAt: timestamp("createdAt").defaultNow().notNull(),
-  updatedAt: timestamp("updatedAt").defaultNow().onUpdateNow().notNull(),
+  updatedAt: timestamp("updatedAt").defaultNow().notNull(),
 });
 
-export type SignageScreen = typeof signageScreens.$inferSelect;
-export type InsertSignageScreen = typeof signageScreens.$inferInsert;
-
-// ─── Signage Screen Groups (Logical grouping for bulk management) ──
 export const signageScreenGroups = mysqlTable("signage_screen_groups", {
   id: int("id").autoincrement().primaryKey(),
-  name: varchar("name", { length: 128 }).notNull(),
+  name: text("name").notNull(),
   description: text("description"),
   locationId: int("locationId"),
-  screenType: mysqlEnum("screenType", [
-    "reception", "gym", "kitchen", "wayfinding", "general",
-    "meeting_room", "elevator", "parking",
-  ]),
-  color: varchar("color", { length: 7 }).default("#627653"),
+  screenType: mysqlEnum("screenType", ["reception", "gym", "kitchen", "wayfinding", "general", "meeting_room", "elevator", "parking"]),
+  color: text("color"),
   isActive: boolean("isActive").default(true),
   createdAt: timestamp("createdAt").defaultNow().notNull(),
 });
 
-export type SignageScreenGroup = typeof signageScreenGroups.$inferSelect;
-
-// ─── Screen-Group Membership ───────────────────────────────────────
 export const signageScreenGroupMembers = mysqlTable("signage_screen_group_members", {
   id: int("id").autoincrement().primaryKey(),
   screenId: int("screenId").notNull(),
   groupId: int("groupId").notNull(),
 });
 
-// ─── Signage Content Items ─────────────────────────────────────────
 export const signageContent = mysqlTable("signage_content", {
   id: int("id").autoincrement().primaryKey(),
-  title: varchar("title", { length: 256 }).notNull(),
-  contentType: mysqlEnum("contentType", [
-    "image",
-    "video",
-    "pdf",
-    "html",
-    "url",
-    "menu_card",
-    "wayfinding",
-    "gym_schedule",
-    "weather",
-    "clock",
-    "news_ticker",
-    "company_presence",
-    "welcome_screen",
-    "announcement",
-  ]).notNull(),
+  title: text("title").notNull(),
+  contentType: mysqlEnum("contentType", ["image", "video", "pdf", "html", "url", "menu_card", "wayfinding", "gym_schedule", "weather", "clock", "news_ticker", "company_presence", "welcome_screen", "announcement"]).notNull(),
   mediaUrl: text("mediaUrl"),
   htmlContent: text("htmlContent"),
   externalUrl: text("externalUrl"),
-  duration: int("duration").default(15), // seconds to display
-  templateData: json("templateData").$type<Record<string, unknown>>(), // dynamic data for templates
-  targetScreenTypes: json("targetScreenTypes").$type<string[]>(), // which screen types can show this
-  locationId: int("locationId"), // null = all locations
+  duration: int("duration").default(15),
+  templateData: json("templateData"),
+  targetScreenTypes: json("targetScreenTypes"),
+  locationId: int("locationId"),
   isActive: boolean("isActive").default(true),
   validFrom: timestamp("validFrom"),
   validUntil: timestamp("validUntil"),
-  priority: int("priority").default(0), // higher = more important
+  priority: int("priority").default(0),
   createdByUserId: int("createdByUserId"),
   createdAt: timestamp("createdAt").defaultNow().notNull(),
-  updatedAt: timestamp("updatedAt").defaultNow().onUpdateNow().notNull(),
+  updatedAt: timestamp("updatedAt").defaultNow().notNull(),
 });
 
-export type SignageContentItem = typeof signageContent.$inferSelect;
-export type InsertSignageContent = typeof signageContent.$inferInsert;
-
-// ─── Signage Playlists ─────────────────────────────────────────────
 export const signagePlaylists = mysqlTable("signage_playlists", {
   id: int("id").autoincrement().primaryKey(),
-  name: varchar("name", { length: 256 }).notNull(),
+  name: text("name").notNull(),
   description: text("description"),
-  screenType: mysqlEnum("screenType", [
-    "reception", "gym", "kitchen", "wayfinding", "general",
-    "meeting_room", "elevator", "parking",
-  ]),
-  locationId: int("locationId"), // null = global
+  screenType: mysqlEnum("screenType", ["reception", "gym", "kitchen", "wayfinding", "general", "meeting_room", "elevator", "parking"]),
+  locationId: int("locationId"),
   isDefault: boolean("isDefault").default(false),
   isActive: boolean("isActive").default(true),
   scheduleType: mysqlEnum("scheduleType", ["always", "time_based", "day_based"]).default("always"),
-  scheduleConfig: json("scheduleConfig").$type<Record<string, unknown>>(),
+  scheduleConfig: json("scheduleConfig"),
   createdAt: timestamp("createdAt").defaultNow().notNull(),
-  updatedAt: timestamp("updatedAt").defaultNow().onUpdateNow().notNull(),
+  updatedAt: timestamp("updatedAt").defaultNow().notNull(),
 });
 
-export type SignagePlaylist = typeof signagePlaylists.$inferSelect;
-export type InsertSignagePlaylist = typeof signagePlaylists.$inferInsert;
-
-// ─── Playlist Items (Content in a playlist with ordering) ──────────
 export const signagePlaylistItems = mysqlTable("signage_playlist_items", {
   id: int("id").autoincrement().primaryKey(),
   playlistId: int("playlistId").notNull(),
   contentId: int("contentId").notNull(),
   sortOrder: int("sortOrder").default(0),
-  durationOverride: int("durationOverride"), // override content default duration
+  durationOverride: int("durationOverride"),
   isActive: boolean("isActive").default(true),
 });
 
-export type SignagePlaylistItem = typeof signagePlaylistItems.$inferSelect;
-
-// ─── Signage Provisioning Templates ────────────────────────────────
 export const signageProvisioningTemplates = mysqlTable("signage_provisioning_templates", {
   id: int("id").autoincrement().primaryKey(),
-  name: varchar("name", { length: 128 }).notNull(),
-  screenType: mysqlEnum("screenType", [
-    "reception", "gym", "kitchen", "wayfinding", "general",
-    "meeting_room", "elevator", "parking", "menu",
-  ]).notNull(),
+  name: text("name").notNull(),
+  screenType: mysqlEnum("screenType", ["reception", "gym", "kitchen", "wayfinding", "general", "meeting_room", "elevator", "parking"]).notNull(),
   defaultPlaylistId: int("defaultPlaylistId"),
   defaultOrientation: mysqlEnum("defaultOrientation", ["portrait", "landscape"]).default("portrait"),
-  defaultResolution: varchar("defaultResolution", { length: 32 }).default("1080x1920"),
+  defaultResolution: text("defaultResolution"),
   defaultBrightness: int("defaultBrightness").default(100),
   autoAssignLocation: boolean("autoAssignLocation").default(true),
   isActive: boolean("isActive").default(true),
   createdAt: timestamp("createdAt").defaultNow().notNull(),
 });
 
-export type SignageProvisioningTemplate = typeof signageProvisioningTemplates.$inferSelect;
-
-// ─── Wayfinding: Building Directory ────────────────────────────────
 export const wayfindingBuildings = mysqlTable("wayfinding_buildings", {
   id: int("id").autoincrement().primaryKey(),
   locationId: int("locationId").notNull(),
-  name: varchar("name", { length: 128 }).notNull(),
-  code: varchar("code", { length: 16 }), // e.g. "A", "B", "C"
+  name: text("name").notNull(),
+  code: text("code"),
   address: text("address"),
   floors: int("floors").default(1),
   isActive: boolean("isActive").default(true),
   createdAt: timestamp("createdAt").defaultNow().notNull(),
 });
 
-export type WayfindingBuilding = typeof wayfindingBuildings.$inferSelect;
-
-// ─── Wayfinding: Company-Building Assignments ──────────────────────
 export const wayfindingCompanyAssignments = mysqlTable("wayfinding_company_assignments", {
   id: int("id").autoincrement().primaryKey(),
   companyId: int("companyId").notNull(),
   buildingId: int("buildingId").notNull(),
-  floor: varchar("floor", { length: 16 }),
-  roomNumber: varchar("roomNumber", { length: 32 }),
+  floor: text("floor"),
+  roomNumber: text("roomNumber"),
   isActive: boolean("isActive").default(true),
   createdAt: timestamp("createdAt").defaultNow().notNull(),
 });
 
-export type WayfindingCompanyAssignment = typeof wayfindingCompanyAssignments.$inferSelect;
-
-// ─── Wayfinding: Company Check-In/Out (Dynamic Presence) ──────────
 export const wayfindingCompanyPresence = mysqlTable("wayfinding_company_presence", {
   id: int("id").autoincrement().primaryKey(),
   companyId: int("companyId").notNull(),
@@ -1558,146 +1459,112 @@ export const wayfindingCompanyPresence = mysqlTable("wayfinding_company_presence
   checkedOutAt: timestamp("checkedOutAt"),
   checkedInByUserId: int("checkedInByUserId"),
   method: mysqlEnum("method", ["manual", "access_log", "auto", "api"]).default("manual"),
-  date: varchar("date", { length: 10 }).notNull(), // YYYY-MM-DD for daily tracking
+  date: varchar("date", { length: 20 }).notNull(),
   createdAt: timestamp("createdAt").defaultNow().notNull(),
-  updatedAt: timestamp("updatedAt").defaultNow().onUpdateNow().notNull(),
+  updatedAt: timestamp("updatedAt").defaultNow().notNull(),
 });
 
-export type WayfindingCompanyPresence = typeof wayfindingCompanyPresence.$inferSelect;
-
-// ─── Signage Screen Heartbeats (Monitoring) ────────────────────────
 export const signageHeartbeats = mysqlTable("signage_heartbeats", {
   id: int("id").autoincrement().primaryKey(),
   screenId: int("screenId").notNull(),
-  status: mysqlEnum("status", ["online", "offline", "error", "maintenance", "provisioning"]).default("online"),
+  status: mysqlEnum("status", ["online", "offline", "provisioning", "maintenance", "error"]).default("online"),
   currentContentId: int("currentContentId"),
   currentPlaylistId: int("currentPlaylistId"),
-  cpuUsage: decimal("cpuUsage", { precision: 5, scale: 2 }),
-  memoryUsage: decimal("memoryUsage", { precision: 5, scale: 2 }),
-  temperature: decimal("temperature", { precision: 5, scale: 2 }),
-  uptime: int("uptime"), // seconds
+  cpuUsage: text("cpuUsage"),
+  memoryUsage: text("memoryUsage"),
+  temperature: text("temperature"),
+  uptime: int("uptime"),
   errorMessage: text("errorMessage"),
   createdAt: timestamp("createdAt").defaultNow().notNull(),
 });
 
-export type SignageHeartbeat = typeof signageHeartbeats.$inferSelect;
-
-// ─── Signage Audit Log ─────────────────────────────────────────────
 export const signageAuditLog = mysqlTable("signage_audit_log", {
   id: int("id").autoincrement().primaryKey(),
   screenId: int("screenId"),
-  action: mysqlEnum("action", [
-    "provisioned",
-    "content_changed",
-    "playlist_assigned",
-    "screen_online",
-    "screen_offline",
-    "settings_changed",
-    "error_reported",
-    "reboot",
-    "firmware_update",
-  ]).notNull(),
+  action: mysqlEnum("action", ["provisioned", "content_changed", "playlist_assigned", "screen_online", "screen_offline", "settings_changed", "error_reported", "reboot", "firmware_update"]).notNull(),
   description: text("description"),
   userId: int("userId"),
-  metadata: json("metadata").$type<Record<string, unknown>>(),
+  metadata: json("metadata"),
   createdAt: timestamp("createdAt").defaultNow().notNull(),
 });
 
-export type SignageAuditLogEntry = typeof signageAuditLog.$inferSelect;
-
-// ─── Kitchen Menu Items (for kitchen screens) ──────────────────────
 export const kitchenMenuItems = mysqlTable("kitchen_menu_items", {
   id: int("id").autoincrement().primaryKey(),
   locationId: int("locationId").notNull(),
-  name: varchar("name", { length: 256 }).notNull(),
+  name: text("name").notNull(),
   description: text("description"),
-  category: mysqlEnum("category", [
-    "breakfast", "lunch", "dinner", "snack", "drink",
-    "soup", "salad", "sandwich", "special",
-  ]).notNull(),
-  price: decimal("price", { precision: 8, scale: 2 }),
+  category: mysqlEnum("category", ["breakfast", "lunch", "dinner", "snack", "drink", "soup", "salad", "sandwich", "special"]).notNull(),
+  price: text("price"),
   imageUrl: text("imageUrl"),
-  allergens: json("allergens").$type<string[]>(),
+  allergens: json("allergens"),
   isVegan: boolean("isVegan").default(false),
   isVegetarian: boolean("isVegetarian").default(false),
   isGlutenFree: boolean("isGlutenFree").default(false),
   isAvailable: boolean("isAvailable").default(true),
-  dayOfWeek: json("dayOfWeek").$type<number[]>(), // null = every day
+  dayOfWeek: json("dayOfWeek"),
   sortOrder: int("sortOrder").default(0),
   createdAt: timestamp("createdAt").defaultNow().notNull(),
-  updatedAt: timestamp("updatedAt").defaultNow().onUpdateNow().notNull(),
+  updatedAt: timestamp("updatedAt").defaultNow().notNull(),
 });
 
-export type KitchenMenuItem = typeof kitchenMenuItems.$inferSelect;
-export type InsertKitchenMenuItem = typeof kitchenMenuItems.$inferInsert;
-
-// ─── Gym Schedules (for gym screens) ───────────────────────────────
 export const gymSchedules = mysqlTable("gym_schedules", {
   id: int("id").autoincrement().primaryKey(),
   locationId: int("locationId").notNull(),
-  className: varchar("className", { length: 256 }).notNull(),
-  instructor: varchar("instructor", { length: 128 }),
+  className: text("className").notNull(),
+  instructor: text("instructor"),
   description: text("description"),
-  category: mysqlEnum("category", [
-    "cardio", "strength", "yoga", "pilates", "hiit",
-    "cycling", "boxing", "stretching", "meditation", "egym",
-  ]).notNull(),
-  dayOfWeek: int("dayOfWeek").notNull(), // 0=Sunday
-  startTime: varchar("startTime", { length: 5 }).notNull(), // HH:MM
-  endTime: varchar("endTime", { length: 5 }).notNull(),
+  category: mysqlEnum("category", ["cardio", "strength", "yoga", "pilates", "hiit", "cycling", "boxing", "stretching", "meditation", "egym"]).notNull(),
+  dayOfWeek: int("dayOfWeek").notNull(),
+  startTime: varchar("startTime", { length: 10 }).notNull(),
+  endTime: varchar("endTime", { length: 10 }).notNull(),
   maxParticipants: int("maxParticipants").default(20),
   currentParticipants: int("currentParticipants").default(0),
   imageUrl: text("imageUrl"),
   isActive: boolean("isActive").default(true),
   createdAt: timestamp("createdAt").defaultNow().notNull(),
-  updatedAt: timestamp("updatedAt").defaultNow().onUpdateNow().notNull(),
+  updatedAt: timestamp("updatedAt").defaultNow().notNull(),
 });
 
-export type GymSchedule = typeof gymSchedules.$inferSelect;
-export type InsertGymSchedule = typeof gymSchedules.$inferInsert;
 
-// ─── Parking Pools (Shared Subscription Pools) ───────────────────
+// ═══════════════════════════════════════════════════════════════════════
+// ─── PARKING POOLS UPGRADE ─────────────────────────────────────────
+// ═══════════════════════════════════════════════════════════════════════
+
 export const parkingPools = mysqlTable("parking_pools", {
   id: int("id").autoincrement().primaryKey(),
   zoneId: int("zoneId").notNull(),
-  companyId: int("companyId"), // owning company (optional)
+  companyId: int("companyId"),
   name: varchar("name", { length: 128 }).notNull(),
-  guaranteedSpots: int("guaranteedSpots").notNull().default(30), // first N cars guaranteed
-  maxMembers: int("maxMembers").default(0), // 0 = unlimited pool members
-  overflowPriceEur: decimal("overflowPriceEur", { precision: 8, scale: 2 }).default("2.50"), // per-hour for car 31+
-  overflowPriceDay: decimal("overflowPriceDay", { precision: 8, scale: 2 }).default("15.00"), // day cap for overflow
-  monthlyFeeEur: decimal("monthlyFeeEur", { precision: 10, scale: 2 }).default("0"), // monthly pool subscription cost
-  slaTier: mysqlEnum("slaTier", ["platinum", "gold", "silver", "bronze"]).default("gold"),
+  guaranteedSpots: int("guaranteedSpots").notNull().default(30),
+  maxMembers: int("maxMembers").default(0),
+  overflowPriceEur: decimal("overflowPriceEur", { precision: 8, scale: 2 }).default("2.50"),
+  overflowPriceDay: decimal("overflowPriceDay", { precision: 8, scale: 2 }).default("15.00"),
+  monthlyFeeEur: decimal("monthlyFeeEur", { precision: 10, scale: 2 }).default("0"),
+  slaTier: text("slaTier").default("gold"),
   isActive: boolean("isActive").default(true),
   createdAt: timestamp("createdAt").defaultNow().notNull(),
   updatedAt: timestamp("updatedAt").defaultNow().onUpdateNow().notNull(),
 });
 
-export type ParkingPool = typeof parkingPools.$inferSelect;
-
-// ─── Parking Pool Members ─────────────────────────────────────────
 export const parkingPoolMembers = mysqlTable("parking_pool_members", {
   id: int("id").autoincrement().primaryKey(),
   poolId: int("poolId").notNull(),
   userId: int("userId").notNull(),
   licensePlate: varchar("licensePlate", { length: 20 }),
-  licensePlate2: varchar("licensePlate2", { length: 20 }), // secondary vehicle
-  role: mysqlEnum("role", ["admin", "member"]).default("member"),
-  status: mysqlEnum("status", ["active", "suspended", "removed"]).default("active"),
+  licensePlate2: varchar("licensePlate2", { length: 20 }),
+  role: text("role").default("member"),
+  status: text("status").default("active"),
   joinedAt: timestamp("joinedAt").defaultNow().notNull(),
   totalSessions: int("totalSessions").default(0),
   totalOverflowSessions: int("totalOverflowSessions").default(0),
   noShowCount: int("noShowCount").default(0),
 });
 
-export type ParkingPoolMember = typeof parkingPoolMembers.$inferSelect;
-
-// ─── Parking Access Log (ANPR/QR Events) ──────────────────────────
 export const parkingAccessLog = mysqlTable("parking_access_log", {
   id: int("id").autoincrement().primaryKey(),
   zoneId: int("zoneId").notNull(),
-  direction: mysqlEnum("direction", ["entry", "exit"]).notNull(),
-  method: mysqlEnum("method", ["anpr", "qr", "manual", "app"]).notNull(),
+  direction: text("direction").notNull(),
+  method: text("method").notNull(),
   licensePlate: varchar("licensePlate", { length: 20 }),
   qrToken: varchar("qrToken", { length: 128 }),
   userId: int("userId"),
@@ -1705,14 +1572,11 @@ export const parkingAccessLog = mysqlTable("parking_access_log", {
   poolId: int("poolId"),
   granted: boolean("granted").notNull().default(false),
   denialReason: varchar("denialReason", { length: 256 }),
-  sessionId: int("sessionId"), // linked parking session
-  responseTimeMs: int("responseTimeMs"), // gate response latency
+  sessionId: int("sessionId"),
+  responseTimeMs: int("responseTimeMs"),
   timestamp: bigint("timestamp", { mode: "number" }).notNull(),
 });
 
-export type ParkingAccessLogEntry = typeof parkingAccessLog.$inferSelect;
-
-// ─── Parking Visitor Permits (QR-based guest access) ──────────────
 export const parkingVisitorPermits = mysqlTable("parking_visitor_permits", {
   id: int("id").autoincrement().primaryKey(),
   zoneId: int("zoneId").notNull(),
@@ -1726,35 +1590,29 @@ export const parkingVisitorPermits = mysqlTable("parking_visitor_permits", {
   validUntil: bigint("validUntil", { mode: "number" }).notNull(),
   maxEntries: int("maxEntries").default(1),
   usedEntries: int("usedEntries").default(0),
-  status: mysqlEnum("status", ["active", "used", "expired", "cancelled"]).default("active"),
-  shareMethod: mysqlEnum("shareMethod", ["whatsapp", "email", "sms", "link"]),
+  status: text("status").default("active"),
+  shareMethod: text("shareMethod"),
   notes: text("notes"),
   createdAt: timestamp("createdAt").defaultNow().notNull(),
 });
 
-export type ParkingVisitorPermit = typeof parkingVisitorPermits.$inferSelect;
-
-// ─── Parking SLA Violations (Compensation Tracking) ───────────────
 export const parkingSlaViolations = mysqlTable("parking_sla_violations", {
   id: int("id").autoincrement().primaryKey(),
   zoneId: int("zoneId").notNull(),
   userId: int("userId").notNull(),
   permitId: int("permitId"),
   poolId: int("poolId"),
-  slaTier: mysqlEnum("slaTier", ["platinum", "gold", "silver", "bronze"]).notNull(),
-  violationType: mysqlEnum("violationType", ["denied_entry", "no_spot_available", "downgrade"]).notNull(),
+  slaTier: text("slaTier").notNull(),
+  violationType: text("violationType").notNull(),
   compensationEur: decimal("compensationEur", { precision: 8, scale: 2 }).default("0"),
   compensationCredits: decimal("compensationCredits", { precision: 8, scale: 2 }).default("0"),
-  compensationStatus: mysqlEnum("compensationStatus", ["pending", "credited", "waived"]).default("pending"),
+  compensationStatus: text("compensationStatus").default("pending"),
   alternativeOffered: varchar("alternativeOffered", { length: 256 }),
   timestamp: bigint("timestamp", { mode: "number" }).notNull(),
   resolvedAt: bigint("resolvedAt", { mode: "number" }),
   notes: text("notes"),
 });
 
-export type ParkingSlaViolation = typeof parkingSlaViolations.$inferSelect;
-
-// ─── Parking Capacity Snapshots (for analytics & predictions) ─────
 export const parkingCapacitySnapshots = mysqlTable("parking_capacity_snapshots", {
   id: int("id").autoincrement().primaryKey(),
   zoneId: int("zoneId").notNull(),
@@ -1768,16 +1626,13 @@ export const parkingCapacitySnapshots = mysqlTable("parking_capacity_snapshots",
   visitors: int("visitors").default(0),
   occupancyPercent: decimal("occupancyPercent", { precision: 5, scale: 2 }).notNull(),
   predictedPeak: decimal("predictedPeak", { precision: 5, scale: 2 }),
-  overbookingHeadroom: int("overbookingHeadroom").default(0), // extra permits safe to issue
+  overbookingHeadroom: int("overbookingHeadroom").default(0),
 });
-
-export type ParkingCapacitySnapshot = typeof parkingCapacitySnapshots.$inferSelect;
 
 // ═══════════════════════════════════════════════════════════════════════
 // ─── MENUKAART MODULE ──────────────────────────────────────────────
 // ═══════════════════════════════════════════════════════════════════════
 
-// ─── Menu Seasons (Q1-Q4 per year) ─────────────────────────────────
 export const menuSeasons = mysqlTable("menu_seasons", {
   id: int("id").autoincrement().primaryKey(),
   year: int("year").notNull(),
@@ -1968,6 +1823,7 @@ export const rozInvoices = mysqlTable("roz_invoices", {
 });
 
 export type RozInvoice = typeof rozInvoices.$inferSelect;
+export type InsertRozInvoice = typeof rozInvoices.$inferInsert;
 
 // ─── Credit Packages (Standalone Purchases) ─────────────────────────
 export const creditPackages = mysqlTable("credit_packages", {
@@ -1977,10 +1833,10 @@ export const creditPackages = mysqlTable("credit_packages", {
   credits: int("credits").notNull(),
   priceEur: decimal("priceEur", { precision: 10, scale: 2 }).notNull(),
   pricePerCredit: decimal("pricePerCredit", { precision: 8, scale: 4 }),
-  discountPercent: decimal("discountPercent", { precision: 5, scale: 2 }).default("0"),
+  discountPercent: decimal("discountPercent", { precision: 5, scale: 2 }).default("0.00"),
   description: text("description"),
   features: json("features").$type<string[]>(),
-  minBundleTier: varchar("minBundleTier", { length: 64 }), // require a subscription to buy
+  minBundleTier: varchar("minBundleTier", { length: 64 }),
   isActive: boolean("isActive").default(true),
   stripeProductId: varchar("stripeProductId", { length: 128 }),
   stripePriceId: varchar("stripePriceId", { length: 128 }),
@@ -1988,22 +1844,15 @@ export const creditPackages = mysqlTable("credit_packages", {
   createdAt: timestamp("createdAt").defaultNow().notNull(),
   updatedAt: timestamp("updatedAt").defaultNow().onUpdateNow().notNull(),
 });
-
 export type CreditPackage = typeof creditPackages.$inferSelect;
 export type InsertCreditPackage = typeof creditPackages.$inferInsert;
 
-// ─── Budget Controls (Enterprise Spending Limits) ───────────────────
+// ─── Budget Controls ────────────────────────────────────────────────
 export const budgetControls = mysqlTable("budget_controls", {
   id: int("id").autoincrement().primaryKey(),
   companyId: int("companyId").notNull(),
   walletId: int("walletId"),
-  controlType: mysqlEnum("controlType", [
-    "per_employee_cap",
-    "team_budget",
-    "location_restriction",
-    "resource_type_restriction",
-    "approval_threshold",
-  ]).notNull(),
+  controlType: mysqlEnum("controlType", ["per_employee_cap", "team_budget", "location_restriction", "resource_type_restriction", "approval_threshold"]).notNull(),
   targetUserId: int("targetUserId"),
   targetTeam: varchar("targetTeam", { length: 128 }),
   capAmount: decimal("capAmount", { precision: 12, scale: 2 }),
@@ -2012,13 +1861,12 @@ export const budgetControls = mysqlTable("budget_controls", {
   allowedResourceTypes: json("allowedResourceTypes").$type<string[]>(),
   approvalThreshold: decimal("approvalThreshold", { precision: 12, scale: 2 }),
   approverUserId: int("approverUserId"),
-  currentSpend: decimal("currentSpend", { precision: 12, scale: 2 }).default("0"),
+  currentSpend: decimal("currentSpend", { precision: 12, scale: 2 }).default("0.00"),
   periodResetAt: bigint("periodResetAt", { mode: "number" }),
   isActive: boolean("isActive").default(true),
   createdAt: timestamp("createdAt").defaultNow().notNull(),
   updatedAt: timestamp("updatedAt").defaultNow().onUpdateNow().notNull(),
 });
-
 export type BudgetControl = typeof budgetControls.$inferSelect;
 export type InsertBudgetControl = typeof budgetControls.$inferInsert;
 
@@ -2033,38 +1881,27 @@ export const commitContracts = mysqlTable("commit_contracts", {
   commitPeriodMonths: int("commitPeriodMonths").notNull(),
   startDate: bigint("startDate", { mode: "number" }).notNull(),
   endDate: bigint("endDate", { mode: "number" }).notNull(),
-  prepaidAmount: decimal("prepaidAmount", { precision: 14, scale: 2 }).default("0"),
-  drawdownUsed: decimal("drawdownUsed", { precision: 14, scale: 2 }).default("0"),
+  prepaidAmount: decimal("prepaidAmount", { precision: 14, scale: 2 }).default("0.00"),
+  drawdownUsed: decimal("drawdownUsed", { precision: 14, scale: 2 }).default("0.00"),
   monthlyAllocation: decimal("monthlyAllocation", { precision: 12, scale: 2 }),
-  rampedCommitments: json("rampedCommitments").$type<Record<string, string>>(), // year -> amount
-  discountPercent: decimal("discountPercent", { precision: 5, scale: 2 }).default("0"),
+  rampedCommitments: json("rampedCommitments"),
+  discountPercent: decimal("discountPercent", { precision: 5, scale: 2 }).default("0.00"),
   trueUpEnabled: boolean("trueUpEnabled").default(false),
   trueUpDate: bigint("trueUpDate", { mode: "number" }),
   earlyRenewalBonus: decimal("earlyRenewalBonus", { precision: 10, scale: 2 }),
-  status: mysqlEnum("commitStatus", [
-    "draft", "pending_approval", "active", "paused", "expired", "terminated",
-  ]).default("draft").notNull(),
+  commitStatus: mysqlEnum("commitStatus", ["draft", "pending_approval", "active", "paused", "expired", "terminated"]).default("draft").notNull(),
   notes: text("notes"),
-  stripeSubscriptionId: varchar("commitStripeSubId", { length: 128 }),
+  commitStripeSubId: varchar("commitStripeSubId", { length: 128 }),
   createdAt: timestamp("createdAt").defaultNow().notNull(),
   updatedAt: timestamp("updatedAt").defaultNow().onUpdateNow().notNull(),
 });
-
 export type CommitContract = typeof commitContracts.$inferSelect;
 export type InsertCommitContract = typeof commitContracts.$inferInsert;
 
 // ─── Credit Bonuses (Gamification & Loyalty) ────────────────────────
 export const creditBonuses = mysqlTable("credit_bonuses", {
   id: int("id").autoincrement().primaryKey(),
-  type: mysqlEnum("bonusType", [
-    "signup_bonus",
-    "referral",
-    "renewal",
-    "daypass_conversion",
-    "loyalty",
-    "promotion",
-    "manual",
-  ]).notNull(),
+  bonusType: mysqlEnum("bonusType", ["signup_bonus", "referral", "renewal", "daypass_conversion", "loyalty", "promotion", "manual"]).notNull(),
   walletId: int("walletId"),
   userId: int("userId"),
   companyId: int("companyId"),
@@ -2074,16 +1911,15 @@ export const creditBonuses = mysqlTable("credit_bonuses", {
   referredCompanyId: int("referredCompanyId"),
   sourceContractId: int("sourceContractId"),
   sourceBundleId: int("sourceBundleId"),
-  expiresAt: bigint("bonusExpiresAt", { mode: "number" }),
+  bonusExpiresAt: bigint("bonusExpiresAt", { mode: "number" }),
   isApplied: boolean("isApplied").default(false),
   appliedAt: timestamp("appliedAt"),
   createdAt: timestamp("createdAt").defaultNow().notNull(),
 });
-
 export type CreditBonus = typeof creditBonuses.$inferSelect;
 export type InsertCreditBonus = typeof creditBonuses.$inferInsert;
 
-// ─── Wallet Payment Transactions (Stripe Checkout) ───────────────────
+// ─── Wallet Transactions ────────────────────────────────────────────
 export const walletTransactions = mysqlTable("wallet_transactions", {
   id: int("id").autoincrement().primaryKey(),
   userId: int("userId").notNull(),
@@ -2099,24 +1935,36 @@ export const walletTransactions = mysqlTable("wallet_transactions", {
   createdAt: timestamp("createdAt").defaultNow().notNull(),
   updatedAt: timestamp("updatedAt").defaultNow().onUpdateNow().notNull(),
 });
-
 export type WalletTransaction = typeof walletTransactions.$inferSelect;
 export type InsertWalletTransaction = typeof walletTransactions.$inferInsert;
-export type InsertRozInvoice = typeof rozInvoices.$inferInsert;
 
-// ─── Email Campaign Sends (CRM Email Campaigns) ─────────────────────────
+// ─── Website Visitors ───────────────────────────────────────────────
+export const websiteVisitors = mysqlTable("website_visitors", {
+  id: int("id").autoincrement().primaryKey(),
+  ip: varchar("ip", { length: 45 }).notNull(),
+  companyName: varchar("companyName", { length: 256 }),
+  companyDomain: varchar("companyDomain", { length: 256 }),
+  city: varchar("city", { length: 128 }),
+  country: varchar("country", { length: 64 }),
+  pageUrl: text("pageUrl").notNull(),
+  referrer: text("referrer"),
+  userAgent: text("userAgent"),
+  leadId: int("leadId"),
+  visitedAt: bigint("visitedAt", { mode: "number" }).notNull(),
+  createdAt: timestamp("createdAt").defaultNow().notNull(),
+  updatedAt: timestamp("updatedAt").defaultNow().onUpdateNow().notNull(),
+});
+export type WebsiteVisitor = typeof websiteVisitors.$inferSelect;
+export type InsertWebsiteVisitor = typeof websiteVisitors.$inferInsert;
+
+// ─── Email Campaign Sends ───────────────────────────────────────────
 export const emailCampaignSends = mysqlTable("email_campaign_sends", {
   id: int("id").autoincrement().primaryKey(),
   campaignId: int("campaignId").notNull(),
   leadId: int("leadId").notNull(),
   email: varchar("email", { length: 256 }).notNull(),
   status: mysqlEnum("sendStatus", [
-    "queued",
-    "sent",
-    "opened",
-    "clicked",
-    "bounced",
-    "unsubscribed",
+    "queued", "sent", "opened", "clicked", "bounced", "unsubscribed",
   ]).default("queued").notNull(),
   sentAt: timestamp("sentAt"),
   openedAt: timestamp("openedAt"),
@@ -2129,26 +1977,5 @@ export const emailCampaignSends = mysqlTable("email_campaign_sends", {
   createdAt: timestamp("createdAt").defaultNow().notNull(),
   updatedAt: timestamp("updatedAt").defaultNow().onUpdateNow().notNull(),
 });
-
 export type EmailCampaignSend = typeof emailCampaignSends.$inferSelect;
-
-// ─── CRM: Website Visitors (LeadInfo-style tracking) ────────────────────────
-export const websiteVisitors = mysqlTable("website_visitors", {
-  id: int("id").autoincrement().primaryKey(),
-  ip: varchar("ip", { length: 45 }).notNull(), // IPv6 support
-  companyName: varchar("companyName", { length: 256 }),
-  companyDomain: varchar("companyDomain", { length: 256 }),
-  city: varchar("city", { length: 128 }),
-  country: varchar("country", { length: 64 }),
-  pageUrl: text("pageUrl").notNull(),
-  referrer: text("referrer"),
-  userAgent: text("userAgent"),
-  leadId: int("leadId"), // FK to crm_leads
-  visitedAt: bigint("visitedAt", { mode: "number" }).notNull(),
-  createdAt: timestamp("createdAt").defaultNow().notNull(),
-  updatedAt: timestamp("updatedAt").defaultNow().onUpdateNow().notNull(),
-});
-
-export type WebsiteVisitor = typeof websiteVisitors.$inferSelect;
-export type InsertWebsiteVisitor = typeof websiteVisitors.$inferInsert;
 export type InsertEmailCampaignSend = typeof emailCampaignSends.$inferInsert;

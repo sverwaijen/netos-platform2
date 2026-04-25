@@ -1,6 +1,6 @@
-# Changelog — Skynet Platform
+# Changelog — Netos Platform
 
-Alle noemenswaardige wijzigingen aan het Skynet Platform worden hier bijgehouden.
+Alle noemenswaardige wijzigingen aan het Netos Platform worden hier bijgehouden.
 Format is gebaseerd op [Keep a Changelog](https://keepachangelog.com/).
 
 ---

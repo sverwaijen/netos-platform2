@@ -15,7 +15,7 @@ export default function Locations() {
       {/* Header */}
       <div className="flex flex-col md:flex-row justify-between items-start md:items-end gap-3">
         <div>
-          <div className="text-[9px] font-semibold tracking-[4px] uppercase text-[#627653] mb-3">Locations</div>
+          <div className="text-[9px] font-semibold tracking-[4px] uppercase text-[#C4B89E] mb-3">Locations</div>
           <h1 className="text-[clamp(28px,3vw,42px)] font-extralight tracking-[-0.5px] leading-tight">
             Where we <strong className="font-semibold">are.</strong>
           </h1>
@@ -29,8 +29,8 @@ export default function Locations() {
           const img = getLocationImage(loc.slug);
           const occ = Math.floor(Math.random() * 60) + 20;
           const spotTag = occ > 70 ? { text: "Waitlist only", cls: "bg-white/[0.08] text-white/40" }
-            : occ > 50 ? { text: `${Math.floor(Math.random() * 3) + 2} spots left`, cls: "bg-[#627653]/25 text-[#627653]" }
-            : { text: "Accepting applications", cls: "bg-[#b8a472]/20 text-[#b8a472]" };
+            : occ > 50 ? { text: `${Math.floor(Math.random() * 3) + 2} spots left`, cls: "bg-[#C4B89E]/25 text-[#C4B89E]" }
+            : { text: "Accepting applications", cls: "bg-[#C4B89E]/20 text-[#C4B89E]" };
 
           return (
             <div

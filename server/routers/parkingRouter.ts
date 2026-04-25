@@ -1,13 +1,9 @@
 import { z } from "zod";
 import { nanoid } from "nanoid";
 import { publicProcedure, protectedProcedure, router } from "../_core/trpc";
-import { getDb } from "../db";
-import {
-  parkingZones, parkingSpots, parkingPricing, parkingPermits,
-  parkingSessions, parkingReservations, parkingPools, parkingPoolMembers,
-  parkingAccessLog, parkingVisitorPermits, parkingSlaViolations,
-  parkingCapacitySnapshots,
-} from "../../drizzle/schema";
+import { getDb, getDriver } from "../db";
+import * as pgSchema from "../../drizzle/pg-schema";
+function S(): any { return pgSchema; }
 import { eq, and, desc, sql, gte, lte, count } from "drizzle-orm";
 import {
   getCapacityState, getPoolStatus, makeAccessDecision,
@@ -25,15 +21,15 @@ export const parkingZonesRouter = router({
     const db = await getDb();
     if (!db) return [];
     if (input?.locationId) {
-      return db.select().from(parkingZones).where(eq(parkingZones.locationId, input.locationId)).orderBy(parkingZones.name);
+      return db.select().from(S().parkingZones).where(eq(S().parkingZones.locationId, input.locationId)).orderBy(S().parkingZones.name);
     }
-    return db.select().from(parkingZones).orderBy(parkingZones.name);
+    return db.select().from(S().parkingZones).orderBy(S().parkingZones.name);
   }),
 
   getById: publicProcedure.input(z.object({ id: z.number() })).query(async ({ input }) => {
     const db = await getDb();
     if (!db) return null;
-    const rows = await db.select().from(parkingZones).where(eq(parkingZones.id, input.id));
+    const rows = await db.select().from(S().parkingZones).where(eq(S().parkingZones.id, input.id));
     return rows[0] ?? null;
   }),
 
@@ -52,7 +48,7 @@ export const parkingZonesRouter = router({
   })).mutation(async ({ input }) => {
     const db = await getDb();
     if (!db) return { success: false };
-    await db.insert(parkingZones).values(input);
+    await db.insert(S().parkingZones).values(input);
     return { success: true };
   }),
 
@@ -74,14 +70,14 @@ export const parkingZonesRouter = router({
     const db = await getDb();
     if (!db) return { success: false };
     const { id, ...data } = input;
-    await db.update(parkingZones).set(data).where(eq(parkingZones.id, id));
+    await db.update(S().parkingZones).set(data).where(eq(S().parkingZones.id, id));
     return { success: true };
   }),
 
   delete: adminProcedure.input(z.object({ id: z.number() })).mutation(async ({ input }) => {
     const db = await getDb();
     if (!db) return { success: false };
-    await db.delete(parkingZones).where(eq(parkingZones.id, input.id));
+    await db.delete(S().parkingZones).where(eq(S().parkingZones.id, input.id));
     return { success: true };
   }),
 
@@ -90,31 +86,31 @@ export const parkingZonesRouter = router({
     if (!db) return { totalSpots: 0, occupied: 0, available: 0, reserved: 0, revenue: 0, poolGuaranteed: 0, poolOverflow: 0, payPerUse: 0, visitors: 0 };
 
     const spotsQuery = input?.zoneId
-      ? db.select().from(parkingSpots).where(eq(parkingSpots.zoneId, input.zoneId))
-      : db.select().from(parkingSpots);
+      ? db.select().from(S().parkingSpots).where(eq(S().parkingSpots.zoneId, input.zoneId))
+      : db.select().from(S().parkingSpots);
     const spots = await spotsQuery;
 
-    const occupied = spots.filter(s => s.status === "occupied").length;
-    const reserved = spots.filter(s => s.status === "reserved").length;
-    const available = spots.filter(s => s.status === "available").length;
+    const occupied = spots.filter((s: any) => s.status === "occupied").length;
+    const reserved = spots.filter((s: any) => s.status === "reserved").length;
+    const available = spots.filter((s: any) => s.status === "available").length;
 
     // Session-based stats
     const sessionsFilter = input?.zoneId
-      ? and(eq(parkingSessions.status, "active"), eq(parkingSessions.zoneId, input.zoneId))
-      : eq(parkingSessions.status, "active");
-    const activeSessions = await db.select().from(parkingSessions).where(sessionsFilter!);
-    const poolGuaranteed = activeSessions.filter(s => s.accessType === "pool_guaranteed").length;
-    const poolOverflow = activeSessions.filter(s => s.accessType === "pool_overflow").length;
-    const payPerUse = activeSessions.filter(s => s.accessType === "pay_per_use").length;
-    const visitors = activeSessions.filter(s => s.accessType === "visitor").length;
+      ? and(eq(S().parkingSessions.status, "active"), eq(S().parkingSessions.zoneId, input.zoneId))
+      : eq(S().parkingSessions.status, "active");
+    const activeSessions = await db.select().from(S().parkingSessions).where(sessionsFilter!);
+    const poolGuaranteed = activeSessions.filter((s: any) => s.accessType === "pool_guaranteed").length;
+    const poolOverflow = activeSessions.filter((s: any) => s.accessType === "pool_overflow").length;
+    const payPerUse = activeSessions.filter((s: any) => s.accessType === "pay_per_use").length;
+    const visitors = activeSessions.filter((s: any) => s.accessType === "visitor").length;
 
     // Revenue this month
     const monthStart = new Date(new Date().getFullYear(), new Date().getMonth(), 1).getTime();
     const revenueFilter = input?.zoneId
-      ? and(eq(parkingSessions.zoneId, input.zoneId), gte(parkingSessions.entryTime, monthStart))
-      : gte(parkingSessions.entryTime, monthStart);
-    const revenueSessions = await db.select().from(parkingSessions).where(revenueFilter!);
-    const revenue = revenueSessions.reduce((sum, s) => sum + parseFloat(String(s.amountEur || "0")), 0);
+      ? and(eq(S().parkingSessions.zoneId, input.zoneId), gte(S().parkingSessions.entryTime, monthStart))
+      : gte(S().parkingSessions.entryTime, monthStart);
+    const revenueSessions = await db.select().from(S().parkingSessions).where(revenueFilter!);
+    const revenue = revenueSessions.reduce((sum: any, s: any) => sum + parseFloat(String(s.amountEur || "0")), 0);
 
     return {
       totalSpots: spots.length,
@@ -147,12 +143,12 @@ export const parkingZonesRouter = router({
     const db = await getDb();
     if (!db) return [];
     const since = Date.now() - ((input.hoursBack || 24) * 60 * 60 * 1000);
-    return db.select().from(parkingCapacitySnapshots)
+    return db.select().from(S().parkingCapacitySnapshots)
       .where(and(
-        eq(parkingCapacitySnapshots.zoneId, input.zoneId),
-        gte(parkingCapacitySnapshots.timestamp, since),
+        eq(S().parkingCapacitySnapshots.zoneId, input.zoneId),
+        gte(S().parkingCapacitySnapshots.timestamp, since),
       ))
-      .orderBy(parkingCapacitySnapshots.timestamp)
+      .orderBy(S().parkingCapacitySnapshots.timestamp)
       .limit(288); // 5-min intervals for 24h
   }),
 });
@@ -162,7 +158,7 @@ export const parkingSpotsRouter = router({
   list: publicProcedure.input(z.object({ zoneId: z.number() })).query(async ({ input }) => {
     const db = await getDb();
     if (!db) return [];
-    return db.select().from(parkingSpots).where(eq(parkingSpots.zoneId, input.zoneId)).orderBy(parkingSpots.spotNumber);
+    return db.select().from(S().parkingSpots).where(eq(S().parkingSpots.zoneId, input.zoneId)).orderBy(S().parkingSpots.spotNumber);
   }),
 
   updateStatus: adminProcedure.input(z.object({
@@ -171,7 +167,7 @@ export const parkingSpotsRouter = router({
   })).mutation(async ({ input }) => {
     const db = await getDb();
     if (!db) return { success: false };
-    await db.update(parkingSpots).set({ status: input.status }).where(eq(parkingSpots.id, input.id));
+    await db.update(S().parkingSpots).set({ status: input.status }).where(eq(S().parkingSpots.id, input.id));
     return { success: true };
   }),
 
@@ -188,7 +184,7 @@ export const parkingSpotsRouter = router({
       spotNumber: `${input.prefix}${String(i + 1).padStart(3, "0")}`,
       type: input.type || ("standard" as const),
     }));
-    await db.insert(parkingSpots).values(spots);
+    await db.insert(S().parkingSpots).values(spots);
     return { success: true, count: input.count };
   }),
 });
@@ -199,9 +195,9 @@ export const parkingPricingRouter = router({
     const db = await getDb();
     if (!db) return [];
     if (input?.zoneId) {
-      return db.select().from(parkingPricing).where(eq(parkingPricing.zoneId, input.zoneId));
+      return db.select().from(S().parkingPricing).where(eq(S().parkingPricing.zoneId, input.zoneId));
     }
-    return db.select().from(parkingPricing);
+    return db.select().from(S().parkingPricing);
   }),
 
   create: adminProcedure.input(z.object({
@@ -217,7 +213,7 @@ export const parkingPricingRouter = router({
   })).mutation(async ({ input }) => {
     const db = await getDb();
     if (!db) return { success: false };
-    await db.insert(parkingPricing).values(input);
+    await db.insert(S().parkingPricing).values(input);
     return { success: true };
   }),
 
@@ -234,7 +230,7 @@ export const parkingPricingRouter = router({
     const db = await getDb();
     if (!db) return { success: false };
     const { id, ...data } = input;
-    await db.update(parkingPricing).set(data).where(eq(parkingPricing.id, id));
+    await db.update(S().parkingPricing).set(data).where(eq(S().parkingPricing.id, id));
     return { success: true };
   }),
 });
@@ -249,12 +245,12 @@ export const parkingReservationsRouter = router({
     const db = await getDb();
     if (!db) return [];
     const conditions = [];
-    if (input?.userId) conditions.push(eq(parkingReservations.userId, input.userId));
-    if (input?.zoneId) conditions.push(eq(parkingReservations.zoneId, input.zoneId));
+    if (input?.userId) conditions.push(eq(S().parkingReservations.userId, input.userId));
+    if (input?.zoneId) conditions.push(eq(S().parkingReservations.zoneId, input.zoneId));
     if (conditions.length > 0) {
-      return db.select().from(parkingReservations).where(and(...conditions)).orderBy(desc(parkingReservations.createdAt));
+      return db.select().from(S().parkingReservations).where(and(...conditions)).orderBy(desc(S().parkingReservations.createdAt));
     }
-    return db.select().from(parkingReservations).orderBy(desc(parkingReservations.createdAt));
+    return db.select().from(S().parkingReservations).orderBy(desc(S().parkingReservations.createdAt));
   }),
 
   create: protectedProcedure.input(z.object({
@@ -267,7 +263,7 @@ export const parkingReservationsRouter = router({
   })).mutation(async ({ ctx, input }) => {
     const db = await getDb();
     if (!db) return { success: false };
-    await db.insert(parkingReservations).values({
+    await db.insert(S().parkingReservations).values({
       ...input,
       userId: ctx.user.id,
       status: "confirmed",
@@ -278,7 +274,7 @@ export const parkingReservationsRouter = router({
   cancel: protectedProcedure.input(z.object({ id: z.number() })).mutation(async ({ input }) => {
     const db = await getDb();
     if (!db) return { success: false };
-    await db.update(parkingReservations).set({ status: "cancelled" }).where(eq(parkingReservations.id, input.id));
+    await db.update(S().parkingReservations).set({ status: "cancelled" }).where(eq(S().parkingReservations.id, input.id));
     return { success: true };
   }),
 });
@@ -289,9 +285,9 @@ export const parkingSessionsRouter = router({
     const db = await getDb();
     if (!db) return [];
     if (input?.zoneId) {
-      return db.select().from(parkingSessions).where(and(eq(parkingSessions.zoneId, input.zoneId), eq(parkingSessions.status, "active"))).orderBy(desc(parkingSessions.entryTime));
+      return db.select().from(S().parkingSessions).where(and(eq(S().parkingSessions.zoneId, input.zoneId), eq(S().parkingSessions.status, "active"))).orderBy(desc(S().parkingSessions.entryTime));
     }
-    return db.select().from(parkingSessions).where(eq(parkingSessions.status, "active")).orderBy(desc(parkingSessions.entryTime));
+    return db.select().from(S().parkingSessions).where(eq(S().parkingSessions.status, "active")).orderBy(desc(S().parkingSessions.entryTime));
   }),
 
   history: protectedProcedure.input(z.object({
@@ -301,9 +297,9 @@ export const parkingSessionsRouter = router({
     const db = await getDb();
     if (!db) return [];
     const q = input?.zoneId
-      ? db.select().from(parkingSessions).where(eq(parkingSessions.zoneId, input.zoneId))
-      : db.select().from(parkingSessions);
-    return q.orderBy(desc(parkingSessions.entryTime)).limit(input?.limit || 50);
+      ? db.select().from(S().parkingSessions).where(eq(S().parkingSessions.zoneId, input.zoneId))
+      : db.select().from(S().parkingSessions);
+    return q.orderBy(desc(S().parkingSessions.entryTime)).limit(input?.limit || 50);
   }),
 
   // Enhanced start session with access type tracking
@@ -319,24 +315,24 @@ export const parkingSessionsRouter = router({
   })).mutation(async ({ input }) => {
     const db = await getDb();
     if (!db) return { success: false };
-    await db.insert(parkingSessions).values({
+    await db.insert(S().parkingSessions).values({
       ...input,
       entryTime: Date.now(),
       status: "active",
     });
     if (input.spotId) {
-      await db.update(parkingSpots).set({ status: "occupied" }).where(eq(parkingSpots.id, input.spotId));
+      await db.update(S().parkingSpots).set({ status: "occupied" }).where(eq(S().parkingSpots.id, input.spotId));
     }
     // Update pool member stats
     if (input.poolId && input.userId) {
-      const members = await db.select().from(parkingPoolMembers)
-        .where(and(eq(parkingPoolMembers.poolId, input.poolId), eq(parkingPoolMembers.userId, input.userId)));
+      const members = await db.select().from(S().parkingPoolMembers)
+        .where(and(eq(S().parkingPoolMembers.poolId, input.poolId), eq(S().parkingPoolMembers.userId, input.userId)));
       if (members[0]) {
-        const updates: { totalSessions: number; totalOverflowSessions?: number } = { totalSessions: (members[0].totalSessions || 0) + 1 };
+        const updates: any = { totalSessions: (members[0].totalSessions || 0) + 1 };
         if (input.accessType === "pool_overflow") {
           updates.totalOverflowSessions = (members[0].totalOverflowSessions || 0) + 1;
         }
-        await db.update(parkingPoolMembers).set(updates).where(eq(parkingPoolMembers.id, members[0].id));
+        await db.update(S().parkingPoolMembers).set(updates).where(eq(S().parkingPoolMembers.id, members[0].id));
       }
     }
     return { success: true };
@@ -349,7 +345,7 @@ export const parkingSessionsRouter = router({
   })).mutation(async ({ input }) => {
     const db = await getDb();
     if (!db) return { success: false };
-    const sessions = await db.select().from(parkingSessions).where(eq(parkingSessions.id, input.id));
+    const sessions = await db.select().from(S().parkingSessions).where(eq(S().parkingSessions.id, input.id));
     const session = sessions[0];
     if (!session) return { success: false };
     const exitTime = Date.now();
@@ -358,7 +354,7 @@ export const parkingSessionsRouter = router({
     // Calculate overflow price if applicable
     let finalAmount = input.amountEur;
     if (session.accessType === "pool_overflow" && session.poolId && !finalAmount) {
-      const pool = (await db.select().from(parkingPools).where(eq(parkingPools.id, session.poolId)))[0];
+      const pool = (await db.select().from(S().parkingPools).where(eq(S().parkingPools.id, session.poolId)))[0];
       if (pool) {
         const hours = durationMinutes / 60;
         const hourlyRate = parseFloat(String(pool.overflowPriceEur || "2.50"));
@@ -367,16 +363,16 @@ export const parkingSessionsRouter = router({
       }
     }
 
-    await db.update(parkingSessions).set({
+    await db.update(S().parkingSessions).set({
       exitTime,
       durationMinutes,
       status: "completed",
       amountEur: finalAmount,
       paymentMethod: input.paymentMethod || (session.accessType === "pool_guaranteed" ? "pool" : "free"),
       paymentStatus: "paid",
-    }).where(eq(parkingSessions.id, input.id));
+    }).where(eq(S().parkingSessions.id, input.id));
     if (session.spotId) {
-      await db.update(parkingSpots).set({ status: "available" }).where(eq(parkingSpots.id, session.spotId));
+      await db.update(S().parkingSpots).set({ status: "available" }).where(eq(S().parkingSpots.id, session.spotId));
     }
     return { success: true, durationMinutes, amountEur: finalAmount };
   }),
@@ -388,21 +384,21 @@ export const parkingPermitsRouter = router({
     userId: z.number().optional(),
     zoneId: z.number().optional(),
     poolId: z.number().optional(),
-    slaTier: z.enum(["platinum", "gold", "silver", "bronze"]).optional(),
-    status: z.enum(["active", "expired", "suspended", "cancelled"]).optional(),
+    slaTier: z.string().optional(),
+    status: z.string().optional(),
   }).optional()).query(async ({ input }) => {
     const db = await getDb();
     if (!db) return [];
     const conditions = [];
-    if (input?.userId) conditions.push(eq(parkingPermits.userId, input.userId));
-    if (input?.zoneId) conditions.push(eq(parkingPermits.zoneId, input.zoneId));
-    if (input?.poolId) conditions.push(eq(parkingPermits.poolId, input.poolId));
-    if (input?.slaTier) conditions.push(eq(parkingPermits.slaTier, input.slaTier));
-    if (input?.status) conditions.push(eq(parkingPermits.status, input.status));
+    if (input?.userId) conditions.push(eq(S().parkingPermits.userId, input.userId));
+    if (input?.zoneId) conditions.push(eq(S().parkingPermits.zoneId, input.zoneId));
+    if (input?.poolId) conditions.push(eq(S().parkingPermits.poolId, input.poolId));
+    if (input?.slaTier) conditions.push(eq(S().parkingPermits.slaTier, input.slaTier as any));
+    if (input?.status) conditions.push(eq(S().parkingPermits.status, input.status as any));
     if (conditions.length > 0) {
-      return db.select().from(parkingPermits).where(and(...conditions)).orderBy(desc(parkingPermits.createdAt));
+      return db.select().from(S().parkingPermits).where(and(...conditions)).orderBy(desc(S().parkingPermits.createdAt));
     }
-    return db.select().from(parkingPermits).orderBy(desc(parkingPermits.createdAt));
+    return db.select().from(S().parkingPermits).orderBy(desc(S().parkingPermits.createdAt));
   }),
 
   create: adminProcedure.input(z.object({
@@ -420,7 +416,7 @@ export const parkingPermitsRouter = router({
   })).mutation(async ({ input }) => {
     const db = await getDb();
     if (!db) return { success: false };
-    await db.insert(parkingPermits).values(input);
+    await db.insert(S().parkingPermits).values(input);
     return { success: true };
   }),
 
@@ -430,7 +426,7 @@ export const parkingPermitsRouter = router({
   })).mutation(async ({ input }) => {
     const db = await getDb();
     if (!db) return { success: false };
-    await db.update(parkingPermits).set({ status: input.status }).where(eq(parkingPermits.id, input.id));
+    await db.update(S().parkingPermits).set({ status: input.status }).where(eq(S().parkingPermits.id, input.id));
     return { success: true };
   }),
 
@@ -440,7 +436,7 @@ export const parkingPermitsRouter = router({
   })).mutation(async ({ input }) => {
     const db = await getDb();
     if (!db) return { success: false };
-    await db.update(parkingPermits).set({ slaTier: input.slaTier }).where(eq(parkingPermits.id, input.id));
+    await db.update(S().parkingPermits).set({ slaTier: input.slaTier }).where(eq(S().parkingPermits.id, input.id));
     return { success: true };
   }),
 });
@@ -451,15 +447,15 @@ export const parkingPoolsRouter = router({
     const db = await getDb();
     if (!db) return [];
     if (input?.zoneId) {
-      return db.select().from(parkingPools).where(eq(parkingPools.zoneId, input.zoneId)).orderBy(parkingPools.name);
+      return db.select().from(S().parkingPools).where(eq(S().parkingPools.zoneId, input.zoneId)).orderBy(S().parkingPools.name);
     }
-    return db.select().from(parkingPools).orderBy(parkingPools.name);
+    return db.select().from(S().parkingPools).orderBy(S().parkingPools.name);
   }),
 
   getById: publicProcedure.input(z.object({ id: z.number() })).query(async ({ input }) => {
     const db = await getDb();
     if (!db) return null;
-    const rows = await db.select().from(parkingPools).where(eq(parkingPools.id, input.id));
+    const rows = await db.select().from(S().parkingPools).where(eq(S().parkingPools.id, input.id));
     return rows[0] ?? null;
   }),
 
@@ -480,7 +476,7 @@ export const parkingPoolsRouter = router({
   })).mutation(async ({ input }) => {
     const db = await getDb();
     if (!db) return { success: false };
-    await db.insert(parkingPools).values(input);
+    await db.insert(S().parkingPools).values(input);
     return { success: true };
   }),
 
@@ -498,7 +494,7 @@ export const parkingPoolsRouter = router({
     const db = await getDb();
     if (!db) return { success: false };
     const { id, ...data } = input;
-    await db.update(parkingPools).set(data).where(eq(parkingPools.id, id));
+    await db.update(S().parkingPools).set(data).where(eq(S().parkingPools.id, id));
     return { success: true };
   }),
 
@@ -506,9 +502,9 @@ export const parkingPoolsRouter = router({
   members: publicProcedure.input(z.object({ poolId: z.number() })).query(async ({ input }) => {
     const db = await getDb();
     if (!db) return [];
-    return db.select().from(parkingPoolMembers)
-      .where(and(eq(parkingPoolMembers.poolId, input.poolId), eq(parkingPoolMembers.status, "active")))
-      .orderBy(parkingPoolMembers.joinedAt);
+    return db.select().from(S().parkingPoolMembers)
+      .where(and(eq(S().parkingPoolMembers.poolId, input.poolId), eq(S().parkingPoolMembers.status, "active")))
+      .orderBy(S().parkingPoolMembers.joinedAt);
   }),
 
   addMember: adminProcedure.input(z.object({
@@ -521,22 +517,22 @@ export const parkingPoolsRouter = router({
     const db = await getDb();
     if (!db) return { success: false };
     // Check max members
-    const pool = (await db.select().from(parkingPools).where(eq(parkingPools.id, input.poolId)))[0];
+    const pool = (await db.select().from(S().parkingPools).where(eq(S().parkingPools.id, input.poolId)))[0];
     if (pool && pool.maxMembers && pool.maxMembers > 0) {
-      const currentCount = await db.select({ cnt: count() }).from(parkingPoolMembers)
-        .where(and(eq(parkingPoolMembers.poolId, input.poolId), eq(parkingPoolMembers.status, "active")));
+      const currentCount = await db.select({ cnt: count() }).from(S().parkingPoolMembers)
+        .where(and(eq(S().parkingPoolMembers.poolId, input.poolId), eq(S().parkingPoolMembers.status, "active")));
       if ((currentCount[0]?.cnt || 0) >= pool.maxMembers) {
         throw new Error(`Pool is vol (max ${pool.maxMembers} leden)`);
       }
     }
-    await db.insert(parkingPoolMembers).values(input);
+    await db.insert(S().parkingPoolMembers).values(input);
     return { success: true };
   }),
 
   removeMember: adminProcedure.input(z.object({ id: z.number() })).mutation(async ({ input }) => {
     const db = await getDb();
     if (!db) return { success: false };
-    await db.update(parkingPoolMembers).set({ status: "removed" }).where(eq(parkingPoolMembers.id, input.id));
+    await db.update(S().parkingPoolMembers).set({ status: "removed" }).where(eq(S().parkingPoolMembers.id, input.id));
     return { success: true };
   }),
 
@@ -548,7 +544,7 @@ export const parkingPoolsRouter = router({
     const db = await getDb();
     if (!db) return { success: false };
     const { id, ...data } = input;
-    await db.update(parkingPoolMembers).set(data).where(eq(parkingPoolMembers.id, id));
+    await db.update(S().parkingPoolMembers).set(data).where(eq(S().parkingPoolMembers.id, id));
     return { success: true };
   }),
 });
@@ -571,7 +567,7 @@ export const parkingAccessRouter = router({
     const responseTimeMs = Date.now() - startTime;
 
     // Log the access attempt
-    await db.insert(parkingAccessLog).values({
+    await db.insert(S().parkingAccessLog).values({
       zoneId: input.zoneId,
       direction: "entry",
       method: input.method || "anpr",
@@ -587,7 +583,7 @@ export const parkingAccessRouter = router({
 
     // If granted, auto-start a session
     if (decision.granted) {
-      const result = await db.insert(parkingSessions).values({
+      const result = await db.insert(S().parkingSessions).values({
         zoneId: input.zoneId,
         licensePlate: plate || undefined,
         permitId: decision.permitId,
@@ -632,13 +628,13 @@ export const parkingAccessRouter = router({
     const plate = input.licensePlate?.toUpperCase().replace(/[\s-]/g, "") || "";
 
     // Find active session
-    const sessions = await db.select().from(parkingSessions)
+    const sessions = await db.select().from(S().parkingSessions)
       .where(and(
-        eq(parkingSessions.zoneId, input.zoneId),
-        eq(parkingSessions.status, "active"),
-        plate ? eq(parkingSessions.licensePlate, plate) : sql`1=1`,
+        eq(S().parkingSessions.zoneId, input.zoneId),
+        eq(S().parkingSessions.status, "active"),
+        plate ? eq(S().parkingSessions.licensePlate, plate) : sql`1=1`,
       ))
-      .orderBy(desc(parkingSessions.entryTime))
+      .orderBy(desc(S().parkingSessions.entryTime))
       .limit(1);
 
     const session = sessions[0];
@@ -650,7 +646,7 @@ export const parkingAccessRouter = router({
     // Calculate amount for overflow/pay-per-use
     let amountEur: string | undefined;
     if (session.accessType === "pool_overflow" && session.poolId) {
-      const pool = (await db.select().from(parkingPools).where(eq(parkingPools.id, session.poolId)))[0];
+      const pool = (await db.select().from(S().parkingPools).where(eq(S().parkingPools.id, session.poolId)))[0];
       if (pool) {
         const hours = durationMinutes / 60;
         const hourly = parseFloat(String(pool.overflowPriceEur || "2.50"));
@@ -659,17 +655,17 @@ export const parkingAccessRouter = router({
       }
     }
 
-    await db.update(parkingSessions).set({
+    await db.update(S().parkingSessions).set({
       exitTime,
       durationMinutes,
       status: "completed",
       amountEur,
       paymentMethod: session.accessType === "pool_guaranteed" ? "pool" : session.accessType === "pay_per_use" ? "stripe" : "permit",
       paymentStatus: "paid",
-    }).where(eq(parkingSessions.id, session.id));
+    }).where(eq(S().parkingSessions.id, session.id));
 
     // Log exit
-    await db.insert(parkingAccessLog).values({
+    await db.insert(S().parkingAccessLog).values({
       zoneId: input.zoneId,
       direction: "exit",
       method: input.method || "anpr",
@@ -680,7 +676,7 @@ export const parkingAccessRouter = router({
     });
 
     if (session.spotId) {
-      await db.update(parkingSpots).set({ status: "available" }).where(eq(parkingSpots.id, session.spotId));
+      await db.update(S().parkingSpots).set({ status: "available" }).where(eq(S().parkingSpots.id, session.spotId));
     }
 
     return { success: true, durationMinutes, amountEur };
@@ -694,13 +690,13 @@ export const parkingAccessRouter = router({
     const db = await getDb();
     if (!db) return [];
     if (input?.zoneId) {
-      return db.select().from(parkingAccessLog)
-        .where(eq(parkingAccessLog.zoneId, input.zoneId))
-        .orderBy(desc(parkingAccessLog.timestamp))
+      return db.select().from(S().parkingAccessLog)
+        .where(eq(S().parkingAccessLog.zoneId, input.zoneId))
+        .orderBy(desc(S().parkingAccessLog.timestamp))
         .limit(input?.limit || 100);
     }
-    return db.select().from(parkingAccessLog)
-      .orderBy(desc(parkingAccessLog.timestamp))
+    return db.select().from(S().parkingAccessLog)
+      .orderBy(desc(S().parkingAccessLog.timestamp))
       .limit(input?.limit || 100);
   }),
 });
@@ -710,18 +706,18 @@ export const parkingVisitorPermitsRouter = router({
   list: protectedProcedure.input(z.object({
     zoneId: z.number().optional(),
     invitedByUserId: z.number().optional(),
-    status: z.enum(["active", "used", "expired", "cancelled"]).optional(),
+    status: z.string().optional(),
   }).optional()).query(async ({ ctx, input }) => {
     const db = await getDb();
     if (!db) return [];
     const conditions = [];
-    if (input?.zoneId) conditions.push(eq(parkingVisitorPermits.zoneId, input.zoneId));
-    if (input?.invitedByUserId) conditions.push(eq(parkingVisitorPermits.invitedByUserId, input.invitedByUserId));
-    if (input?.status) conditions.push(eq(parkingVisitorPermits.status, input.status));
+    if (input?.zoneId) conditions.push(eq(S().parkingVisitorPermits.zoneId, input.zoneId));
+    if (input?.invitedByUserId) conditions.push(eq(S().parkingVisitorPermits.invitedByUserId, input.invitedByUserId));
+    if (input?.status) conditions.push(eq(S().parkingVisitorPermits.status, input.status as any));
     if (conditions.length > 0) {
-      return db.select().from(parkingVisitorPermits).where(and(...conditions)).orderBy(desc(parkingVisitorPermits.createdAt));
+      return db.select().from(S().parkingVisitorPermits).where(and(...conditions)).orderBy(desc(S().parkingVisitorPermits.createdAt));
     }
-    return db.select().from(parkingVisitorPermits).orderBy(desc(parkingVisitorPermits.createdAt));
+    return db.select().from(S().parkingVisitorPermits).orderBy(desc(S().parkingVisitorPermits.createdAt));
   }),
 
   // Create visitor permit (generates QR token and shareable link)
@@ -743,7 +739,7 @@ export const parkingVisitorPermitsRouter = router({
     const qrToken = nanoid(24);
     const shareUrl = `/parking/visitor/${qrToken}`;
 
-    await db.insert(parkingVisitorPermits).values({
+    await db.insert(S().parkingVisitorPermits).values({
       ...input,
       licensePlate: input.licensePlate?.toUpperCase().replace(/[\s-]/g, ""),
       invitedByUserId: ctx.user.id,
@@ -767,8 +763,8 @@ export const parkingVisitorPermitsRouter = router({
   validate: publicProcedure.input(z.object({ qrToken: z.string() })).query(async ({ input }) => {
     const db = await getDb();
     if (!db) return null;
-    const rows = await db.select().from(parkingVisitorPermits)
-      .where(eq(parkingVisitorPermits.qrToken, input.qrToken));
+    const rows = await db.select().from(S().parkingVisitorPermits)
+      .where(eq(S().parkingVisitorPermits.qrToken, input.qrToken));
     const permit = rows[0];
     if (!permit) return null;
     const now = Date.now();
@@ -784,7 +780,7 @@ export const parkingVisitorPermitsRouter = router({
   cancel: protectedProcedure.input(z.object({ id: z.number() })).mutation(async ({ input }) => {
     const db = await getDb();
     if (!db) return { success: false };
-    await db.update(parkingVisitorPermits).set({ status: "cancelled" }).where(eq(parkingVisitorPermits.id, input.id));
+    await db.update(S().parkingVisitorPermits).set({ status: "cancelled" }).where(eq(S().parkingVisitorPermits.id, input.id));
     return { success: true };
   }),
 });
@@ -793,17 +789,17 @@ export const parkingVisitorPermitsRouter = router({
 export const parkingSlaRouter = router({
   list: adminProcedure.input(z.object({
     zoneId: z.number().optional(),
-    status: z.enum(["pending", "credited", "waived"]).optional(),
+    status: z.string().optional(),
   }).optional()).query(async ({ input }) => {
     const db = await getDb();
     if (!db) return [];
     const conditions = [];
-    if (input?.zoneId) conditions.push(eq(parkingSlaViolations.zoneId, input.zoneId));
-    if (input?.status) conditions.push(eq(parkingSlaViolations.compensationStatus, input.status));
+    if (input?.zoneId) conditions.push(eq(S().parkingSlaViolations.zoneId, input.zoneId));
+    if (input?.status) conditions.push(eq(S().parkingSlaViolations.compensationStatus, input.status as any));
     if (conditions.length > 0) {
-      return db.select().from(parkingSlaViolations).where(and(...conditions)).orderBy(desc(parkingSlaViolations.timestamp));
+      return db.select().from(S().parkingSlaViolations).where(and(...conditions)).orderBy(desc(S().parkingSlaViolations.timestamp));
     }
-    return db.select().from(parkingSlaViolations).orderBy(desc(parkingSlaViolations.timestamp));
+    return db.select().from(S().parkingSlaViolations).orderBy(desc(S().parkingSlaViolations.timestamp));
   }),
 
   resolve: adminProcedure.input(z.object({
@@ -812,10 +808,10 @@ export const parkingSlaRouter = router({
   })).mutation(async ({ input }) => {
     const db = await getDb();
     if (!db) return { success: false };
-    await db.update(parkingSlaViolations).set({
+    await db.update(S().parkingSlaViolations).set({
       compensationStatus: input.compensationStatus,
       resolvedAt: Date.now(),
-    }).where(eq(parkingSlaViolations.id, input.id));
+    }).where(eq(S().parkingSlaViolations.id, input.id));
     return { success: true };
   }),
 
@@ -823,12 +819,12 @@ export const parkingSlaRouter = router({
     const db = await getDb();
     if (!db) return { total: 0, pending: 0, totalCompensation: 0 };
     const conditions = [];
-    if (input?.zoneId) conditions.push(eq(parkingSlaViolations.zoneId, input.zoneId));
+    if (input?.zoneId) conditions.push(eq(S().parkingSlaViolations.zoneId, input.zoneId));
     const all = conditions.length > 0
-      ? await db.select().from(parkingSlaViolations).where(and(...conditions))
-      : await db.select().from(parkingSlaViolations);
-    const pending = all.filter(v => v.compensationStatus === "pending").length;
-    const totalCompensation = all.reduce((sum, v) => sum + parseFloat(String(v.compensationEur || "0")), 0);
+      ? await db.select().from(S().parkingSlaViolations).where(and(...conditions))
+      : await db.select().from(S().parkingSlaViolations);
+    const pending = all.filter((v: any) => v.compensationStatus === "pending").length;
+    const totalCompensation = all.reduce((sum: any, v: any) => sum + parseFloat(String(v.compensationEur || "0")), 0);
     return { total: all.length, pending, totalCompensation: Math.round(totalCompensation * 100) / 100 };
   }),
 });

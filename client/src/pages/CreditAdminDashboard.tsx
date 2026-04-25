@@ -10,7 +10,16 @@ export default function CreditAdminDashboard() {
 
   if (isLoading) return <div className="space-y-4 p-1">{Array.from({ length: 4 }).map((_, i) => <Skeleton key={i} className="h-32" />)}</div>;
 
-  const s = stats ?? { totalWallets: 0, totalCreditsInCirculation: 0, totalPermanentCredits: 0, totalMonthlyBurn: 0, activeContracts: 0, totalBonusesPending: 0 };
+  // Map backend stats to display-friendly names
+  const raw = stats ?? { totalWallets: 0, totalBalance: 0, totalPackagesSold: 0, activeBundles: 0, activeContracts: 0, pendingBonuses: 0 };
+  const s = {
+    totalWallets: (raw as any).totalWallets ?? 0,
+    totalCreditsInCirculation: Number((raw as any).totalBalance ?? 0),
+    totalPermanentCredits: Number((raw as any).totalPackagesSold ?? 0),
+    totalMonthlyBurn: Number((raw as any).activeBundles ?? 0),
+    activeContracts: (raw as any).activeContracts ?? 0,
+    totalBonusesPending: (raw as any).pendingBonuses ?? 0,
+  };
 
   return (
     <div className="space-y-8 p-1">

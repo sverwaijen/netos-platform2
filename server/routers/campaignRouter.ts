@@ -2,7 +2,7 @@ import { z } from "zod";
 import { eq, and, sql, ne } from "drizzle-orm";
 import { publicProcedure, protectedProcedure, router } from "../_core/trpc";
 import { getDb } from "../db";
-import { emailCampaignSends } from "../../drizzle/schema";
+import { emailCampaignSends } from "../../drizzle/pg-schema";
 import { send, buildCampaignEmail, isValidEmail } from "../integrations/emailService";
 import { nanoid } from "nanoid";
 
@@ -42,7 +42,7 @@ export const campaignRouter = router({
         email: input.leadEmail,
         status: "queued",
         resendMessageId: sendId,
-      }).$returningId();
+      }).returning();
 
       try {
         // Build email with tracking
@@ -186,7 +186,7 @@ export const campaignRouter = router({
   listSends: adminProcedure
     .input(z.object({
       campaignId: z.number(),
-      status: z.enum(["queued", "sent", "opened", "clicked", "bounced", "unsubscribed"]).optional(),
+      status: z.string().optional(),
       limit: z.number().optional(),
     }))
     .query(async ({ input }) => {
@@ -195,7 +195,7 @@ export const campaignRouter = router({
 
       const conditions = [eq(emailCampaignSends.campaignId, input.campaignId)];
       if (input.status) {
-        conditions.push(eq(emailCampaignSends.status, input.status));
+        conditions.push(eq(emailCampaignSends.status, input.status as any));
       }
 
       return db.select().from(emailCampaignSends)

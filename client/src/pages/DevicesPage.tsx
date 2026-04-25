@@ -22,10 +22,10 @@ export default function DevicesPage() {
 
   const filtered = useMemo(() => {
     if (!devices) return [];
-    return devices.filter((d) => !search || d.name?.toLowerCase().includes(search.toLowerCase()) || d.serialNumber?.toLowerCase().includes(search.toLowerCase()));
+    return devices.filter((d: any) => !search || d.name?.toLowerCase().includes(search.toLowerCase()) || d.serialNumber?.toLowerCase().includes(search.toLowerCase()));
   }, [devices, search]);
 
-  const online = (devices ?? []).filter((d) => d.status === "online").length;
+  const online = (devices ?? []).filter((d: any) => d.status === "online").length;
   const totalSensors = parseInt(String((deviceStats as any)?.totalSensors ?? 0));
 
   return (
@@ -58,7 +58,7 @@ export default function DevicesPage() {
       <div className="flex gap-4 items-center flex-wrap">
         <Select value={selectedLocation} onValueChange={setSelectedLocation}>
           <SelectTrigger className="w-56 bg-white/[0.03] border-white/[0.06]"><SelectValue placeholder="Select location" /></SelectTrigger>
-          <SelectContent>{(locations ?? []).map((l) => <SelectItem key={l.id} value={String(l.id)}>{l.name}</SelectItem>)}</SelectContent>
+          <SelectContent>{(locations ?? []).map((l: any) => <SelectItem key={l.id} value={String(l.id)}>{l.name}</SelectItem>)}</SelectContent>
         </Select>
         <div className="relative flex-1 max-w-xs">
           <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-[#888]" />
@@ -85,7 +85,7 @@ export default function DevicesPage() {
           <div className="text-center py-16"><Cpu className="w-8 h-8 text-[#888] mx-auto mb-3 opacity-30" /><p className="text-sm text-[#888] font-light">No devices found.</p></div>
         ) : (
           <div className="space-y-0">
-            {filtered.map((d) => {
+            {filtered.map((d: any) => {
               const isOnline = d.status === "online";
               return (
                 <div key={d.id} className="flex items-center justify-between py-4 border-b border-white/[0.03] hover:bg-white/[0.02] transition-colors">
@@ -99,7 +99,7 @@ export default function DevicesPage() {
                         <span>{d.type || "netlink"}</span>
                         <span className="font-mono">{d.serialNumber}</span>
                         <span>v{d.firmwareVersion}</span>
-                        {(d as Record<string, unknown>).sensorCount != null && Number((d as Record<string, unknown>).sensorCount) > 0 && <span className="flex items-center gap-1"><Radio className="w-3 h-3" />{String((d as Record<string, unknown>).sensorCount)} sensors</span>}
+                        {d.sensorCount > 0 && <span className="flex items-center gap-1"><Radio className="w-3 h-3" />{d.sensorCount} sensors</span>}
                       </div>
                     </div>
                   </div>
@@ -119,7 +119,7 @@ export default function DevicesPage() {
 
       {tab === "occupancy" && (
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-          {(locations ?? []).map((l) => {
+          {(locations ?? []).map((l: any) => {
             const occ = Math.floor(Math.random() * 80) + 10;
             return (
               <div key={l.id} className="bg-[#111] p-5 border border-white/[0.06]">
@@ -130,7 +130,7 @@ export default function DevicesPage() {
                 <div className="w-full h-1 bg-white/[0.04] overflow-hidden">
                   <div className="h-full transition-all" style={{ width: `${occ}%`, backgroundColor: occ > 80 ? "#ef4444" : occ > 50 ? "#f59e0b" : "#627653" }} />
                 </div>
-                <p className="text-[11px] text-[#888] mt-2">{(l as any).totalDesks ?? 0} desks &middot; Real-time</p>
+                <p className="text-[11px] text-[#888] mt-2">{l.totalDesks ?? 0} desks &middot; Real-time</p>
               </div>
             );
           })}

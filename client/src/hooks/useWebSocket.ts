@@ -22,7 +22,9 @@ export interface WebSocketStatus {
   reconnectAttempts: number;
 }
 
-type ChannelMessages = Partial<Record<WebSocketChannel, WebSocketMessage | null>>;
+type ChannelMessages = {
+  [key in WebSocketChannel]?: WebSocketMessage | null;
+};
 
 const RECONNECT_DELAY = 3000;
 const MAX_RECONNECT_ATTEMPTS = 5;
@@ -64,7 +66,7 @@ export function useWebSocket(
         }));
 
         // Subscribe to channels
-        channels.forEach((channel) => {
+        channels.forEach((channel: any) => {
           if (wsRef.current?.readyState === WebSocket.OPEN) {
             wsRef.current.send(
               JSON.stringify({
@@ -193,7 +195,7 @@ export function useWebSocket(
   return {
     ...status,
     lastMessagesByChannel,
-    subscribe,
-    unsubscribe,
+    subscribe: subscribe as any,
+    unsubscribe: unsubscribe as any,
   };
 }

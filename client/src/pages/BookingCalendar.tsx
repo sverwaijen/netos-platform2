@@ -104,20 +104,20 @@ export default function BookingCalendar() {
   const [selectedLocation, setSelectedLocation] = useState<string>("all");
   const [selectedFloor, setSelectedFloor] = useState<string>("all");
   const [selectedResourceTypes, setSelectedResourceTypes] = useState<Set<ResourceType>>(
-    new Set(["desk", "meeting_room", "parking"] as ResourceType[])
+    new Set<ResourceType>(["desk", "meeting_room", "parking"])
   );
   const [showBookingModal, setShowBookingModal] = useState(false);
   const [selectedSlot, setSelectedSlot] = useState<any>(null);
 
   // Get unique locations and floors from demo data
   const locations = useMemo(() => {
-    const locs = new Set(DEMO_BOOKINGS.map((b) => b.location));
+    const locs = new Set(DEMO_BOOKINGS.map((b: any) => b.location));
     return Array.from(locs);
   }, []);
 
   const floors = useMemo(() => {
     const flrs = new Set(
-      DEMO_BOOKINGS.filter((b) => selectedLocation === "all" || b.location === selectedLocation).map(
+      DEMO_BOOKINGS.filter((b: any) => selectedLocation === "all" || b.location === selectedLocation).map(
         (b) => b.floor
       )
     );
@@ -126,7 +126,7 @@ export default function BookingCalendar() {
 
   // Filter bookings based on selected filters
   const filteredBookings = useMemo(() => {
-    return DEMO_BOOKINGS.filter((booking) => {
+    return DEMO_BOOKINGS.filter((booking: any) => {
       if (selectedLocation !== "all" && booking.location !== selectedLocation) return false;
       if (selectedFloor !== "all" && booking.floor !== selectedFloor) return false;
       if (!selectedResourceTypes.has(booking.resourceType)) return false;
@@ -211,7 +211,7 @@ export default function BookingCalendar() {
     return (
       <div className="space-y-4">
         <div className="grid grid-cols-7 gap-1 mb-4">
-          {["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"].map((day) => (
+          {["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"].map((day: any) => (
             <div key={day} className="text-center text-xs font-semibold text-muted-foreground py-2">
               {day}
             </div>
@@ -228,7 +228,7 @@ export default function BookingCalendar() {
                 >
                   <div className="text-xs font-semibold mb-1 text-foreground">{dayData.date.getDate()}</div>
                   <div className="space-y-0.5">
-                    {dayData.dayBookings.slice(0, 2).map((booking: BookingData) => {
+                    {dayData.dayBookings.slice(0, 2).map((booking: any) => {
                       const color = RESOURCE_COLORS[booking.resourceType as ResourceType];
                       return (
                         <div
@@ -274,21 +274,21 @@ export default function BookingCalendar() {
         <div className="overflow-x-auto">
           <div className="grid gap-1 min-w-max" style={{ gridTemplateColumns: "80px " + "1fr ".repeat(7) }}>
             <div className="text-xs font-semibold text-muted-foreground py-2">Time</div>
-            {days.map((day) => (
+            {days.map((day: any) => (
               <div key={day.toISOString()} className="text-center text-xs font-semibold text-muted-foreground py-2">
                 <div>{day.toLocaleDateString("en-US", { weekday: "short" })}</div>
                 <div>{day.getDate()}</div>
               </div>
             ))}
 
-            {Array.from({ length: 17 }, (_, hour) => hour + 7).map((hour) => (
+            {Array.from({ length: 17 }, (_, hour) => hour + 7).map((hour: any) => (
               <div key={`time-${hour}`} className="text-right pr-2 text-xs text-muted-foreground font-medium">
                 {String(hour).padStart(2, "0")}:00
               </div>
             ))}
 
-            {days.flatMap((day) =>
-              Array.from({ length: 17 }, (_, hour) => hour + 7).map((hour) => {
+            {days.flatMap((day: any) =>
+              Array.from({ length: 17 }, (_, hour) => hour + 7).map((hour: any) => {
                 const dayBookings = filteredBookings.filter(
                   (b) =>
                     b.startTime.getDate() === day.getDate() &&
@@ -303,8 +303,8 @@ export default function BookingCalendar() {
                     className="border border-border rounded bg-card min-h-16 p-1 hover:bg-accent/50 cursor-pointer transition-colors relative"
                     onClick={() => handleCreateBooking(day, hour)}
                   >
-                    {dayBookings.map((booking) => {
-                      const color = RESOURCE_COLORS[booking.resourceType];
+                    {dayBookings.map((booking: any) => {
+                      const color = RESOURCE_COLORS[booking.resourceType as ResourceType];
                       return (
                         <div
                           key={booking.id}
@@ -343,8 +343,8 @@ export default function BookingCalendar() {
         </div>
 
         <div className="space-y-2">
-          {Array.from({ length: 17 }, (_, hour) => hour + 7).map((hour) => {
-            const hourBookings = dayBookings.filter((b) => b.startTime.getHours() === hour);
+          {Array.from({ length: 17 }, (_, hour) => hour + 7).map((hour: any) => {
+            const hourBookings = dayBookings.filter((b: any) => b.startTime.getHours() === hour);
 
             return (
               <div key={`hour-${hour}`} className="flex gap-4">
@@ -353,8 +353,8 @@ export default function BookingCalendar() {
                 </div>
                 <div className="flex-1 flex gap-2 flex-wrap">
                   {hourBookings.length > 0 ? (
-                    hourBookings.map((booking) => {
-                      const color = RESOURCE_COLORS[booking.resourceType];
+                    hourBookings.map((booking: any) => {
+                      const color = RESOURCE_COLORS[booking.resourceType as ResourceType];
                       return (
                         <div
                           key={booking.id}
@@ -403,7 +403,7 @@ export default function BookingCalendar() {
           <div className="flex flex-col sm:flex-row gap-4">
             {/* View selector */}
             <div className="flex gap-2">
-              {["day", "week", "month"].map((v) => (
+              {["day", "week", "month"].map((v: any) => (
                 <Button
                   key={v}
                   onClick={() => setView(v as ViewType)}
@@ -423,7 +423,7 @@ export default function BookingCalendar() {
               </SelectTrigger>
               <SelectContent>
                 <SelectItem value="all">All Locations</SelectItem>
-                {locations.map((loc) => (
+                {locations.map((loc: any) => (
                   <SelectItem key={loc} value={loc}>
                     {loc}
                   </SelectItem>
@@ -438,7 +438,7 @@ export default function BookingCalendar() {
               </SelectTrigger>
               <SelectContent>
                 <SelectItem value="all">All Floors</SelectItem>
-                {floors.map((floor) => (
+                {floors.map((floor: any) => (
                   <SelectItem key={floor} value={floor}>
                     Floor {floor}
                   </SelectItem>

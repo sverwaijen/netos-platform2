@@ -7,7 +7,7 @@ import { toast } from "sonner";
 import { Building2, Search, Users, CreditCard, Crown, Plus } from "lucide-react";
 import { useState, useMemo } from "react";
 
-const TIER_COLORS: Record<string, string> = { gold: "#b8a472", silver: "#888", bronze: "#8B6914" };
+const TIER_COLORS: Record<string, string> = { gold: "#C4B89E", silver: "#888", bronze: "#8B6914" };
 
 export default function Companies() {
   const { data: companies, isLoading } = trpc.companies.list.useQuery();
@@ -18,7 +18,7 @@ export default function Companies() {
 
   const filtered = useMemo(() => {
     if (!companies) return [];
-    return companies.filter((c) => {
+    return companies.filter((c: any) => {
       const matchSearch = !search || c.name.toLowerCase().includes(search.toLowerCase());
       const matchTier = tierFilter === "all" || c.tier === tierFilter;
       return matchSearch && matchTier;
@@ -27,7 +27,7 @@ export default function Companies() {
 
   const tierCounts = useMemo(() => {
     const counts: Record<string, number> = { gold: 0, silver: 0, bronze: 0 };
-    (companies ?? []).forEach((c) => { if (c.tier && counts[c.tier] !== undefined) counts[c.tier]++; });
+    (companies ?? []).forEach((c: any) => { if (counts[c.tier] !== undefined) counts[c.tier]++; });
     return counts;
   }, [companies]);
 
@@ -37,12 +37,12 @@ export default function Companies() {
     <div className="space-y-8 p-1">
       <div className="flex items-end justify-between">
         <div>
-          <div className="text-[9px] font-semibold tracking-[4px] uppercase text-[#627653] mb-3">Network</div>
+          <div className="text-[9px] font-semibold tracking-[4px] uppercase text-[#C4B89E] mb-3">Network</div>
           <h1 className="text-[clamp(24px,3vw,36px)] font-extralight tracking-[-0.5px]">
             Member <strong className="font-semibold">companies.</strong>
           </h1>
         </div>
-        <button onClick={() => setCreateOpen(true)} className="flex items-center gap-2 px-5 py-3 bg-[#627653] text-white text-[10px] font-semibold tracking-[3px] uppercase hover:bg-[#4a5a3f] transition-all">
+        <button onClick={() => setCreateOpen(true)} className="flex items-center gap-2 px-5 py-3 bg-[#C4B89E] text-white text-[10px] font-semibold tracking-[3px] uppercase hover:bg-[#4a5a3f] transition-all">
           <Plus className="w-3.5 h-3.5" />Add company
         </button>
       </div>
@@ -84,11 +84,11 @@ export default function Companies() {
         </div>
       ) : (
         <div className="space-y-0">
-          {filtered.map((c) => (
+          {filtered.map((c: any) => (
             <div key={c.id} className="flex items-center justify-between py-4 border-b border-white/[0.03] hover:bg-white/[0.02] transition-colors">
               <div className="flex items-center gap-4">
-                <div className="w-10 h-10 rounded flex items-center justify-center" style={{ background: `${c.primaryColor || "#627653"}20` }}>
-                  {c.logoUrl ? <img src={c.logoUrl} alt="" className="w-6 h-6 object-contain" /> : <Building2 className="w-5 h-5" style={{ color: c.primaryColor || "#627653" }} />}
+                <div className="w-10 h-10 rounded flex items-center justify-center" style={{ background: `${c.primaryColor || "#C4B89E"}20` }}>
+                  {c.logoUrl ? <img src={c.logoUrl} alt="" className="w-6 h-6 object-contain" /> : <Building2 className="w-5 h-5" style={{ color: c.primaryColor || "#C4B89E" }} />}
                 </div>
                 <div>
                   <p className="text-sm font-light">{c.name}</p>
@@ -100,12 +100,12 @@ export default function Companies() {
               </div>
               <div className="flex items-center gap-3">
                 <div className="flex items-center gap-2">
-                  <div className="w-3 h-3 rounded-full" style={{ backgroundColor: c.primaryColor ?? "#627653" }} />
-                  <div className="w-3 h-3 rounded-full" style={{ backgroundColor: c.secondaryColor ?? "#b8a472" }} />
+                  <div className="w-3 h-3 rounded-full" style={{ backgroundColor: c.primaryColor ?? "#C4B89E" }} />
+                  <div className="w-3 h-3 rounded-full" style={{ backgroundColor: c.secondaryColor ?? "#C4B89E" }} />
                 </div>
                 <div className="flex items-center gap-1.5">
-                  <Crown className="w-3.5 h-3.5" style={{ color: (c.tier ? TIER_COLORS[c.tier] : null) || "#888" }} />
-                  <span className="text-[10px] font-semibold tracking-[2px] uppercase" style={{ color: (c.tier ? TIER_COLORS[c.tier] : null) || "#888" }}>{c.tier}</span>
+                  <Crown className="w-3.5 h-3.5" style={{ color: TIER_COLORS[c.tier] || "#888" }} />
+                  <span className="text-[10px] font-semibold tracking-[2px] uppercase" style={{ color: TIER_COLORS[c.tier] || "#888" }}>{c.tier}</span>
                 </div>
               </div>
             </div>
@@ -122,7 +122,7 @@ export default function Companies() {
           </div>
           <DialogFooter>
             <Button variant="outline" onClick={() => setCreateOpen(false)} className="border-white/10 bg-transparent">Cancel</Button>
-            <Button onClick={() => { toast.success("Company creation request submitted."); setCreateOpen(false); setNewName(""); }} disabled={!newName} className="bg-[#627653] text-white hover:bg-[#4a5a3f]">Create</Button>
+            <Button onClick={() => { toast.success("Company creation request submitted."); setCreateOpen(false); setNewName(""); }} disabled={!newName} className="bg-[#C4B89E] text-white hover:bg-[#4a5a3f]">Create</Button>
           </DialogFooter>
         </DialogContent>
       </Dialog>

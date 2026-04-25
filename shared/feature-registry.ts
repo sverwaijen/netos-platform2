@@ -11,15 +11,9 @@
  */
 
 // ─── Rollen ──────────────────────────────────────────────────────────
-export type UserRole =
-  | "administrator"   // Volledige toegang, beheert platform
-  | "host"            // Receptionist / community host
-  | "teamadmin"       // Boss / bedrijfsleider van een huurder
-  | "member"          // Reguliere gebruiker / huurder
-  | "guest"           // Bezoeker
-  | "facility"        // Facility manager (gebouwbeheer)
-  | "company_owner"   // Company owner
-  | "developer";      // Developer / agent die test
+// Consolidated: single source of truth in shared/roles.ts
+import type { UserRole } from "./roles";
+export type { UserRole };
 
 // ─── Module Status ───────────────────────────────────────────────────
 export type ModuleStatus =
@@ -58,7 +52,7 @@ export const featureRegistry: FeatureModule[] = [
     description: "Hoofddashboard met KPI's, bezetting en activiteit",
     status: "beta",
     enabled: true,
-    visibleTo: ["administrator", "host", "teamadmin", "facility", "developer"],
+    visibleTo: ["administrator", "host", "teamadmin", "facility"],
     canReview: ["administrator", "teamadmin", "facility"],
     routes: ["/dashboard", "/"],
     lastSprintUpdate: "sprint-1",
@@ -71,12 +65,12 @@ export const featureRegistry: FeatureModule[] = [
     description: "Boekingssysteem voor werkplekken, vergaderruimtes en faciliteiten",
     status: "beta",
     enabled: true,
-    visibleTo: ["administrator", "host", "teamadmin", "member", "guest", "facility", "developer"],
+    visibleTo: ["administrator", "host", "teamadmin", "member", "guest", "facility"],
     canReview: ["administrator", "teamadmin", "member"],
     routes: ["/bookings"],
     lastSprintUpdate: "sprint-1",
     knownIssues: ["Tijdslots soms niet correct bij overlapping"],
-    missingIntegrations: [],
+    missingIntegrations: ["Salto KS deur-integratie"],
   },
   {
     id: "wallet",
@@ -84,7 +78,7 @@ export const featureRegistry: FeatureModule[] = [
     description: "Dual wallet systeem met persoonlijke en bedrijfscredits",
     status: "demo",
     enabled: true,
-    visibleTo: ["administrator", "teamadmin", "member", "developer"],
+    visibleTo: ["administrator", "teamadmin", "member"],
     canReview: ["administrator", "teamadmin", "member"],
     routes: ["/wallet"],
     lastSprintUpdate: "sprint-1",
@@ -97,7 +91,7 @@ export const featureRegistry: FeatureModule[] = [
     description: "7 Mr. Green locaties met plattegronden en resources",
     status: "beta",
     enabled: true,
-    visibleTo: ["administrator", "host", "facility", "developer"],
+    visibleTo: ["administrator", "host", "facility"],
     canReview: ["administrator", "facility"],
     routes: ["/locations", "/locations/:slug"],
     lastSprintUpdate: "sprint-1",
@@ -112,7 +106,7 @@ export const featureRegistry: FeatureModule[] = [
     description: "Zendesk-style ticketsysteem met AI-first handling en SLA tracking",
     status: "beta",
     enabled: true,
-    visibleTo: ["administrator", "host", "facility", "developer"],
+    visibleTo: ["administrator", "host", "facility"],
     canReview: ["administrator", "host", "facility"],
     routes: ["/operations"],
     lastSprintUpdate: "sprint-1",
@@ -125,7 +119,7 @@ export const featureRegistry: FeatureModule[] = [
     description: "IoT sensor monitoring, HVAC/lighting controls en automatiseringsregels",
     status: "demo",
     enabled: true,
-    visibleTo: ["administrator", "facility", "developer"],
+    visibleTo: ["administrator", "facility"],
     canReview: ["administrator", "facility"],
     routes: ["/room-control"],
     lastSprintUpdate: "sprint-1",
@@ -140,7 +134,7 @@ export const featureRegistry: FeatureModule[] = [
     description: "Kanban-style lead pipeline met AI scoring en enrichment",
     status: "beta",
     enabled: true,
-    visibleTo: ["administrator", "host", "developer"],
+    visibleTo: ["administrator", "host"],
     canReview: ["administrator", "host"],
     routes: ["/crm/pipeline", "/crm/leads/:id"],
     lastSprintUpdate: "sprint-1",
@@ -153,7 +147,7 @@ export const featureRegistry: FeatureModule[] = [
     description: "Email campagnes met sequences en templates",
     status: "demo",
     enabled: true,
-    visibleTo: ["administrator", "host", "developer"],
+    visibleTo: ["administrator", "host"],
     canReview: ["administrator"],
     routes: ["/crm/campaigns", "/crm/templates"],
     lastSprintUpdate: "sprint-1",
@@ -166,7 +160,7 @@ export const featureRegistry: FeatureModule[] = [
     description: "LeadInfo-style website bezoeker detectie",
     status: "demo",
     enabled: true,
-    visibleTo: ["administrator", "host", "developer"],
+    visibleTo: ["administrator", "host"],
     canReview: ["administrator"],
     routes: ["/crm/visitors"],
     lastSprintUpdate: "sprint-1",
@@ -179,7 +173,7 @@ export const featureRegistry: FeatureModule[] = [
     description: "Community transitie funnel voor leads",
     status: "demo",
     enabled: true,
-    visibleTo: ["administrator", "developer"],
+    visibleTo: ["administrator"],
     canReview: ["administrator"],
     routes: ["/crm/reengagement"],
     lastSprintUpdate: "sprint-1",
@@ -194,7 +188,7 @@ export const featureRegistry: FeatureModule[] = [
     description: "POS systeem met 45 producten, multi-payment, cart management",
     status: "beta",
     enabled: true,
-    visibleTo: ["administrator", "host", "member", "developer"],
+    visibleTo: ["administrator", "host", "member"],
     canReview: ["administrator", "host", "member"],
     routes: ["/kiosk", "/butler-admin"],
     lastSprintUpdate: "sprint-1",
@@ -207,7 +201,7 @@ export const featureRegistry: FeatureModule[] = [
     description: "Keukenscherm voor bestellingen en bereidingen",
     status: "demo",
     enabled: true,
-    visibleTo: ["administrator", "host", "developer"],
+    visibleTo: ["administrator", "host"],
     canReview: ["administrator", "host"],
     routes: ["/kitchen"],
     lastSprintUpdate: "sprint-1",
@@ -220,7 +214,7 @@ export const featureRegistry: FeatureModule[] = [
     description: "Seizoens-menukaart met categorieën, items en arrangementen",
     status: "beta",
     enabled: true,
-    visibleTo: ["administrator", "host", "developer"],
+    visibleTo: ["administrator", "host"],
     canReview: ["administrator", "host"],
     routes: ["/menu"],
     lastSprintUpdate: "sprint-1",
@@ -235,7 +229,7 @@ export const featureRegistry: FeatureModule[] = [
     description: "Parkeerplatform met zones, dynamic pricing, permits en sessions",
     status: "beta",
     enabled: true,
-    visibleTo: ["administrator", "facility", "teamadmin", "member", "developer"],
+    visibleTo: ["administrator", "facility", "teamadmin", "member"],
     canReview: ["administrator", "facility", "teamadmin"],
     routes: ["/parking"],
     lastSprintUpdate: "sprint-1",
@@ -250,7 +244,7 @@ export const featureRegistry: FeatureModule[] = [
     description: "Digitale welkomstschermen per bedrijf met auto-branding",
     status: "beta",
     enabled: true,
-    visibleTo: ["administrator", "host", "teamadmin", "developer"],
+    visibleTo: ["administrator", "host", "teamadmin"],
     canReview: ["administrator", "host", "teamadmin"],
     routes: ["/signing"],
     lastSprintUpdate: "sprint-1",
@@ -263,7 +257,7 @@ export const featureRegistry: FeatureModule[] = [
     description: "Content management voor digitale schermen met playlists en heartbeat",
     status: "beta",
     enabled: true,
-    visibleTo: ["administrator", "host", "facility", "developer"],
+    visibleTo: ["administrator", "host", "facility"],
     canReview: ["administrator", "facility"],
     routes: ["/signage", "/signage/display/:id"],
     lastSprintUpdate: "sprint-1",
@@ -278,7 +272,7 @@ export const featureRegistry: FeatureModule[] = [
     description: "Huurovereenkomsten generator met PDF auto-fill en preview",
     status: "beta",
     enabled: true,
-    visibleTo: ["administrator", "teamadmin", "developer"],
+    visibleTo: ["administrator", "teamadmin"],
     canReview: ["administrator", "teamadmin"],
     routes: ["/roz"],
     lastSprintUpdate: "sprint-1",
@@ -293,12 +287,12 @@ export const featureRegistry: FeatureModule[] = [
     description: "Progressive Web App met 7 pagina's: Home, Bookings, Wallet, Access, Parking, Support, Profile",
     status: "demo",
     enabled: true,
-    visibleTo: ["administrator", "member", "developer"],
+    visibleTo: ["administrator", "member"],
     canReview: ["administrator", "member"],
     routes: ["/app/*"],
     lastSprintUpdate: "sprint-1",
-    knownIssues: ["WiFi provisioning is UI-only"],
-    missingIntegrations: ["UniFi Identity API", "Push notifications"],
+    knownIssues: ["Salto KS deur-opening niet werkend", "WiFi provisioning is UI-only"],
+    missingIntegrations: ["Salto KS SDK", "UniFi Identity API", "Push notifications"],
   },
 
   // ── User Management ───────────────────────────────────────────────
@@ -308,7 +302,7 @@ export const featureRegistry: FeatureModule[] = [
     description: "RBAC systeem met rollen, uitnodigingen en bedrijfsbeheer",
     status: "beta",
     enabled: true,
-    visibleTo: ["administrator", "developer"],
+    visibleTo: ["administrator"],
     canReview: ["administrator"],
     routes: ["/users", "/invites", "/companies"],
     lastSprintUpdate: "sprint-1",

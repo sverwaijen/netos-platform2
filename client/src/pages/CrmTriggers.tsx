@@ -200,7 +200,7 @@ export default function CrmTriggers() {
 
       {/* Triggers Grid */}
       <div className="grid gap-4">
-        {triggers?.map(trigger => {
+        {triggers?.map((trigger: any) => {
           const et = EVENT_TYPES.find(e => e.value === trigger.eventType);
           const EventIcon = et?.icon || Zap;
           const actions = (trigger.actions || []) as Array<{ type: string; config: Record<string, any> }>;
@@ -268,7 +268,7 @@ export default function CrmTriggers() {
                       <p className="text-xs text-zinc-500">Nog geen uitvoeringen</p>
                     ) : (
                       <div className="space-y-2 max-h-48 overflow-y-auto">
-                        {logs.map(log => (
+                        {logs.map((log: any) => (
                           <div key={log.id} className="flex items-center gap-2 text-xs p-2 bg-zinc-800/50 rounded">
                             <Badge variant={log.status === "success" ? "default" : "destructive"} className="text-[10px]">
                               {log.status}

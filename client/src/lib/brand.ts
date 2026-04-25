@@ -1,5 +1,15 @@
-// Mr. Green Brand Assets - CDN URLs
+/**
+ * THE GREEN — Brand Identity
+ * Private members community. Office for the Unbound.
+ */
 export const BRAND = {
+  name: "The Green",
+  tagline: "Office for the Unbound",
+  heroLine: "You don't find us.",
+  heroLineBold: "We find you.",
+  description: "A closed community of selected businesses. Access to seven premium locations across the Netherlands — by invitation only.",
+  acceptance: "23% acceptance rate",
+  locations: 7,
   logo: "https://d2xsxph8kpxj0f.cloudfront.net/310519663495612718/mDvGyHKfUjrJPbgE7f5Bn3/logo-white_47b57f46.svg",
   images: {
     amsterdam: "https://d2xsxph8kpxj0f.cloudfront.net/310519663495612718/mDvGyHKfUjrJPbgE7f5Bn3/amsterdam_9ecc8111.jpg",
@@ -13,12 +23,17 @@ export const BRAND = {
     boutiqueOffice: "https://d2xsxph8kpxj0f.cloudfront.net/310519663495612718/mDvGyHKfUjrJPbgE7f5Bn3/boutique-office_5639fb42.jpg",
   },
   colors: {
-    green: "#627653",
-    greenDark: "#3a4a34",
-    cream: "#f6f5f2",
-    black: "#111",
-    gold: "#b8a472",
-    gray: "#888",
+    sand: "#C4B89E",
+    sandLight: "#D4CBBA",
+    warmWhite: "#F5F3F0",
+    black: "#111111",
+    charcoal: "#1C1C1C",
+    border: "#3A3A3A",
+    textMuted: "#6B6B6B",
+  },
+  fonts: {
+    display: "'Space Grotesk', ui-sans-serif, system-ui, sans-serif",
+    body: "'Inter', ui-sans-serif, system-ui, sans-serif",
   },
 } as const;
 

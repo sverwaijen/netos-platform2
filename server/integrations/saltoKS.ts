@@ -1,22 +1,21 @@
-import { createLogger } from "../_core/logger";
-
-const log = createLogger("SaltoKS");
-
 /**
  * Salto KS Connect API Integration
- *
+ * 
  * Provides server-side access to Salto KS for:
  * - Creating/managing users in Salto KS
  * - Issuing and revoking mobile keys
  * - Listing access points (doors/locks)
  * - Remote door opening
- *
+ * 
  * Requires:
  * - SALTO_KS_API_URL
  * - SALTO_KS_CLIENT_ID
  * - SALTO_KS_CLIENT_SECRET
  * - SALTO_KS_SITE_ID
  */
+
+import { createLogger } from "../_core/logger";
+const log = createLogger("SaltoKS");
 
 interface SaltoKSConfig {
   apiUrl: string;

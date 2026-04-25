@@ -1,22 +1,21 @@
-import { createLogger } from "../_core/logger";
-
-const log = createLogger("UniFi");
-
 /**
  * UniFi Identity / UniFi Network Integration
- *
+ * 
  * Provides server-side WiFi provisioning for coworking members:
  * - Create WiFi user accounts
  * - Generate WiFi profiles for auto-connect
  * - Manage bandwidth and VLAN assignments
  * - Authorize/deauthorize devices
- *
+ * 
  * Requires:
  * - UNIFI_CONTROLLER_URL
  * - UNIFI_USERNAME
  * - UNIFI_PASSWORD
  * - UNIFI_SITE (default: 'default')
  */
+
+import { createLogger } from "../_core/logger";
+const log = createLogger("UniFi");
 
 interface UniFiConfig {
   controllerUrl: string;
@@ -90,7 +89,7 @@ export async function createWiFiUser(user: {
     name: user.name,
     email: user.email,
     x_password: password,
-    note: user.note || `NET OS member: ${user.email}`,
+    note: user.note || `Skynet member: ${user.email}`,
     usergroup_id: "", // Default group
   });
   return { ...result, password };

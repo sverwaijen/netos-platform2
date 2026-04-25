@@ -17,7 +17,7 @@ import {
 } from "lucide-react";
 
 const STATUS_COLORS: Record<string, string> = {
-  draft: "#111", active: "#627653", paused: "#b8a472", completed: "#4a7c3f", archived: "#888",
+  draft: "#111", active: "#C4B89E", paused: "#C4B89E", completed: "#4a7c3f", archived: "#888",
 };
 
 export default function CrmCampaigns() {
@@ -41,7 +41,7 @@ export default function CrmCampaigns() {
   const [aiSubject, setAiSubject] = useState("");
   const [aiBody, setAiBody] = useState("");
 
-  const selectedCampaignData = campaigns.find((c) => c.id === selectedCampaign);
+  const selectedCampaignData = campaigns.find((c: any) => c.id === selectedCampaign);
 
   return (
     <div className="space-y-6">
@@ -63,7 +63,7 @@ export default function CrmCampaigns() {
           </Select>
           <Dialog open={showCreate} onOpenChange={setShowCreate}>
             <DialogTrigger asChild>
-              <Button size="sm" className="bg-[#627653] hover:bg-[#3a4a34] text-white">
+              <Button size="sm" className="bg-[#C4B89E] hover:bg-[#1C1C1C] text-white">
                 <Plus className="w-4 h-4 mr-2" /> New Campaign
               </Button>
             </DialogTrigger>
@@ -94,7 +94,7 @@ export default function CrmCampaigns() {
                   <Label className="text-xs uppercase tracking-wider text-white/50">Description</Label>
                   <Textarea value={newCampaign.description} onChange={e => setNewCampaign(p => ({ ...p, description: e.target.value }))} className="mt-1 bg-white/[0.04] border-white/[0.08]" rows={2} />
                 </div>
-                <Button className="w-full bg-[#627653] hover:bg-[#3a4a34] text-white" onClick={() => createCampaign.mutate(newCampaign)} disabled={!newCampaign.name || createCampaign.isPending}>
+                <Button className="w-full bg-[#C4B89E] hover:bg-[#1C1C1C] text-white" onClick={() => createCampaign.mutate(newCampaign)} disabled={!newCampaign.name || createCampaign.isPending}>
                   {createCampaign.isPending ? "Creating..." : "Create Campaign"}
                 </Button>
               </div>
@@ -113,11 +113,11 @@ export default function CrmCampaigns() {
               <p className="text-xs text-white/30 mt-1">Create your first outreach campaign</p>
             </Card>
           )}
-          {campaigns.map((c) => (
+          {campaigns.map((c: any) => (
             <Card
               key={c.id}
               onClick={() => setSelectedCampaign(c.id)}
-              className={`p-4 cursor-pointer transition-all ${selectedCampaign === c.id ? "bg-[#627653]/5 border-[#627653]/30" : "bg-white/[0.04] border-white/[0.08] hover:shadow-sm"}`}
+              className={`p-4 cursor-pointer transition-all ${selectedCampaign === c.id ? "bg-[#C4B89E]/5 border-[#C4B89E]/30" : "bg-white/[0.04] border-white/[0.08] hover:shadow-sm"}`}
             >
               <div className="flex items-start justify-between mb-2">
                 <h3 className="text-sm font-semibold text-white">{c.name}</h3>
@@ -128,8 +128,8 @@ export default function CrmCampaigns() {
               {c.description && <p className="text-xs text-white/50 mb-2 line-clamp-1">{c.description}</p>}
               <div className="flex items-center gap-3 text-[10px] text-white/30 uppercase tracking-wider">
                 <span className="flex items-center gap-1"><Users className="w-3 h-3" /> {c.totalLeads ?? 0}</span>
-                <span className="flex items-center gap-1"><Eye className="w-3 h-3" /> {(c as any).openRate ?? 0}%</span>
-                <span className="flex items-center gap-1"><MousePointer className="w-3 h-3" /> {(c as any).clickRate ?? 0}%</span>
+                <span className="flex items-center gap-1"><Eye className="w-3 h-3" /> {c.openRate ?? 0}%</span>
+                <span className="flex items-center gap-1"><MousePointer className="w-3 h-3" /> {c.clickRate ?? 0}%</span>
               </div>
             </Card>
           ))}
@@ -146,17 +146,17 @@ export default function CrmCampaigns() {
                 </div>
                 <div className="flex items-center gap-2">
                   {selectedCampaignData.status === "draft" && (
-                    <Button size="sm" onClick={() => updateCampaign.mutate({ id: selectedCampaignData.id, status: "active" })} className="bg-[#627653] hover:bg-[#3a4a34] text-white">
+                    <Button size="sm" onClick={() => updateCampaign.mutate({ id: selectedCampaignData.id, status: "active" })} className="bg-[#C4B89E] hover:bg-[#1C1C1C] text-white">
                       <Play className="w-3.5 h-3.5 mr-1" /> Launch
                     </Button>
                   )}
                   {selectedCampaignData.status === "active" && (
-                    <Button size="sm" variant="outline" onClick={() => updateCampaign.mutate({ id: selectedCampaignData.id, status: "paused" })} className="border-[#b8a472]/30 text-[#b8a472]">
+                    <Button size="sm" variant="outline" onClick={() => updateCampaign.mutate({ id: selectedCampaignData.id, status: "paused" })} className="border-[#C4B89E]/30 text-[#C4B89E]">
                       <Pause className="w-3.5 h-3.5 mr-1" /> Pause
                     </Button>
                   )}
                   {selectedCampaignData.status === "paused" && (
-                    <Button size="sm" onClick={() => updateCampaign.mutate({ id: selectedCampaignData.id, status: "active" })} className="bg-[#627653] hover:bg-[#3a4a34] text-white">
+                    <Button size="sm" onClick={() => updateCampaign.mutate({ id: selectedCampaignData.id, status: "active" })} className="bg-[#C4B89E] hover:bg-[#1C1C1C] text-white">
                       <Play className="w-3.5 h-3.5 mr-1" /> Resume
                     </Button>
                   )}
@@ -172,7 +172,7 @@ export default function CrmCampaigns() {
                   { label: "Click Rate", value: `${(selectedCampaignData as any).clickRate ?? 0}%`, icon: MousePointer },
                 ].map((s, i) => (
                   <div key={i} className="bg-white/[0.04] rounded-lg p-3">
-                    <s.icon className="w-3.5 h-3.5 text-[#627653] mb-1" />
+                    <s.icon className="w-3.5 h-3.5 text-[#C4B89E] mb-1" />
                     <p className="text-lg font-semibold text-white">{s.value}</p>
                     <p className="text-[10px] uppercase tracking-wider text-white/30">{s.label}</p>
                   </div>
@@ -186,13 +186,13 @@ export default function CrmCampaigns() {
                 </TabsList>
 
                 <TabsContent value="steps" className="mt-4 space-y-3">
-                  {steps.map((step, i) => (
+                  {steps.map((step: any, i: number) => (
                     <Card key={step.id} className="p-4 bg-white/[0.06] border-white/10">
                       <div className="flex items-center justify-between mb-2">
                         <div className="flex items-center gap-2">
-                          <div className="w-6 h-6 rounded-full bg-[#627653] text-white flex items-center justify-center text-xs font-semibold">{i + 1}</div>
+                          <div className="w-6 h-6 rounded-full bg-[#C4B89E] text-white flex items-center justify-center text-xs font-semibold">{i + 1}</div>
                           <span className="text-xs text-white/40">
-                            {(step.delayDays ?? 0) > 0 ? `Wait ${step.delayDays} day${(step.delayDays ?? 0) > 1 ? "s" : ""}` : "Immediate"}
+                            {step.delayDays > 0 ? `Wait ${step.delayDays} day${step.delayDays > 1 ? "s" : ""}` : "Immediate"}
                           </span>
                         </div>
                         <Button size="sm" variant="ghost" onClick={() => deleteStep.mutate({ id: step.id })} className="text-white/30 hover:text-red-500">
@@ -217,7 +217,7 @@ export default function CrmCampaigns() {
                           setAiBody(result.body);
                         }}
                         disabled={aiGenerate.isPending}
-                        className="border-[#627653]/30 text-[#627653]"
+                        className="border-[#C4B89E]/30 text-[#C4B89E]"
                       >
                         <Sparkles className="w-3.5 h-3.5 mr-1" /> {aiGenerate.isPending ? "Generating..." : "AI Write"}
                       </Button>
@@ -226,7 +226,7 @@ export default function CrmCampaigns() {
                     <Textarea value={aiBody} onChange={e => setAiBody(e.target.value)} placeholder="Email body..." className="bg-white/[0.06] border-white/10" rows={4} />
                     <Button
                       size="sm"
-                      className="mt-2 bg-[#627653] hover:bg-[#3a4a34] text-white"
+                      className="mt-2 bg-[#C4B89E] hover:bg-[#1C1C1C] text-white"
                       onClick={() => {
                         addStep.mutate({ campaignId: selectedCampaign!, stepOrder: steps.length + 1, delayDays: steps.length === 0 ? 0 : 3, subject: aiSubject, body: aiBody });
                         setAiSubject(""); setAiBody("");
@@ -247,7 +247,7 @@ export default function CrmCampaigns() {
                     </div>
                   ) : (
                     <div className="space-y-2">
-                      {enrollments.map((e) => (
+                      {enrollments.map((e: any) => (
                         <div key={e.id} className="flex items-center justify-between p-3 bg-white/[0.04] rounded-lg">
                           <div>
                             <p className="text-sm font-medium text-white">{e.leadName}</p>
@@ -255,9 +255,9 @@ export default function CrmCampaigns() {
                           </div>
                           <div className="flex items-center gap-2">
                             <Badge variant="outline" className="text-[10px] border-white/10 text-white/40">
-                              Step {e.currentStepId ?? 1}
+                              Step {e.currentStep ?? 1}
                             </Badge>
-                            <Badge variant="secondary" className={`text-[10px] ${e.status === "active" ? "bg-[#627653]/10 text-[#627653]" : "bg-white/[0.04] text-white/40"}`}>
+                            <Badge variant="secondary" className={`text-[10px] ${e.status === "active" ? "bg-[#C4B89E]/10 text-[#C4B89E]" : "bg-white/[0.04] text-white/40"}`}>
                               {e.status}
                             </Badge>
                           </div>

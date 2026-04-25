@@ -38,9 +38,9 @@ export default function AppBookingNew() {
     },
   });
 
-  const selectedLocationObj = locations.find(l => l.id === selectedLocation);
-  const selectedResourceObj = resources.find(r => r.id === selectedResource);
-  const personalWallet = wallets.find(w => w.type === "personal");
+  const selectedLocationObj = locations.find((l: any) => l.id === selectedLocation);
+  const selectedResourceObj = resources.find((r: any) => r.id === selectedResource);
+  const personalWallet = wallets.find((w: any) => w.type === "personal");
 
   const getResourceIcon = (type: string) => {
     switch (type) {

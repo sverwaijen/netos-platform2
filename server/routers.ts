@@ -1,11 +1,10 @@
 import { COOKIE_NAME } from "@shared/const";
 import { getSessionCookieOptions } from "./_core/cookies";
 import { systemRouter } from "./_core/systemRouter";
-import { publicProcedure, protectedProcedure, router } from "./_core/trpc";
+import { publicProcedure, protectedProcedure, adminProcedure, router } from "./_core/trpc";
 import { z } from "zod";
 import { nanoid } from "nanoid";
 import * as db from "./db";
-import { Booking, InsertCrmLead, InsertCrmLeadActivity, InsertCrmCampaign, InsertCreditBundle } from "../drizzle/schema";
 import {
   resourceTypesRouter, resourceRatesRouter, resourceRulesRouter,
   bookingPoliciesRouter, resourceAmenitiesRouter, resourceSchedulesRouter,
@@ -53,6 +52,9 @@ import {
 import { walletPaymentRouter } from "./routers/walletPaymentRouter";
 import { visitorTrackingRouter } from "./routers/visitorTrackingRouter";
 import { accessControlRouter, parkingAccessControlRouter } from "./routers/accessControlRouter";
+import { logAudit, queryAuditLogs } from "./auditLogger";
+import { energyReadings } from "../drizzle/pg-schema";
+import { sum, avg, count, eq, and, gte, lte } from "drizzle-orm";
 
 // TODO: #36 - No Database Transactions
 // Critical mutations involve multiple DB writes (bookings, wallet updates, etc.)
@@ -63,12 +65,45 @@ import { accessControlRouter, parkingAccessControlRouter } from "./routers/acces
 // - Credit purchase + wallet balance update
 // Use: db.transaction(async (tx) => { ... })
 
-const adminProcedure = protectedProcedure.use(({ ctx, next }) => {
-  if (ctx.user.role !== "administrator" && ctx.user.role !== "host") {
-    throw new Error("Forbidden: admin access required");
+// adminProcedure imported from _core/trpc.ts (single source of truth)
+
+// Shared booking cancellation logic (#31 - deduplicated)
+async function performBookingCancellation(userId: number, bookingId: number) {
+  const allBookings = await db.getBookingsByUser(userId);
+  const booking = allBookings.find((b: any) => b.id === bookingId);
+  if (!booking) throw new Error("Booking not found");
+  if (booking.status === "cancelled") throw new Error("Booking is already cancelled");
+
+  const hourBeforeStart = booking.startTime - (60 * 60 * 1000);
+  if (Date.now() > hourBeforeStart) throw new Error("Cancellations must be made at least 1 hour before the booking start time");
+
+  if (booking.walletId) {
+    const wallet = await db.getWalletById(booking.walletId);
+    if (wallet) {
+      const refundAmount = parseFloat(booking.creditsCost);
+      const newBalance = (parseFloat(wallet.balance) + refundAmount).toFixed(2);
+      await db.updateWalletBalance(booking.walletId, newBalance);
+      await db.addLedgerEntry({
+        walletId: booking.walletId,
+        type: "refund",
+        amount: refundAmount.toFixed(2),
+        balanceAfter: newBalance,
+        description: `Refund for cancelled booking #${bookingId}`,
+        referenceType: "booking",
+        referenceId: bookingId,
+      });
+    }
   }
-  return next({ ctx });
-});
+
+  await db.updateBookingStatus(bookingId, "cancelled");
+  logAudit({
+    userId, userName: null, userEmail: null,
+    action: "DELETE", entity: "Booking", entityId: String(bookingId),
+    details: `Cancelled booking #${bookingId}, refunded ${booking.creditsCost} credits`,
+    severity: "medium",
+  });
+  return { success: true, refundedCredits: booking.creditsCost };
+}
 
 export const appRouter = router({
   system: systemRouter,
@@ -117,6 +152,44 @@ export const appRouter = router({
 
   // ─── Resources ───
   resources: router({
+    all: protectedProcedure.query(async () => {
+      return db.getAllResources();
+    }),
+    create: adminProcedure.input(z.object({
+      name: z.string(),
+      type: z.string(),
+      locationId: z.number(),
+      zone: z.string().optional(),
+      capacity: z.number().optional(),
+      creditCostPerHour: z.string().optional(),
+      floor: z.string().optional(),
+      imageUrl: z.string().optional(),
+      areaM2: z.string().optional(),
+      amenities: z.array(z.string()).optional(),
+      description: z.string().optional(),
+    })).mutation(async ({ input }) => {
+      return db.createResource({
+        ...input,
+        zone: input.zone || "",
+        creditCostPerHour: input.creditCostPerHour || "0",
+      } as any);
+    }),
+    update: adminProcedure.input(z.object({
+      id: z.number(),
+      name: z.string().optional(),
+      type: z.string().optional(),
+      zone: z.string().optional(),
+      capacity: z.number().optional(),
+      costPerHour: z.number().optional(),
+      description: z.string().optional(),
+      isActive: z.boolean().optional(),
+    })).mutation(async ({ input }) => {
+      const { id, ...data } = input;
+      return db.updateResource(id, data);
+    }),
+    delete: adminProcedure.input(z.object({ id: z.number() })).mutation(async ({ input }) => {
+      return db.deleteResource(input.id);
+    }),
     byLocation: publicProcedure.input(z.object({ locationId: z.number() })).query(async ({ input }) => {
       return db.getResourcesByLocation(input.locationId);
     }),
@@ -212,7 +285,7 @@ export const appRouter = router({
       minCommitMonths: z.number().optional(),
       maxRolloverCredits: z.number().optional(),
     })).mutation(async ({ input }) => {
-      await db.createBundle(input as InsertCreditBundle);
+      await db.createBundle(input as any);
       return { success: true };
     }),
     update: adminProcedure.input(z.object({
@@ -235,7 +308,7 @@ export const appRouter = router({
       maxRolloverCredits: z.number().optional(),
     })).mutation(async ({ input }) => {
       const { id, ...data } = input;
-      await db.updateBundle(id, data as Partial<InsertCreditBundle>);
+      await db.updateBundle(id, data as any);
       return { success: true };
     }),
   }),
@@ -295,15 +368,54 @@ export const appRouter = router({
       threshold: z.string().optional(),
       amount: z.string().optional(),
     })).mutation(async ({ input }) => {
-      await db.setWalletAutoTopUp(input.walletId, input.enabled, input.threshold, input.amount);
+      await db.setWalletAutoTopUp(input.walletId, input.enabled, input.threshold ? parseFloat(input.threshold) : undefined, input.amount ? parseFloat(input.amount) : undefined);
       return { success: true };
     }),
     processRollover: adminProcedure.input(z.object({ walletId: z.number() })).mutation(async ({ input }) => {
       const result = await db.processMonthlyRollover(input.walletId);
-      return { success: true, ...result };
+      return { ...result };
     }),
     enhancedSummary: protectedProcedure.input(z.object({ walletId: z.number() })).query(async ({ input }) => {
       return db.getEnhancedLedgerSummary(input.walletId);
+    }),
+    seedDemoData: adminProcedure.input(z.object({ walletId: z.number() })).mutation(async ({ input }) => {
+      const wallet = await db.getWalletById(input.walletId);
+      if (!wallet) throw new Error("Wallet not found");
+      const demoEntries = [
+        { type: "grant" as const, amount: "500.00", description: "Welcome bonus credits" },
+        { type: "topup" as const, amount: "200.00", description: "Stripe top-up" },
+        { type: "spend" as const, amount: "-25.00", description: "Desk booking: Flex Desk A3 (4h)" },
+        { type: "spend" as const, amount: "-50.00", description: "Meeting room: Board Room (2h)" },
+        { type: "spend" as const, amount: "-12.50", description: "Kiosk order: Lunch + Coffee" },
+        { type: "topup" as const, amount: "100.00", description: "Monthly bundle credit" },
+        { type: "spend" as const, amount: "-35.00", description: "Desk booking: Private Office B2 (7h)" },
+        { type: "refund" as const, amount: "25.00", description: "Refund: Cancelled booking #42" },
+        { type: "spend" as const, amount: "-8.00", description: "Kiosk order: Cappuccino x2" },
+        { type: "spend" as const, amount: "-75.00", description: "Meeting room: Workshop Space (3h)" },
+        { type: "topup" as const, amount: "300.00", description: "Quarterly bundle top-up" },
+        { type: "spend" as const, amount: "-18.00", description: "Parking: Day pass" },
+        { type: "spend" as const, amount: "-42.00", description: "Desk booking: Standing Desk C1 (6h)" },
+        { type: "transfer" as const, amount: "-100.00", description: "Transfer to company wallet" },
+        { type: "spend" as const, amount: "-15.00", description: "Kiosk order: Team lunch" },
+        { type: "grant" as const, amount: "50.00", description: "Referral bonus" },
+        { type: "spend" as const, amount: "-30.00", description: "Meeting room: Phone Booth (5h)" },
+        { type: "spend" as const, amount: "-22.00", description: "Desk booking: Hot Desk D4 (4h)" },
+        { type: "topup" as const, amount: "150.00", description: "Manual top-up" },
+        { type: "spend" as const, amount: "-9.50", description: "Kiosk order: Smoothie + Snack" },
+      ];
+      let balance = parseFloat(wallet.balance);
+      for (const entry of demoEntries) {
+        balance += parseFloat(entry.amount);
+        await db.addLedgerEntry({
+          walletId: input.walletId,
+          type: entry.type,
+          amount: entry.amount,
+          balanceAfter: balance.toFixed(2),
+          description: entry.description,
+        });
+      }
+      await db.updateWalletBalance(input.walletId, balance.toFixed(2));
+      return { success: true, entriesCreated: demoEntries.length, newBalance: balance.toFixed(2) };
     }),
   }),
 
@@ -335,7 +447,7 @@ export const appRouter = router({
 
       // Edge case: Prevent double-booking by same user at same time
       const userBookings = await db.getBookingsByUser(ctx.user.id);
-      const doubleBooking = userBookings?.some((b: Booking) => {
+      const doubleBooking = userBookings?.some((b: any) => {
         if (b.status === "cancelled") return false;
         return !(input.endTime <= b.startTime || input.startTime >= b.endTime);
       });
@@ -365,9 +477,6 @@ export const appRouter = router({
           walletId,
           totalCost,
           `Booking: ${resource.name} (${hours}h × ${multiplier}x)`,
-          "booking",
-          undefined,
-          multiplier,
         );
       }
 
@@ -383,6 +492,13 @@ export const appRouter = router({
         notes: input.notes,
       });
 
+      // Audit log
+      logAudit({
+        userId: ctx.user.id, userName: ctx.user.name, userEmail: ctx.user.email,
+        action: "CREATE", entity: "Booking", entityId: String(input.resourceId),
+        details: `Booked ${resource.name} for ${hours}h (${totalCost.toFixed(2)} credits)`,
+        severity: "low",
+      });
       return { success: true, creditsCost: totalCost, multiplier };
     }),
     mine: protectedProcedure.query(async ({ ctx }) => {
@@ -405,33 +521,8 @@ export const appRouter = router({
       id: z.number(),
       status: z.enum(["confirmed", "checked_in", "completed", "cancelled", "no_show"]),
     })).mutation(async ({ ctx, input }) => {
-      // If cancelling, validate restrictions and refund credits
       if (input.status === "cancelled") {
-        const allBookings = await db.getBookingsByUser(ctx.user.id);
-        const booking = allBookings.find(b => b.id === input.id);
-        if (!booking) throw new Error("Booking not found");
-
-        // Cancellation time restriction: only allow > 1 hour before start
-        const hourBeforeStart = booking.startTime - (60 * 60 * 1000);
-        if (Date.now() > hourBeforeStart) throw new Error("Cancellations must be made at least 1 hour before the booking start time");
-
-        if (booking.walletId) {
-          const wallet = await db.getWalletById(booking.walletId);
-          if (wallet) {
-            const refundAmount = parseFloat(booking.creditsCost);
-            const newBalance = (parseFloat(wallet.balance) + refundAmount).toFixed(2);
-            await db.updateWalletBalance(booking.walletId, newBalance);
-            await db.addLedgerEntry({
-              walletId: booking.walletId,
-              type: "refund",
-              amount: refundAmount.toFixed(2),
-              balanceAfter: newBalance,
-              description: `Refund for cancelled booking #${input.id}`,
-              referenceType: "booking",
-              referenceId: input.id,
-            });
-          }
-        }
+        return performBookingCancellation(ctx.user.id, input.id);
       }
       await db.updateBookingStatus(input.id, input.status);
       return { success: true };
@@ -442,36 +533,7 @@ export const appRouter = router({
     cancelBooking: protectedProcedure.input(z.object({
       id: z.number(),
     })).mutation(async ({ ctx, input }) => {
-      const allBookings = await db.getBookingsByUser(ctx.user.id);
-      const booking = allBookings.find(b => b.id === input.id);
-      if (!booking) throw new Error("Booking not found");
-      if (booking.status === "cancelled") throw new Error("Booking is already cancelled");
-
-      // Cancellation time restriction: only allow > 1 hour before start
-      const hourBeforeStart = booking.startTime - (60 * 60 * 1000);
-      if (Date.now() > hourBeforeStart) throw new Error("Cancellations must be made at least 1 hour before the booking start time");
-
-      // Refund credits to wallet
-      if (booking.walletId) {
-        const wallet = await db.getWalletById(booking.walletId);
-        if (wallet) {
-          const refundAmount = parseFloat(booking.creditsCost);
-          const newBalance = (parseFloat(wallet.balance) + refundAmount).toFixed(2);
-          await db.updateWalletBalance(booking.walletId, newBalance);
-          await db.addLedgerEntry({
-            walletId: booking.walletId,
-            type: "refund",
-            amount: refundAmount.toFixed(2),
-            balanceAfter: newBalance,
-            description: `Refund for cancelled booking #${input.id}`,
-            referenceType: "booking",
-            referenceId: input.id,
-          });
-        }
-      }
-
-      await db.updateBookingStatus(input.id, "cancelled");
-      return { success: true, refundedCredits: booking.creditsCost };
+      return performBookingCancellation(ctx.user.id, input.id);
     }),
   }),
 
@@ -586,7 +648,7 @@ export const appRouter = router({
       email: z.string().optional(),
       phone: z.string().optional(),
       companyId: z.number().optional(),
-      role: z.enum(["administrator", "host", "company_owner", "teamadmin", "tenant", "member", "facility", "cleaner", "guest", "ceo", "cfo", "developer"]).optional(),
+      role: z.enum(["administrator", "ceo", "cfo", "host", "company_owner", "teamadmin", "member", "facility", "cleaner", "guest"]).optional(),
     })).mutation(async ({ ctx, input }) => {
       const token = nanoid(32);
       const expiresAt = new Date(Date.now() + 7 * 24 * 60 * 60 * 1000);
@@ -616,7 +678,7 @@ export const appRouter = router({
     }),
     updateRole: adminProcedure.input(z.object({
       userId: z.number(),
-      role: z.enum(["administrator", "host", "company_owner", "teamadmin", "tenant", "member", "facility", "cleaner", "guest", "ceo", "cfo", "developer"]),
+      role: z.enum(["administrator", "ceo", "cfo", "host", "company_owner", "teamadmin", "member", "facility", "cleaner", "guest"]),
     })).mutation(async ({ ctx, input }) => {
       // Prevent self-demotion for safety
       if (ctx.user.id === input.userId && input.role !== "administrator") {
@@ -703,7 +765,7 @@ export const appRouter = router({
     })).mutation(async ({ ctx, input }) => {
       const { id, ...data } = input;
       const oldLead = await db.getCrmLeadById(id);
-      await db.updateCrmLead(id, data as Partial<InsertCrmLead>);
+      await db.updateCrmLead(id, data as any);
       if (data.stage && oldLead && data.stage !== oldLead.stage) {
         await db.addCrmLeadActivity({ leadId: id, userId: ctx.user.id, type: "stage_change", title: `Stage: ${oldLead.stage} → ${data.stage}` });
       }
@@ -725,7 +787,7 @@ export const appRouter = router({
       title: z.string(),
       description: z.string().optional(),
     })).mutation(async ({ ctx, input }) => {
-      await db.addCrmLeadActivity({ ...input, userId: ctx.user.id } as InsertCrmLeadActivity);
+      await db.addCrmLeadActivity({ ...input, userId: ctx.user.id } as any);
       return { success: true };
     }),
     aiScore: protectedProcedure.input(z.object({ id: z.number() })).mutation(async ({ ctx, input }) => {
@@ -786,7 +848,7 @@ export const appRouter = router({
       targetAudience: z.string().optional(),
     })).mutation(async ({ input }) => {
       const { id, ...data } = input;
-      await db.updateCrmCampaign(id, data as Partial<InsertCrmCampaign>);
+      await db.updateCrmCampaign(id, data as any);
       return { success: true };
     }),
     steps: protectedProcedure.input(z.object({ campaignId: z.number() })).query(async ({ input }) => {
@@ -967,7 +1029,7 @@ Return JSON with "subject" and "body" fields. The body should be HTML formatted.
       });
       
       const enrichment = JSON.parse(String(response.choices[0].message.content) || "{}");
-      const updates: Partial<InsertCrmLead> = {};
+      const updates: any = {};
       if (enrichment.industry && !lead.industry) updates.industry = enrichment.industry;
       if (enrichment.companySize && !lead.companySize) updates.companySize = enrichment.companySize;
       if (enrichment.estimatedValue && !lead.estimatedValue) updates.estimatedValue = enrichment.estimatedValue;
@@ -1058,6 +1120,155 @@ Return JSON with "subject" and "body" fields. The body should be HTML formatted.
   creditAdmin: creditAdminRouter,
   // ─── Wallet Payments ───
   walletPayment: walletPaymentRouter,
+  stripe: walletPaymentRouter, // alias for pages that use trpc.stripe
+  // ─── Energy Dashboard ───
+  energy: router({
+    summary: protectedProcedure.input(z.object({
+      locationId: z.number().optional(),
+      days: z.number().optional(),
+    })).query(async ({ input }) => {
+      const daysBack = input.days || 30;
+      const since = Date.now() - daysBack * 86400000;
+      const dbConn = await (await import("./db")).getDb();
+      if (!dbConn) return { totalKwh: 0, totalCost: 0, totalCo2: 0, solarKwh: 0, gridKwh: 0, readingCount: 0 };
+      const conditions = [gte(energyReadings.recordedAt, since)];
+      if (input.locationId) conditions.push(eq(energyReadings.locationId, input.locationId));
+      const result = await (dbConn as any).select({
+        totalKwh: sum(energyReadings.value),
+        totalCost: sum(energyReadings.cost),
+        totalCo2: sum(energyReadings.co2Kg),
+        readingCount: count(),
+      }).from(energyReadings).where(and(...conditions));
+      // Solar vs grid breakdown
+      const solarResult = await (dbConn as any).select({
+        totalKwh: sum(energyReadings.value),
+      }).from(energyReadings).where(and(...conditions, eq(energyReadings.source, "solar")));
+      const gridResult = await (dbConn as any).select({
+        totalKwh: sum(energyReadings.value),
+      }).from(energyReadings).where(and(...conditions, eq(energyReadings.source, "grid")));
+      return {
+        totalKwh: Number(result[0]?.totalKwh || 0),
+        totalCost: Number(result[0]?.totalCost || 0),
+        totalCo2: Number(result[0]?.totalCo2 || 0),
+        solarKwh: Number(solarResult[0]?.totalKwh || 0),
+        gridKwh: Number(gridResult[0]?.totalKwh || 0),
+        readingCount: Number(result[0]?.readingCount || 0),
+      };
+    }),
+    byLocation: protectedProcedure.input(z.object({
+      days: z.number().optional(),
+    })).query(async ({ input }) => {
+      const daysBack = input.days || 30;
+      const since = Date.now() - daysBack * 86400000;
+      const dbConn = await (await import("./db")).getDb();
+      if (!dbConn) return [];
+      const rows = await (dbConn as any).select({
+        locationId: energyReadings.locationId,
+        totalKwh: sum(energyReadings.value),
+        totalCost: sum(energyReadings.cost),
+        totalCo2: sum(energyReadings.co2Kg),
+      }).from(energyReadings)
+        .where(gte(energyReadings.recordedAt, since))
+        .groupBy(energyReadings.locationId);
+      // Enrich with location names
+      const locs = await db.getAllLocations();
+      return rows.map((r: any) => ({
+        locationId: r.locationId,
+        locationName: locs.find((l: any) => l.id === r.locationId)?.name || `Location ${r.locationId}`,
+        totalKwh: Number(r.totalKwh || 0),
+        totalCost: Number(r.totalCost || 0),
+        totalCo2: Number(r.totalCo2 || 0),
+      }));
+    }),
+    byFloor: protectedProcedure.input(z.object({
+      locationId: z.number().optional(),
+      days: z.number().optional(),
+    })).query(async ({ input }) => {
+      const daysBack = input.days || 30;
+      const since = Date.now() - daysBack * 86400000;
+      const dbConn = await (await import("./db")).getDb();
+      if (!dbConn) return [];
+      const conditions = [gte(energyReadings.recordedAt, since)];
+      if (input.locationId) conditions.push(eq(energyReadings.locationId, input.locationId));
+      return (dbConn as any).select({
+        floor: energyReadings.floor,
+        totalKwh: sum(energyReadings.value),
+        totalCost: sum(energyReadings.cost),
+        totalCo2: sum(energyReadings.co2Kg),
+      }).from(energyReadings)
+        .where(and(...conditions))
+        .groupBy(energyReadings.floor);
+    }),
+    trend: protectedProcedure.input(z.object({
+      locationId: z.number().optional(),
+      months: z.number().optional(),
+    })).query(async ({ input }) => {
+      const monthsBack = input.months || 4;
+      const dbConn = await (await import("./db")).getDb();
+      if (!dbConn) return [];
+      // Get monthly aggregates
+      const results = [];
+      for (let m = monthsBack - 1; m >= 0; m--) {
+        const now = new Date();
+        const start = new Date(now.getFullYear(), now.getMonth() - m, 1).getTime();
+        const end = new Date(now.getFullYear(), now.getMonth() - m + 1, 1).getTime();
+        const conditions = [
+          gte(energyReadings.recordedAt, start),
+          lte(energyReadings.recordedAt, end),
+        ];
+        if (input.locationId) conditions.push(eq(energyReadings.locationId, input.locationId));
+        const row = await (dbConn as any).select({
+          totalKwh: sum(energyReadings.value),
+          totalCost: sum(energyReadings.cost),
+          totalCo2: sum(energyReadings.co2Kg),
+        }).from(energyReadings).where(and(...conditions));
+        const monthName = new Date(start).toLocaleString("en", { month: "long" });
+        results.push({
+          month: monthName,
+          year: new Date(start).getFullYear(),
+          totalKwh: Number(row[0]?.totalKwh || 0),
+          totalCost: Number(row[0]?.totalCost || 0),
+          totalCo2Kg: Number(row[0]?.totalCo2 || 0),
+        });
+      }
+      return results;
+    }),
+  }),
+  // ─── Audit Trail ───
+  audit: router({
+    list: adminProcedure.input(z.object({
+      search: z.string().optional(),
+      action: z.enum(["CREATE", "UPDATE", "DELETE", "LOGIN", "LOGOUT", "EXPORT", "VIEW", "SETTINGS_CHANGE"]).optional(),
+      severity: z.enum(["low", "medium", "high"]).optional(),
+      entity: z.string().optional(),
+      fromDate: z.string().optional(),
+      toDate: z.string().optional(),
+      limit: z.number().optional(),
+      offset: z.number().optional(),
+    })).query(async ({ input }) => {
+      return queryAuditLogs(input);
+    }),
+    log: protectedProcedure.input(z.object({
+      action: z.enum(["CREATE", "UPDATE", "DELETE", "LOGIN", "LOGOUT", "EXPORT", "VIEW", "SETTINGS_CHANGE"]),
+      entity: z.string(),
+      entityId: z.string().optional(),
+      details: z.string().optional(),
+      severity: z.enum(["low", "medium", "high"]).optional(),
+    })).mutation(async ({ ctx, input }) => {
+      await logAudit({
+        userId: ctx.user.id,
+        userName: ctx.user.name,
+        userEmail: ctx.user.email,
+        action: input.action,
+        entity: input.entity,
+        entityId: input.entityId,
+        details: input.details,
+        severity: input.severity,
+        ipAddress: null,
+      });
+      return { success: true };
+    }),
+  }),
 });
 
 export type AppRouter = typeof appRouter;

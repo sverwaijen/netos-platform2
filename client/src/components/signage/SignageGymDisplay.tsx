@@ -1,17 +1,8 @@
 import { trpc } from "@/lib/trpc";
 import SignageLayout from "./SignageLayout";
-import { Dumbbell, Users, Flame, Heart, Zap, Activity, Trophy, type LucideIcon } from "lucide-react";
+import { Dumbbell, Users, Flame, Heart, Zap, Activity, Trophy } from "lucide-react";
 
-type GymClass = {
-  className: string;
-  instructor?: string | null;
-  category: string;
-  startTime: string;
-  endTime: string;
-  maxParticipants?: number | null;
-};
-
-const CATEGORY_META: Record<string, { icon: LucideIcon; color: string; label: string }> = {
+const CATEGORY_META: Record<string, { icon: any; color: string; label: string }> = {
   cardio: { icon: Heart, color: "#ef4444", label: "Cardio" },
   strength: { icon: Dumbbell, color: "#3b82f6", label: "Strength" },
   yoga: { icon: Activity, color: "#7cb342", label: "Yoga" },
@@ -25,7 +16,7 @@ const CATEGORY_META: Record<string, { icon: LucideIcon; color: string; label: st
 };
 
 interface Props {
-  config: { location?: { name?: string } };
+  config: any;
   time: Date;
   locationId: number;
   onRefresh: () => void;
@@ -59,10 +50,10 @@ export default function SignageGymDisplay({ config, time, locationId, onRefresh,
   const classes = isDemo ? DEMO_CLASSES : (schedule || []);
   const now = time.toLocaleTimeString("nl-NL", { hour: "2-digit", minute: "2-digit" });
 
-  const sortedClasses = [...(classes as GymClass[])].sort((a, b) => a.startTime.localeCompare(b.startTime));
-  const currentClass = sortedClasses.find((c) => c.startTime <= now && c.endTime > now);
-  const upcomingClasses = sortedClasses.filter((c) => c.startTime > now);
-  const pastClasses = sortedClasses.filter((c) => c.endTime <= now);
+  const sortedClasses = [...classes].sort((a: any, b: any) => a.startTime.localeCompare(b.startTime));
+  const currentClass = sortedClasses.find((c: any) => c.startTime <= now && c.endTime > now);
+  const upcomingClasses = sortedClasses.filter((c: any) => c.startTime > now);
+  const pastClasses = sortedClasses.filter((c: any) => c.endTime <= now);
 
   const tipIndex = Math.floor(time.getMinutes() / 15) % VITALITY_TIPS.length;
 
@@ -121,7 +112,7 @@ export default function SignageGymDisplay({ config, time, locationId, onRefresh,
             {currentClass ? "Volgende lessen" : "Rooster vandaag"}
           </div>
           <div className="space-y-1.5 overflow-y-auto h-full pr-1" style={{ scrollbarWidth: "none" }}>
-            {(currentClass ? upcomingClasses : sortedClasses).map((cls, idx) => {
+            {(currentClass ? upcomingClasses : sortedClasses).map((cls: any, idx: number) => {
               const meta = CATEGORY_META[cls.category] || { icon: Dumbbell, color: "#14b8a6", label: cls.category };
               const Icon = meta.icon;
               const isPast = pastClasses.includes(cls);

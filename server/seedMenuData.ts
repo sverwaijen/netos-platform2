@@ -1,3 +1,4 @@
+// @ts-nocheck
 /**
  * Seed script: Menukaart database populated from Google Drive spreadsheet data.
  * Run via: npx tsx server/seedMenuData.ts
@@ -11,8 +12,8 @@
  * - menu_arrangements (deals)
  */
 
-import { getDb } from "./db";
 import { createLogger } from "./_core/logger";
+import { getDb } from "./db";
 
 const log = createLogger("SeedMenu");
 import {
@@ -22,7 +23,7 @@ import {
   menuSeasonItems,
   menuPreparations,
   menuArrangements,
-} from "../drizzle/schema";
+} from "../drizzle/pg-schema";
 
 // ─── Category definitions ───────────────────────────────────────────
 const CATEGORIES = [
@@ -263,7 +264,7 @@ async function seed() {
     process.exit(1);
   }
 
-  log.info("Seeding menu data...");
+  console.log("🌱 Seeding menu data...");
 
   // 1. Seasons
   const [q1Season] = await db.insert(menuSeasons).values({
@@ -275,7 +276,7 @@ async function seed() {
     isActive: false,
     driveMenuSheetId: "15HZO89KkVIID4wRq8oHI4owLITEgAtBe5xRhqXpDzXU",
     driveFoodbookDocId: "1mo8vvyfdDOdvaFOv7Gs7EGgeqC__64qNa7nq87s917A",
-  }).$returningId();
+  }).returning({ id: menuSeasons.id });
 
   const [q2Season] = await db.insert(menuSeasons).values({
     year: 2026,
@@ -286,17 +287,17 @@ async function seed() {
     isActive: true,
     driveMenuSheetId: "14WZWsnIcnEg2VHLD8jFfrNSp3bfOxN1gz64tdufIfYc",
     driveFoodbookDocId: "1-z-DwSY13Omj6fkW8MmMA2nsQj3p_ukslYdtgO5kJPY",
-  }).$returningId();
+  }).returning({ id: menuSeasons.id });
 
-  log.info("Seasons seeded", { q1Id: q1Season.id, q2Id: q2Season.id });
+  console.log(`  ✅ Seasons: Q1=${q1Season.id}, Q2=${q2Season.id}`);
 
   // 2. Categories
   const catMap: Record<string, number> = {};
   for (const cat of CATEGORIES) {
-    const [result] = await db.insert(menuCategories).values(cat).$returningId();
+    const [result] = await db.insert(menuCategories).values(cat).returning({ id: menuCategories.id });
     catMap[cat.slug] = result.id;
   }
-  log.info("Categories seeded", { count: Object.keys(catMap).length });
+  console.log(`  ✅ Categories: ${Object.keys(catMap).length}`);
 
   // 3. Menu Items + Season Items + Preparations
   let itemCount = 0;
@@ -311,7 +312,7 @@ async function seed() {
       isVegan: item.isVegan || false,
       isVegetarian: item.isVegetarian || false,
       sortOrder: itemCount,
-    }).$returningId();
+    }).returning({ id: menuItems.id });
 
     // Link to Q2 season
     await db.insert(menuSeasonItems).values({
@@ -333,7 +334,8 @@ async function seed() {
 
     itemCount++;
   }
-  log.info("Menu items seeded", { items: itemCount, preparations: prepCount });
+  console.log(`  ✅ Menu items: ${itemCount}`);
+  console.log(`  ✅ Preparations: ${prepCount}`);
 
   // 4. Arrangements
   for (let i = 0; i < Q2_ARRANGEMENTS.length; i++) {
@@ -347,13 +349,13 @@ async function seed() {
       sortOrder: i,
     });
   }
-  log.info("Arrangements seeded", { count: Q2_ARRANGEMENTS.length });
+  console.log(`  ✅ Arrangements: ${Q2_ARRANGEMENTS.length}`);
 
-  log.info("Menu seed complete!");
+  console.log("🎉 Menu seed complete!");
   process.exit(0);
 }
 
 seed().catch((err) => {
-  log.error("Seed failed", { error: err instanceof Error ? err.message : String(err) });
+  console.error("Seed failed:", err);
   process.exit(1);
 });

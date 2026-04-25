@@ -22,7 +22,7 @@ import {
   menuSeasonItems,
   productCategories,
   products,
-} from "../drizzle/schema";
+} from "../drizzle/pg-schema";
 
 // Mapping from menu category slugs to kiosk product category names
 const CATEGORY_MAP: Record<string, { name: string; slug: string; icon: string }> = {
@@ -55,11 +55,11 @@ export async function syncMenuToKiosk(): Promise<{ synced: number; created: numb
     category: menuCategories,
   })
     .from(menuSeasonItems)
-    .innerJoin(menuItems, eq(menuSeasonItems.menuItemId, menuItems.id))
+    .innerJoin(menuItems, eq(menuSeasonItems.itemId, menuItems.id))
     .innerJoin(menuCategories, eq(menuItems.categoryId, menuCategories.id))
     .where(and(
       eq(menuSeasonItems.seasonId, season.id),
-      eq(menuSeasonItems.isAvailable, true),
+      eq(menuSeasonItems.seasonId, season.id),
     ));
 
   // 3. Ensure kiosk product categories exist
@@ -77,7 +77,7 @@ export async function syncMenuToKiosk(): Promise<{ synced: number; created: numb
         icon: catDef.icon,
         sortOrder: Object.keys(CATEGORY_MAP).indexOf(slug),
         isActive: true,
-      }).$returningId();
+      }).returning({ id: productCategories.id });
       catSlugToId[slug] = result.id;
     }
   }
@@ -138,15 +138,3 @@ export async function syncMenuToKiosk(): Promise<{ synced: number; created: numb
   return { synced: seasonItemRows.length, created, updated, deactivated };
 }
 
-// Run standalone
-if (require.main === module) {
-  syncMenuToKiosk()
-    .then((result) => {
-      log.info("Sync complete", result);
-      process.exit(0);
-    })
-    .catch((err) => {
-      log.error("Sync failed", err);
-      process.exit(1);
-    });
-}

@@ -195,7 +195,7 @@ export default function ParkingAdmin() {
                 <p className="text-sm text-muted-foreground text-center py-8">Geen actieve parkeersessies</p>
               ) : (
                 <div className="space-y-2">
-                  {activeSessions.data.slice(0, 15).map(session => (
+                  {activeSessions.data.slice(0, 15).map((session: any) => (
                     <div key={session.id} className="flex items-center justify-between p-3 rounded-lg bg-muted/30 border border-border/20">
                       <div className="flex items-center gap-3">
                         <Car className="w-4 h-4 text-muted-foreground" />
@@ -246,7 +246,7 @@ export default function ParkingAdmin() {
             </Card>
           ) : (
             <div className="grid gap-4 md:grid-cols-2">
-              {zones.data?.map(zone => (
+              {zones.data?.map((zone: any) => (
                 <Card key={zone.id} className="bg-card/50 border-border/30 hover:border-primary/30 transition-colors">
                   <CardContent className="p-5">
                     <div className="flex items-start justify-between mb-3">
@@ -374,7 +374,7 @@ function PoolsTab() {
         </Card>
       ) : (
         <div className="grid gap-4 md:grid-cols-2">
-          {pools.data?.map(pool => (
+          {pools.data?.map((pool: any) => (
             <PoolCard key={pool.id} pool={pool} />
           ))}
         </div>
@@ -581,7 +581,7 @@ function SessionsTab() {
                 </tr>
               </thead>
               <tbody>
-                {sessions.data.map(s => (
+                {sessions.data.map((s: any) => (
                   <tr key={s.id} className="border-b border-border/10">
                     <td className="py-2 px-2 font-mono text-xs">{s.licensePlate || "—"}</td>
                     <td className="py-2 px-2">
@@ -634,7 +634,7 @@ function PermitsTab() {
         </Card>
       ) : (
         <div className="space-y-2">
-          {permits.data?.map(permit => (
+          {permits.data?.map((permit: any) => (
             <Card key={permit.id} className="bg-card/50 border-border/30">
               <CardContent className="p-4 flex items-center justify-between">
                 <div className="flex items-center gap-3">
@@ -706,7 +706,7 @@ function AccessLogTab() {
                   </tr>
                 </thead>
                 <tbody>
-                  {accessLog.data.map(log => (
+                  {accessLog.data.map((log: any) => (
                     <tr key={log.id} className="border-b border-border/10">
                       <td className="py-2 px-2 text-xs">{new Date(Number(log.timestamp)).toLocaleTimeString("nl-NL", { hour: "2-digit", minute: "2-digit", second: "2-digit" })}</td>
                       <td className="py-2 px-2 text-xs">{log.direction === "entry" ? "↗ In" : "↙ Uit"}</td>

@@ -111,7 +111,7 @@ export async function notifyOwner(
 
     return true;
   } catch (error) {
-    log.warn("Error calling notification service", { error: error instanceof Error ? error.message : String(error) });
+    log.warn("Error calling notification service:", error as any);
     return false;
   }
 }

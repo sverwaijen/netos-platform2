@@ -14,28 +14,27 @@ export function BrandingPreviewPanel({ companyId, companyName }: BrandingPreview
   const [isLoading, setIsLoading] = useState(false);
 
   // Get live preview data
-  const { data: preview, refetch: refetchPreview } = trpc.signing.kioskDisplay.useQuery(
+  const { data: preview, refetch: refetchPreview } = (trpc.signing as any).getLivePreview.useQuery(
     { companyId },
     { enabled: !!companyId }
   );
 
   // Trigger scrape mutation
-  const triggerScrape = trpc.signing.scrape.useMutation({
+  const triggerScrape = (trpc.signing as any).triggerBrandScrape.useMutation({
     onSuccess: () => {
       toast.success("Branding gescraped en bijgewerkt!");
       setIsLoading(false);
       refetchPreview();
     },
-    onError: (error: unknown) => {
-      const msg = error instanceof Error ? error.message : "Unknown error";
-      toast.error(`Scrape mislukt: ${msg}`);
+    onError: (error: any) => {
+      toast.error(`Scrape mislukt: ${error.message}`);
       setIsLoading(false);
     },
   });
 
   const handleScrape = async () => {
     setIsLoading(true);
-    triggerScrape.mutate({ companyId, websiteUrl: "" });
+    triggerScrape.mutate({ companyId });
   };
 
   if (!preview) {
@@ -78,7 +77,7 @@ export function BrandingPreviewPanel({ companyId, companyName }: BrandingPreview
               {preview.scraped.status === "completed" && (
                 <>
                   <CheckCircle2 className="w-4 h-4 text-green-500" />
-                  <span>Gescraped op {preview.scraped.lastScrapedAt ? new Date(preview.scraped.lastScrapedAt).toLocaleString("nl-NL") : "N/A"}</span>
+                  <span>Gescraped op {new Date(preview.scraped.lastScrapedAt).toLocaleString("nl-NL")}</span>
                 </>
               )}
               {preview.scraped.status === "scraping" && (
@@ -108,23 +107,23 @@ export function BrandingPreviewPanel({ companyId, companyName }: BrandingPreview
                   <div className="flex items-center gap-2">
                     <div
                       className="w-6 h-6 rounded border border-gray-300"
-                      style={{ backgroundColor: preview.branding.primaryColor || undefined }}
+                      style={{ backgroundColor: preview.branding.primaryColor }}
                     />
-                    <span className="text-xs">Primair: {preview.branding.primaryColor || "N/A"}</span>
+                    <span className="text-xs">Primair: {preview.branding.primaryColor}</span>
                   </div>
                   <div className="flex items-center gap-2">
                     <div
                       className="w-6 h-6 rounded border border-gray-300"
-                      style={{ backgroundColor: preview.branding.secondaryColor || undefined }}
+                      style={{ backgroundColor: preview.branding.secondaryColor }}
                     />
-                    <span className="text-xs">Secundair: {preview.branding.secondaryColor || "N/A"}</span>
+                    <span className="text-xs">Secundair: {preview.branding.secondaryColor}</span>
                   </div>
                   <div className="flex items-center gap-2">
                     <div
                       className="w-6 h-6 rounded border border-gray-300"
-                      style={{ backgroundColor: preview.branding.accentColor || undefined }}
+                      style={{ backgroundColor: preview.branding.accentColor }}
                     />
-                    <span className="text-xs">Accent: {preview.branding.accentColor || "N/A"}</span>
+                    <span className="text-xs">Accent: {preview.branding.accentColor}</span>
                   </div>
                 </>
               )}
@@ -157,9 +156,9 @@ export function BrandingPreviewPanel({ companyId, companyName }: BrandingPreview
           <div>
             <h3 className="text-sm font-semibold mb-2">Foto's ({preview.photos.length})</h3>
             <div className="grid grid-cols-4 gap-2">
-              {preview.photos.map((photo) => (
+              {preview.photos.map((photo: any) => (
                 <div key={photo.id} className="aspect-square rounded overflow-hidden bg-gray-100">
-                  <img src={photo.photoUrl} alt={photo.displayName ?? ""} className="w-full h-full object-cover" />
+                  <img src={photo.url} alt={photo.employeeName} className="w-full h-full object-cover" />
                 </div>
               ))}
             </div>
