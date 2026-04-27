@@ -12,6 +12,44 @@ import {
   ChevronRight, Search, X, AlertCircle, Zap,
 } from "lucide-react";
 
+// ─── Local view-model types ──────────────────────────────────────────
+// The menu/kiosk routers proxy through a runtime schema accessor whose
+// return is `any`, so trpc inference yields `any` for these payloads.
+// These local aliases mirror the actual runtime shapes so the component
+// can be statically type-checked.
+type KitchenStatus = "new" | "preparing" | "ready" | "picked_up";
+
+type Preparation = {
+  id: number;
+  menuItemId: number;
+  itemName: string;
+  itemSubtitle?: string | null;
+  categoryName: string;
+  categorySlug?: string | null;
+  prepTimeMinutes?: number | null;
+  steps?: string[] | null;
+};
+
+type PreparationDetail = Preparation;
+
+type KitchenOrderItem = {
+  id: number;
+  orderId: number;
+  productId: number;
+  productName: string;
+  quantity: number;
+};
+
+type KitchenOrder = {
+  id: number;
+  orderNumber: string;
+  locationId: number;
+  kitchenStatus?: KitchenStatus | string | null;
+  createdAt: string | Date;
+  items?: KitchenOrderItem[];
+};
+
+
 export default function KitchenPrepDisplay() {
   const [time, setTime] = useState(new Date());
   const [locationId, setLocationId] = useState<number>(1); // Default, could be from URL/context
@@ -99,7 +137,7 @@ export default function KitchenPrepDisplay() {
     let items = activeCategory ? (prepGrouped[activeCategory] || []) : (preparations || []);
     if (searchQuery) {
       const q = searchQuery.toLowerCase();
-      items = items.filter((p: any) =>
+      items = items.filter((p: Preparation) =>
         p.itemName.toLowerCase().includes(q) || p.itemSubtitle?.toLowerCase().includes(q)
       );
     }
@@ -130,7 +168,7 @@ export default function KitchenPrepDisplay() {
       ready: "picked_up",
     };
     const nextStatus = nextStatuses[currentStatus] || "new";
-    updateKitchenStatus.mutate({ orderId, kitchenStatus: nextStatus as any });
+    updateKitchenStatus.mutate({ orderId, kitchenStatus: nextStatus as KitchenStatus });
   };
 
   const goBack = () => {
@@ -162,9 +200,9 @@ export default function KitchenPrepDisplay() {
             <span className="text-lg">Terug</span>
           </button>
           <div className="text-center">
-            <h1 className="text-3xl font-light text-white">{(selectedPrep as any).itemName || "Bereiding"}</h1>
-            {(selectedPrep as any).itemSubtitle && (
-              <p className="text-sm text-white/30 mt-1">{(selectedPrep as any).itemSubtitle}</p>
+            <h1 className="text-3xl font-light text-white">{(selectedPrep as PreparationDetail | null | undefined)?.itemName || "Bereiding"}</h1>
+            {(selectedPrep as PreparationDetail | null | undefined)?.itemSubtitle && (
+              <p className="text-sm text-white/30 mt-1">{(selectedPrep as PreparationDetail | null | undefined)?.itemSubtitle}</p>
             )}
           </div>
           <div className="flex items-center gap-4">
@@ -271,7 +309,7 @@ export default function KitchenPrepDisplay() {
             <h2 className="text-lg font-semibold text-[#dc2626]">Nieuw ({grouped.new.length})</h2>
           </div>
           <div className="flex-1 overflow-y-auto space-y-3 pr-4">
-            {grouped.new.map((order: any) => (
+            {grouped.new.map((order: KitchenOrder) => (
               <button
                 key={order.id}
                 onClick={() => bumpOrderStatus(order.id, "new")}
@@ -280,7 +318,7 @@ export default function KitchenPrepDisplay() {
                   <div className="min-w-0 flex-1">
                     <p className="font-semibold text-white truncate">{order.orderNumber}</p>
                     <p className="text-xs text-white/50 mt-1">
-                      {order.items?.map((item: any) => item.productName).join(", ") || "Geen items"}
+                      {order.items?.map((item: KitchenOrderItem) => item.productName).join(", ") || "Geen items"}
                     </p>
                   </div>
                   <div className="text-right ml-2">
@@ -304,7 +342,7 @@ export default function KitchenPrepDisplay() {
             <h2 className="text-lg font-semibold text-[#f59e0b]">Bereiden ({grouped.preparing.length})</h2>
           </div>
           <div className="flex-1 overflow-y-auto space-y-3 pr-4">
-            {grouped.preparing.map((order: any) => (
+            {grouped.preparing.map((order: KitchenOrder) => (
               <button
                 key={order.id}
                 onClick={() => bumpOrderStatus(order.id, "preparing")}
@@ -313,7 +351,7 @@ export default function KitchenPrepDisplay() {
                   <div className="min-w-0 flex-1">
                     <p className="font-semibold text-white truncate">{order.orderNumber}</p>
                     <p className="text-xs text-white/50 mt-1">
-                      {order.items?.map((item: any) => item.productName).join(", ") || "Geen items"}
+                      {order.items?.map((item: KitchenOrderItem) => item.productName).join(", ") || "Geen items"}
                     </p>
                   </div>
                   <div className="text-right ml-2">
@@ -337,7 +375,7 @@ export default function KitchenPrepDisplay() {
             <h2 className="text-lg font-semibold text-[#22c55e]">Klaar ({grouped.ready.length})</h2>
           </div>
           <div className="flex-1 overflow-y-auto space-y-3 pr-4">
-            {grouped.ready.map((order: any) => (
+            {grouped.ready.map((order: KitchenOrder) => (
               <button
                 key={order.id}
                 onClick={() => bumpOrderStatus(order.id, "ready")}
@@ -346,7 +384,7 @@ export default function KitchenPrepDisplay() {
                   <div className="min-w-0 flex-1">
                     <p className="font-semibold text-white truncate">{order.orderNumber}</p>
                     <p className="text-xs text-white/50 mt-1">
-                      {order.items?.map((item: any) => item.productName).join(", ") || "Geen items"}
+                      {order.items?.map((item: KitchenOrderItem) => item.productName).join(", ") || "Geen items"}
                     </p>
                   </div>
                   <div className="text-right ml-2">
@@ -384,7 +422,7 @@ export default function KitchenPrepDisplay() {
             }`}>
             Alles
           </button>
-          {prepCategories.map((cat: any) => (
+          {prepCategories.map((cat: string) => (
             <button key={cat} onClick={() => setActiveCategory(cat)}
               className={`px-4 py-2 rounded-lg text-sm font-medium transition-all whitespace-nowrap ${
                 activeCategory === cat ? "bg-[#627653] text-white" : "bg-white/[0.04] text-white/50 hover:bg-white/[0.06]"
@@ -397,7 +435,7 @@ export default function KitchenPrepDisplay() {
         {/* Preps grid */}
         <div className="flex-1 overflow-y-auto px-10 py-3">
           <div className="grid grid-cols-6 gap-2">
-            {visiblePreps.map((prep: any) => (
+            {visiblePreps.map((prep: Preparation) => (
               <button key={prep.id} onClick={() => selectPrep(prep.menuItemId)}
                 className="p-2 rounded-lg bg-white/[0.03] border border-white/[0.06] hover:bg-white/[0.06] transition-all text-left group">
                 <p className="text-xs font-medium text-white truncate">{prep.itemName}</p>
