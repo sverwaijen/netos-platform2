@@ -16,6 +16,44 @@ import {
   MousePointer, MessageSquare, Trash2
 } from "lucide-react";
 
+// ─── Local view-model types ──────────────────────────────────────────
+// The crmCampaigns router proxies through the `db` accessor whose return
+// is `any`, so trpc inference yields `any` for these payloads. These
+// local aliases mirror the runtime shape so the component is statically
+// type-checked.
+type CampaignType = "email_sequence" | "one_off" | "drip" | "event";
+type CampaignStatus = "draft" | "active" | "paused" | "completed" | "archived";
+
+type Campaign = {
+  id: number;
+  name: string;
+  description?: string | null;
+  type?: CampaignType | string | null;
+  status: CampaignStatus | string;
+  targetAudience?: string | null;
+  totalLeads?: number | null;
+  totalSent?: number | null;
+  openRate?: number | null;
+  clickRate?: number | null;
+};
+
+type CampaignStep = {
+  id: number;
+  campaignId: number;
+  stepOrder: number;
+  delayDays: number;
+  subject?: string | null;
+  body?: string | null;
+};
+
+type CampaignEnrollment = {
+  id: number;
+  leadName?: string | null;
+  contactName?: string | null;
+  currentStep?: number | null;
+  status: string;
+};
+
 const STATUS_COLORS: Record<string, string> = {
   draft: "#111", active: "#C4B89E", paused: "#C4B89E", completed: "#4a7c3f", archived: "#888",
 };
@@ -24,7 +62,7 @@ export default function CrmCampaigns() {
   const [showCreate, setShowCreate] = useState(false);
   const [selectedCampaign, setSelectedCampaign] = useState<number | null>(null);
   const [statusFilter, setStatusFilter] = useState<string>("");
-  const [newCampaign, setNewCampaign] = useState({ name: "", description: "", type: "email_sequence" as const, targetAudience: "" });
+  const [newCampaign, setNewCampaign] = useState<{ name: string; description: string; type: CampaignType; targetAudience: string }>({ name: "", description: "", type: "email_sequence", targetAudience: "" });
 
   const { data: campaigns = [], refetch } = trpc.crmCampaigns.list.useQuery(statusFilter ? { status: statusFilter } : undefined);
   const createCampaign = trpc.crmCampaigns.create.useMutation({ onSuccess: () => { refetch(); setShowCreate(false); toast.success("Campaign created"); } });
@@ -41,7 +79,7 @@ export default function CrmCampaigns() {
   const [aiSubject, setAiSubject] = useState("");
   const [aiBody, setAiBody] = useState("");
 
-  const selectedCampaignData = campaigns.find((c: any) => c.id === selectedCampaign);
+  const selectedCampaignData = (campaigns as Campaign[]).find((c: Campaign) => c.id === selectedCampaign);
 
   return (
     <div className="space-y-6">
@@ -76,7 +114,7 @@ export default function CrmCampaigns() {
                 </div>
                 <div>
                   <Label className="text-xs uppercase tracking-wider text-white/50">Type</Label>
-                  <Select value={newCampaign.type} onValueChange={v => setNewCampaign(p => ({ ...p, type: v as any }))}>
+                  <Select value={newCampaign.type} onValueChange={v => setNewCampaign(p => ({ ...p, type: v as CampaignType }))}>
                     <SelectTrigger className="mt-1 bg-white/[0.04] border-white/[0.08]"><SelectValue /></SelectTrigger>
                     <SelectContent>
                       <SelectItem value="email_sequence">Email Sequence</SelectItem>
@@ -113,7 +151,7 @@ export default function CrmCampaigns() {
               <p className="text-xs text-white/30 mt-1">Create your first outreach campaign</p>
             </Card>
           )}
-          {campaigns.map((c: any) => (
+          {(campaigns as Campaign[]).map((c: Campaign) => (
             <Card
               key={c.id}
               onClick={() => setSelectedCampaign(c.id)}
@@ -167,9 +205,9 @@ export default function CrmCampaigns() {
               <div className="grid grid-cols-4 gap-3 mb-6">
                 {[
                   { label: "Enrolled", value: selectedCampaignData.totalLeads ?? 0, icon: Users },
-                  { label: "Sent", value: (selectedCampaignData as any).totalSent ?? 0, icon: Send },
-                  { label: "Open Rate", value: `${(selectedCampaignData as any).openRate ?? 0}%`, icon: Eye },
-                  { label: "Click Rate", value: `${(selectedCampaignData as any).clickRate ?? 0}%`, icon: MousePointer },
+                  { label: "Sent", value: selectedCampaignData.totalSent ?? 0, icon: Send },
+                  { label: "Open Rate", value: `${selectedCampaignData.openRate ?? 0}%`, icon: Eye },
+                  { label: "Click Rate", value: `${selectedCampaignData.clickRate ?? 0}%`, icon: MousePointer },
                 ].map((s, i) => (
                   <div key={i} className="bg-white/[0.04] rounded-lg p-3">
                     <s.icon className="w-3.5 h-3.5 text-[#C4B89E] mb-1" />
@@ -186,7 +224,7 @@ export default function CrmCampaigns() {
                 </TabsList>
 
                 <TabsContent value="steps" className="mt-4 space-y-3">
-                  {steps.map((step: any, i: number) => (
+                  {(steps as CampaignStep[]).map((step: CampaignStep, i: number) => (
                     <Card key={step.id} className="p-4 bg-white/[0.06] border-white/10">
                       <div className="flex items-center justify-between mb-2">
                         <div className="flex items-center gap-2">
@@ -247,7 +285,7 @@ export default function CrmCampaigns() {
                     </div>
                   ) : (
                     <div className="space-y-2">
-                      {enrollments.map((e: any) => (
+                      {(enrollments as CampaignEnrollment[]).map((e: CampaignEnrollment) => (
                         <div key={e.id} className="flex items-center justify-between p-3 bg-white/[0.04] rounded-lg">
                           <div>
                             <p className="text-sm font-medium text-white">{e.leadName}</p>
