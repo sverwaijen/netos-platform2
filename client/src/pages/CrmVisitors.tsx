@@ -10,6 +10,36 @@ import {
   Loader2, UserPlus, Mail, TrendingUp, AlertCircle, CheckCircle2, Search
 } from "lucide-react";
 
+// ─── Local view-model types ──────────────────────────────────────────
+// The visitorTracking.getRecentVisitors query returns aggregated visitor
+// records produced by `groupVisitorsByCompany` on the server, but trpc
+// inference yields `any` because the underlying db accessor erases types.
+// These local aliases mirror the actual runtime shape so the component
+// can be statically type-checked.
+type Visitor = {
+  id?: number;
+  company: string;
+  domain?: string;
+  city?: string;
+  country?: string;
+  visitCount: number;
+  lastVisit: number | string | Date;
+  leadId?: number;
+  pages?: string[];
+  ips?: string[];
+};
+
+type VisitorAnalysisResult = {
+  companyName?: string;
+  industry?: string;
+  companySize?: string;
+  revenue?: string;
+  recommendedAction?: string;
+  interestAreas?: string[];
+};
+
+type MutationError = { message: string };
+
 const INTENT_COLORS: Record<string, string> = {
   high: "bg-red-500/20 text-red-400 border-red-500/30",
   medium: "bg-yellow-500/20 text-yellow-400 border-yellow-500/30",
@@ -19,7 +49,7 @@ const INTENT_COLORS: Record<string, string> = {
 export default function CrmVisitors() {
   const [search, setSearch] = useState("");
   const [analyzingId, setAnalyzingId] = useState<number | null>(null);
-  const [analysisResult, setAnalysisResult] = useState<any>(null);
+  const [analysisResult, setAnalysisResult] = useState<VisitorAnalysisResult | null>(null);
   const [convertingId, setConvertingId] = useState<number | null>(null);
 
   const { data: visitors, refetch } = trpc.visitorTracking.getRecentVisitors.useQuery({
@@ -29,12 +59,14 @@ export default function CrmVisitors() {
   });
 
   const analyzeMut = trpc.crmVisitors.analyze.useMutation({
-    onSuccess: (data: any) => {
-      setAnalysisResult(data);
+    onSuccess: (data: { analysis?: VisitorAnalysisResult } | VisitorAnalysisResult) => {
+      // Server returns { success, analysis, matchedLead }; older shape returned analysis directly.
+      const result = (data as { analysis?: VisitorAnalysisResult }).analysis ?? (data as VisitorAnalysisResult);
+      setAnalysisResult(result);
       setAnalyzingId(null);
       toast.success("AI analyse compleet");
     },
-    onError: (e: any) => {
+    onError: (e: MutationError) => {
       setAnalyzingId(null);
       toast.error(e.message);
     },
@@ -46,13 +78,14 @@ export default function CrmVisitors() {
       setConvertingId(null);
       toast.success("Bezoeker omgezet naar lead in pipeline");
     },
-    onError: (e: any) => {
+    onError: (e: MutationError) => {
       setConvertingId(null);
       toast.error(e.message);
     },
   });
 
-  function handleAnalyze(visitor: any) {
+  function handleAnalyze(visitor: Visitor) {
+    if (visitor.id == null) return;
     setAnalyzingId(visitor.id);
     setAnalysisResult(null);
     analyzeMut.mutate({ id: visitor.id });
@@ -76,10 +109,10 @@ export default function CrmVisitors() {
       {/* Stats */}
       <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
         {[
-          { label: "Totaal bezoekers", value: visitors?.reduce((sum: number, v: any) => sum + v.visitCount, 0) || 0, color: "text-purple-400" },
+          { label: "Totaal bezoekers", value: visitors?.reduce((sum: number, v: Visitor) => sum + v.visitCount, 0) || 0, color: "text-purple-400" },
           { label: "Unieke bedrijven", value: visitors?.length || 0, color: "text-red-400" },
-          { label: "Geidenticeerd", value: visitors?.filter((v: any) => v.company && !v.company.startsWith("Unknown")).length || 0, color: "text-green-400" },
-          { label: "Linked to leads", value: visitors?.filter((v: any) => v.leadId).length || 0, color: "text-blue-400" },
+          { label: "Geidenticeerd", value: visitors?.filter((v: Visitor) => v.company && !v.company.startsWith("Unknown")).length || 0, color: "text-green-400" },
+          { label: "Linked to leads", value: visitors?.filter((v: Visitor) => v.leadId).length || 0, color: "text-blue-400" },
         ].map(s => (
           <Card key={s.label} className="bg-zinc-900/50 border-zinc-800">
             <CardContent className="p-3 text-center">
@@ -160,7 +193,7 @@ export default function CrmVisitors() {
               </div>
 
               {/* AI Analysis Result */}
-              {analysisResult && analyzingId === null && analyzeMut.variables?.id === (visitor as any).id && (
+              {analysisResult && analyzingId === null && analyzeMut.variables?.id === (visitor as Visitor).id && (
                 <div className="mt-4 pt-4 border-t border-zinc-800">
                   <h4 className="text-sm font-medium text-white flex items-center gap-2 mb-3">
                     <Brain className="h-4 w-4 text-green-400" /> AI Analyse Resultaat
@@ -186,7 +219,7 @@ export default function CrmVisitors() {
                       <p className="text-xs text-zinc-400">Aanbevolen actie</p>
                       <p className="text-green-400 font-medium">{analysisResult.recommendedAction}</p>
                     </div>
-                    {analysisResult.interestAreas?.length > 0 && (
+                    {analysisResult.interestAreas && analysisResult.interestAreas.length > 0 && (
                       <div className="p-3 bg-zinc-800/50 rounded-lg col-span-full">
                         <p className="text-xs text-zinc-400 mb-1">Interesse gebieden</p>
                         <div className="flex flex-wrap gap-1">
