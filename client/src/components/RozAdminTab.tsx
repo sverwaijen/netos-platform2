@@ -15,6 +15,23 @@ import {
   Clock, Calculator, CheckCircle2, AlertTriangle, Trash2, Receipt,
 } from "lucide-react";
 import RozInvoicesTab from "@/components/RozInvoicesTab";
+import type { Resource, RozPricingTier, RozContract } from "@shared/types";
+
+// ─── Local view-model types ──────────────────────────────────────────
+// `trpc.resources.search` returns rows of the `resources` table; alias
+// it locally so we can type the many filter/find/map callbacks below.
+type RozResource = Resource;
+
+// Mirrors `ROZ_PERIOD_TYPES` in server/routers/rozRouter.ts. The
+// `rozPricingTiers.create` mutation accepts only these values.
+type RozPeriodType =
+  | "month"
+  | "6_months"
+  | "1_year"
+  | "2_year"
+  | "3_year"
+  | "5_year"
+  | "10_year";
 
 const PERIOD_LABELS: Record<string, string> = {
   month: "1 Maand", "6_months": "6 Maanden", "1_year": "1 Jaar",
@@ -50,7 +67,7 @@ function RozResourceSettings() {
     onError: (e) => toast.error(e.message),
   });
 
-  const [editResource, setEditResource] = useState<any>(null);
+  const [editResource, setEditResource] = useState<RozResource | null>(null);
   const [form, setForm] = useState({
     areaM2: "",
     rozContractType: "kantoorruimte",
@@ -63,15 +80,15 @@ function RozResourceSettings() {
     rozNoticePeriodMonths: 3,
   });
 
-  function openEdit(r: any) {
+  function openEdit(r: RozResource) {
     setEditResource(r);
     setForm({
-      areaM2: r.areaM2 || "",
-      rozContractType: r.rozContractType || "kantoorruimte",
-      rozServiceChargeModel: r.rozServiceChargeModel || "voorschot",
-      rozVatRate: r.rozVatRate || "21.00",
-      rozIndexation: r.rozIndexation || "CPI",
-      rozIndexationPct: r.rozIndexationPct || "2.50",
+      areaM2: r.areaM2 ?? "",
+      rozContractType: r.rozContractType ?? "kantoorruimte",
+      rozServiceChargeModel: r.rozServiceChargeModel ?? "voorschot",
+      rozVatRate: r.rozVatRate ?? "21.00",
+      rozIndexation: r.rozIndexation ?? "CPI",
+      rozIndexationPct: r.rozIndexationPct ?? "2.50",
       rozTenantProtection: r.rozTenantProtection ?? true,
       rozMinLeaseTerm: r.rozMinLeaseTerm ?? 1,
       rozNoticePeriodMonths: r.rozNoticePeriodMonths ?? 3,
@@ -89,8 +106,8 @@ function RozResourceSettings() {
     setEditResource(null);
   }
 
-  const rozResources = resources?.filter((r: any) => r.isRozEligible) || [];
-  const nonRozResources = resources?.filter((r: any) => !r.isRozEligible) || [];
+  const rozResources = resources?.filter((r: RozResource) => r.isRozEligible) || [];
+  const nonRozResources = resources?.filter((r: RozResource) => !r.isRozEligible) || [];
 
   return (
     <div className="space-y-6">
@@ -114,7 +131,7 @@ function RozResourceSettings() {
             ROZ-gelabelde ruimtes ({rozResources.length})
           </h4>
           <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
-            {rozResources.map((r: any) => (
+            {rozResources.map((r: RozResource) => (
               <Card key={r.id} className="bg-amber-500/5 border-amber-500/20">
                 <CardContent className="p-4">
                   <div className="flex items-start justify-between">
@@ -151,7 +168,7 @@ function RozResourceSettings() {
             Overige ruimtes — stel oppervlakte in om ROZ te activeren ({nonRozResources.length})
           </h4>
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-2">
-            {nonRozResources.map((r: any) => (
+            {nonRozResources.map((r: RozResource) => (
               <Card key={r.id} className="bg-white/[0.02] border-border/30">
                 <CardContent className="p-3 flex items-center justify-between">
                   <div>
@@ -312,7 +329,7 @@ function RozPricingTiersSection() {
   const [form, setForm] = useState({
     name: "",
     resourceId: undefined as number | undefined,
-    periodType: "1_year" as string,
+    periodType: "1_year" as RozPeriodType,
     creditCostPerMonth: "",
     creditCostPerM2PerMonth: "",
     discountPercent: "0",
@@ -336,7 +353,7 @@ function RozPricingTiersSection() {
     },
   });
 
-  const rozResources = resources?.filter((r: any) => r.isRozEligible) || [];
+  const rozResources = resources?.filter((r: RozResource) => r.isRozEligible) || [];
 
   return (
     <div className="space-y-6">
@@ -366,8 +383,8 @@ function RozPricingTiersSection() {
         </Card>
       ) : (
         <div className="space-y-2">
-          {tiers.map((tier: any) => {
-            const resource = resources?.find((r: any) => r.id === tier.resourceId);
+          {tiers.map((tier: RozPricingTier) => {
+            const resource = resources?.find((r: RozResource) => r.id === tier.resourceId);
             return (
               <Card key={tier.id} className="bg-white/[0.02] border-border/30">
                 <CardContent className="p-4 flex items-center justify-between">
@@ -383,14 +400,14 @@ function RozPricingTiersSection() {
                         </Badge>
                         {parseFloat(tier.discountPercent || "0") > 0 && (
                           <Badge className="text-[9px] bg-green-500/20 text-green-400">
-                            -{parseFloat(tier.discountPercent).toFixed(0)}%
+                            -{parseFloat(tier.discountPercent ?? "0").toFixed(0)}%
                           </Badge>
                         )}
                       </div>
                       <p className="text-xs text-muted-foreground mt-0.5">
                         {parseFloat(tier.creditCostPerMonth).toFixed(0)} credits/mnd
                         {resource ? ` · ${resource.name}` : " · Alle ruimtes"}
-                        {parseFloat(tier.serviceChargePerMonth || "0") > 0 && ` · +${parseFloat(tier.serviceChargePerMonth).toFixed(0)}c servicekosten`}
+                        {parseFloat(tier.serviceChargePerMonth || "0") > 0 && ` · +${parseFloat(tier.serviceChargePerMonth ?? "0").toFixed(0)}c servicekosten`}
                       </p>
                     </div>
                   </div>
@@ -424,7 +441,7 @@ function RozPricingTiersSection() {
                   <SelectTrigger className="bg-secondary/50"><SelectValue placeholder="Alle ruimtes" /></SelectTrigger>
                   <SelectContent>
                     <SelectItem value="all">Alle ROZ-ruimtes</SelectItem>
-                    {rozResources.map((r: any) => (
+                    {rozResources.map((r: RozResource) => (
                       <SelectItem key={r.id} value={r.id.toString()}>{r.name}</SelectItem>
                     ))}
                   </SelectContent>
@@ -432,7 +449,7 @@ function RozPricingTiersSection() {
               </div>
               <div>
                 <Label className="text-xs">Periode</Label>
-                <Select value={form.periodType} onValueChange={(v) => setForm(f => ({ ...f, periodType: v }))}>
+                <Select value={form.periodType} onValueChange={(v) => setForm(f => ({ ...f, periodType: v as RozPeriodType }))}>
                   <SelectTrigger className="bg-secondary/50"><SelectValue /></SelectTrigger>
                   <SelectContent>
                     {Object.entries(PERIOD_LABELS).map(([k, v]) => (
@@ -470,7 +487,7 @@ function RozPricingTiersSection() {
               onClick={() => createMut.mutate({
                 name: form.name,
                 resourceId: form.resourceId,
-                periodType: form.periodType as any,
+                periodType: form.periodType,
                 creditCostPerMonth: form.creditCostPerMonth,
                 discountPercent: form.discountPercent,
                 serviceChargePerMonth: form.serviceChargePerMonth,
@@ -571,8 +588,8 @@ function RozContractsSection() {
         </Card>
       ) : (
         <div className="space-y-2">
-          {contracts.map((c: any) => {
-            const resource = resources?.find((r: any) => r.id === c.resourceId);
+          {contracts.map((c: RozContract) => {
+            const resource = resources?.find((r: RozResource) => r.id === c.resourceId);
             return (
               <Card key={c.id} className="bg-white/[0.02] border-border/30">
                 <CardContent className="p-4">
@@ -590,7 +607,7 @@ function RozContractsSection() {
                       <p className="text-xs text-muted-foreground mt-1">
                         {resource?.name || `Resource #${c.resourceId}`} ·
                         {parseFloat(c.monthlyRentCredits).toFixed(0)} credits/mnd
-                        {parseFloat(c.monthlyServiceCharge || "0") > 0 && ` + ${parseFloat(c.monthlyServiceCharge).toFixed(0)} servicekosten`}
+                        {parseFloat(c.monthlyServiceCharge || "0") > 0 && ` + ${parseFloat(c.monthlyServiceCharge ?? "0").toFixed(0)} servicekosten`}
                       </p>
                       <p className="text-[10px] text-muted-foreground mt-0.5">
                         {new Date(c.startDate).toLocaleDateString("nl-NL")} — {new Date(c.endDate).toLocaleDateString("nl-NL")}
