@@ -6,8 +6,26 @@ import {
   Check, X, Edit3, Save, ChevronDown, ChevronRight, ToggleLeft, ToggleRight,
 } from "lucide-react";
 import { toast } from "sonner";
+import type { MenuSeason, MenuItem, MenuArrangement } from "@shared/types";
 
-type DragItem = { id?: number; seasonItemId?: number; menuItemId?: number; sortOrder?: number };
+// ─── Local view-model types ──────────────────────────────────────────
+// `trpc.menuItems.bySeason` returns rows joined from menu_season_items +
+// menu_items + menu_categories — see server/routers/menuRouter.ts.
+type SeasonItem = MenuItem & {
+  seasonItemId: number;
+  priceEur: string | null;
+  priceLargeEur: string | null;
+  isAvailable: boolean | null;
+  categoryName: string;
+  categorySlug: string;
+  categoryIcon: string | null;
+};
+
+// Mirrors the `quarter` mysqlEnum on `menu_seasons` and the
+// `menuSeasons.clone` zod input.
+type Quarter = "Q1" | "Q2" | "Q3" | "Q4";
+
+type DragItem = { id?: number; seasonItemId?: number; menuItemId?: number; sortOrder?: number | null };
 
 export default function MenuDashboard() {
   const [activeTab, setActiveTab] = useState<"seasons" | "items" | "arrangements">("seasons");
@@ -20,7 +38,7 @@ export default function MenuDashboard() {
   const { data: seasons, refetch: refetchSeasons } = trpc.menuSeasons.list.useQuery();
   const { data: categories } = trpc.menuCategories.list.useQuery();
   const { data: allItems, refetch: refetchItems } = trpc.menuItems.list.useQuery({});
-  const activeSeason = seasons?.find((s: any) => s.isActive);
+  const activeSeason = seasons?.find((s: MenuSeason) => s.isActive);
   const effectiveSeasonId = selectedSeasonId || activeSeason?.id;
 
   const { data: seasonItems, refetch: refetchSeasonItems } = trpc.menuItems.bySeason.useQuery(
@@ -67,11 +85,11 @@ export default function MenuDashboard() {
   // ─── Items NOT in current season (for drag source) ───────────────
   const availableItems = useMemo(() => {
     if (!allItems || !seasonItems) return allItems || [];
-    const inSeason = new Set(seasonItems.map((si: any) => si.id));
-    let filtered = allItems.filter((item: any) => !inSeason.has(item.id));
+    const inSeason = new Set(seasonItems.map((si: SeasonItem) => si.id));
+    let filtered = allItems.filter((item: MenuItem) => !inSeason.has(item.id));
     if (searchQuery) {
       const q = searchQuery.toLowerCase();
-      filtered = filtered.filter((item: any) =>
+      filtered = filtered.filter((item: MenuItem) =>
         item.name.toLowerCase().includes(q) || item.subtitle?.toLowerCase().includes(q)
       );
     }
@@ -87,7 +105,7 @@ export default function MenuDashboard() {
     });
   };
 
-  const handleDragStart = (item: any) => {
+  const handleDragStart = (item: MenuItem | SeasonItem) => {
     setDraggedItem(item);
   };
 
@@ -102,7 +120,7 @@ export default function MenuDashboard() {
     setDraggedItem(null);
   };
 
-  const selectedSeason = seasons?.find((s: any) => s.id === effectiveSeasonId);
+  const selectedSeason = seasons?.find((s: MenuSeason) => s.id === effectiveSeasonId);
 
   const tabs = [
     { id: "seasons" as const, label: "Seizoenen", icon: Calendar },
@@ -167,7 +185,7 @@ export default function MenuDashboard() {
       {/* ═══ SEASONS TAB ═══ */}
       {activeTab === "seasons" && (
         <div className="space-y-4">
-          {seasons?.map((season: any) => (
+          {seasons?.map((season: MenuSeason) => (
             <div key={season.id}
               className={`glass-card rounded-xl p-5 border-l-4 transition-all cursor-pointer ${
                 season.isActive ? "border-l-[#627653]" : "border-l-transparent"
@@ -189,7 +207,7 @@ export default function MenuDashboard() {
                   <button onClick={(e) => { e.stopPropagation(); cloneSeason.mutate({
                     sourceSeasonId: season.id,
                     year: season.year,
-                    quarter: season.quarter === "Q4" ? "Q1" : `Q${parseInt(season.quarter[1]) + 1}` as any,
+                    quarter: (season.quarter === "Q4" ? "Q1" : `Q${parseInt(season.quarter[1]) + 1}`) as Quarter,
                     name: `Kopie van ${season.name}`,
                     startDate: season.endDate,
                     endDate: season.endDate,
@@ -225,7 +243,7 @@ export default function MenuDashboard() {
                 className="w-full pl-9 pr-3 py-2 rounded-lg bg-white/[0.05] border border-white/[0.08] text-sm text-white placeholder:text-white/30 focus:outline-none focus:ring-1 focus:ring-[#627653]/50" />
             </div>
             <div className="space-y-1 max-h-[600px] overflow-y-auto">
-              {availableItems.map((item: any) => (
+              {availableItems.map((item: MenuItem) => (
                 <div key={item.id}
                   draggable
                   onDragStart={() => handleDragStart(item)}
@@ -266,7 +284,7 @@ export default function MenuDashboard() {
                 </button>
                 {expandedCategories.has(category) && (
                   <div className="space-y-1 ml-6">
-                    {items.map((item: any) => (
+                    {items.map((item: SeasonItem) => (
                       <div key={item.seasonItemId}
                         className={`flex items-center gap-3 px-3 py-2 rounded-lg group transition-all ${
                           item.isAvailable ? "hover:bg-white/[0.03]" : "opacity-40 bg-white/[0.02]"
@@ -282,8 +300,8 @@ export default function MenuDashboard() {
                           {item.subtitle && <p className="text-[11px] text-white/30 truncate">{item.subtitle}</p>}
                         </div>
                         <span className="text-sm font-mono text-[#b8a472]">
-                          €{parseFloat(item.priceEur).toFixed(2)}
-                          {item.priceLargeEur && <span className="text-white/30"> / €{parseFloat(item.priceLargeEur).toFixed(2)}</span>}
+                          €{parseFloat(item.priceEur ?? "0").toFixed(2)}
+                          {item.priceLargeEur && <span className="text-white/30"> / €{parseFloat(item.priceLargeEur ?? "0").toFixed(2)}</span>}
                         </span>
                         <button onClick={() => toggleAvailability.mutate({ id: item.seasonItemId, isAvailable: !item.isAvailable })}
                           className="p-1 rounded hover:bg-white/5" title={item.isAvailable ? "Verbergen" : "Tonen"}>
@@ -324,7 +342,7 @@ export default function MenuDashboard() {
               </tr>
             </thead>
             <tbody>
-              {arrangements?.map((arr: any) => (
+              {arrangements?.map((arr: MenuArrangement) => (
                 <tr key={arr.id} className="border-b border-white/[0.04] hover:bg-white/[0.02]">
                   <td className="px-5 py-3">
                     <p className="text-sm text-white">{arr.name}</p>
