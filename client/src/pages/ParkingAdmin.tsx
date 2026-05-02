@@ -15,6 +15,86 @@ import {
   CreditCard, Shield, Zap, MapPin, TrendingUp, Users,
   AlertTriangle, UserPlus, QrCode, Activity, Gauge,
 } from "lucide-react";
+import type { ParkingZone, ParkingPermit, ParkingSession } from "@shared/types";
+
+// ─── Local view-model types ──────────────────────────────────────────
+// The parking router uses a `function S(): any` shim over the
+// drizzle pg-schema, so the trpc client cannot infer return shapes.
+// These local types mirror the rows / objects that the parking
+// endpoints actually return so we can drop every `any` callback param
+// in this page.
+
+// Mirrors the `parking_zones.type` mysqlEnum.
+type ParkingZoneType = "indoor" | "outdoor" | "underground" | "rooftop";
+
+// Mirrors the `parking_zones.accessMethod` mysqlEnum.
+type ParkingAccessMethod = "barrier" | "anpr" | "manual" | "salto";
+
+// SLA tiers used on parking pools and permits.
+type SlaTier = "platinum" | "gold" | "silver" | "bronze";
+
+// Mirrors the `parking_pools` row shape (the mysql schema does not
+// export a $inferSelect type for this table).
+type ParkingPool = {
+  id: number;
+  zoneId: number;
+  companyId: number | null;
+  name: string;
+  guaranteedSpots: number;
+  maxMembers: number | null;
+  overflowPriceEur: string | null;
+  overflowPriceDay: string | null;
+  monthlyFeeEur: string | null;
+  slaTier: string | null;
+  isActive: boolean | null;
+};
+
+// Mirrors `PoolStatus` returned by `parkingPools.status` (see
+// `server/parking/capacityEngine.ts`).
+type ParkingPoolStatus = {
+  poolId: number;
+  poolName: string;
+  guaranteedSpots: number;
+  currentGuaranteedUsed: number;
+  guaranteedAvailable: number;
+  totalPoolMembers: number;
+  isGuaranteedFull: boolean;
+  overflowActive: number;
+  overflowPriceEur: string;
+  overflowPriceDay: string;
+};
+
+// Mirrors `CapacityState` returned by `parkingZones.capacity`.
+type ParkingCapacityState = {
+  zoneId: number;
+  totalSpots: number;
+  reservedSpots: number;
+  floatingSpots: number;
+  occupied: number;
+  available: number;
+  occupancyPercent: number;
+  overbookingEnabled: boolean;
+  overbookingRatio: number;
+  maxPermitsAllowed: number;
+  currentPermitsIssued: number;
+  headroom: number;
+  criticalRatio: number;
+  predictedPeakToday: number;
+  noShowRateAvg: number;
+};
+
+// Mirrors the `parking_access_log` row shape.
+type ParkingAccessLogEntry = {
+  id: number;
+  zoneId: number;
+  direction: string;
+  method: string;
+  licensePlate: string | null;
+  qrToken: string | null;
+  granted: boolean;
+  responseTimeMs: number | null;
+  timestamp: number;
+};
 
 export default function ParkingAdmin() {
   const { user } = useAuth();
@@ -26,9 +106,19 @@ export default function ParkingAdmin() {
   const activeSessions = trpc.parkingSessions.active.useQuery();
   const pools = trpc.parkingPools.list.useQuery();
 
-  const [newZone, setNewZone] = useState({
+  const [newZone, setNewZone] = useState<{
+    name: string;
+    slug: string;
+    totalSpots: number;
+    reservedSpots: number;
+    type: ParkingZoneType;
+    accessMethod: ParkingAccessMethod;
+    overbookingEnabled: boolean;
+    payPerUseEnabled: boolean;
+    locationId: number;
+  }>({
     name: "", slug: "", totalSpots: 50, reservedSpots: 0,
-    type: "outdoor" as const, accessMethod: "anpr" as const,
+    type: "outdoor", accessMethod: "anpr",
     overbookingEnabled: false, payPerUseEnabled: false,
     locationId: 1,
   });
@@ -54,7 +144,7 @@ export default function ParkingAdmin() {
             <DialogHeader><DialogTitle>Nieuwe parkeerzone</DialogTitle></DialogHeader>
             <div className="space-y-3">
               <Input placeholder="Zone naam" value={newZone.name} onChange={e => setNewZone(p => ({ ...p, name: e.target.value, slug: e.target.value.toLowerCase().replace(/\s+/g, "-") }))} />
-              <Select value={newZone.type} onValueChange={v => setNewZone(p => ({ ...p, type: v as any }))}>
+              <Select value={newZone.type} onValueChange={v => setNewZone(p => ({ ...p, type: v as ParkingZoneType }))}>
                 <SelectTrigger><SelectValue /></SelectTrigger>
                 <SelectContent>
                   <SelectItem value="outdoor">Buiten</SelectItem>
@@ -63,7 +153,7 @@ export default function ParkingAdmin() {
                   <SelectItem value="rooftop">Dak</SelectItem>
                 </SelectContent>
               </Select>
-              <Select value={newZone.accessMethod} onValueChange={v => setNewZone(p => ({ ...p, accessMethod: v as any }))}>
+              <Select value={newZone.accessMethod} onValueChange={v => setNewZone(p => ({ ...p, accessMethod: v as ParkingAccessMethod }))}>
                 <SelectTrigger><SelectValue /></SelectTrigger>
                 <SelectContent>
                   <SelectItem value="anpr">Kentekenherkenning (ANPR)</SelectItem>
@@ -195,7 +285,7 @@ export default function ParkingAdmin() {
                 <p className="text-sm text-muted-foreground text-center py-8">Geen actieve parkeersessies</p>
               ) : (
                 <div className="space-y-2">
-                  {activeSessions.data.slice(0, 15).map((session: any) => (
+                  {activeSessions.data.slice(0, 15).map((session: ParkingSession) => (
                     <div key={session.id} className="flex items-center justify-between p-3 rounded-lg bg-muted/30 border border-border/20">
                       <div className="flex items-center gap-3">
                         <Car className="w-4 h-4 text-muted-foreground" />
@@ -246,7 +336,7 @@ export default function ParkingAdmin() {
             </Card>
           ) : (
             <div className="grid gap-4 md:grid-cols-2">
-              {zones.data?.map((zone: any) => (
+              {zones.data?.map((zone: ParkingZone) => (
                 <Card key={zone.id} className="bg-card/50 border-border/30 hover:border-primary/30 transition-colors">
                   <CardContent className="p-5">
                     <div className="flex items-start justify-between mb-3">
@@ -303,10 +393,19 @@ export default function ParkingAdmin() {
 function PoolsTab() {
   const pools = trpc.parkingPools.list.useQuery();
   const [showCreate, setShowCreate] = useState(false);
-  const [form, setForm] = useState({
+  const [form, setForm] = useState<{
+    zoneId: number;
+    name: string;
+    guaranteedSpots: number;
+    maxMembers: number;
+    overflowPriceEur: string;
+    overflowPriceDay: string;
+    monthlyFeeEur: string;
+    slaTier: SlaTier;
+  }>({
     zoneId: 1, name: "", guaranteedSpots: 30, maxMembers: 100,
     overflowPriceEur: "2.50", overflowPriceDay: "15.00", monthlyFeeEur: "500.00",
-    slaTier: "gold" as const,
+    slaTier: "gold",
   });
   const createPool = trpc.parkingPools.create.useMutation({
     onSuccess: () => { pools.refetch(); setShowCreate(false); toast.success("Pool aangemaakt"); },
@@ -349,7 +448,7 @@ function PoolsTab() {
                 <label className="text-xs text-muted-foreground">Maandelijks abonnement</label>
                 <Input value={form.monthlyFeeEur} onChange={e => setForm(p => ({ ...p, monthlyFeeEur: e.target.value }))} />
               </div>
-              <Select value={form.slaTier} onValueChange={v => setForm(p => ({ ...p, slaTier: v as any }))}>
+              <Select value={form.slaTier} onValueChange={v => setForm(p => ({ ...p, slaTier: v as SlaTier }))}>
                 <SelectTrigger><SelectValue /></SelectTrigger>
                 <SelectContent>
                   <SelectItem value="platinum">Platinum (100% garantie)</SelectItem>
@@ -374,7 +473,7 @@ function PoolsTab() {
         </Card>
       ) : (
         <div className="grid gap-4 md:grid-cols-2">
-          {pools.data?.map((pool: any) => (
+          {pools.data?.map((pool: ParkingPool) => (
             <PoolCard key={pool.id} pool={pool} />
           ))}
         </div>
@@ -383,11 +482,11 @@ function PoolsTab() {
   );
 }
 
-function PoolCard({ pool }: { pool: any }) {
+function PoolCard({ pool }: { pool: ParkingPool }) {
   const status = trpc.parkingPools.status.useQuery({ poolId: pool.id });
   const members = trpc.parkingPools.members.useQuery({ poolId: pool.id });
 
-  const s = status.data;
+  const s = status.data as ParkingPoolStatus | undefined;
   const guaranteedPercent = s ? Math.round((s.currentGuaranteedUsed / Math.max(s.guaranteedSpots, 1)) * 100) : 0;
 
   return (
@@ -405,7 +504,7 @@ function PoolCard({ pool }: { pool: any }) {
             pool.slaTier === "gold" ? "bg-amber-600" :
             pool.slaTier === "silver" ? "bg-gray-400 text-gray-900" : "bg-orange-800"
           }>
-            {pool.slaTier?.charAt(0).toUpperCase() + pool.slaTier?.slice(1)}
+            {(pool.slaTier ?? "").charAt(0).toUpperCase() + (pool.slaTier ?? "").slice(1)}
           </Badge>
         </div>
 
@@ -459,7 +558,7 @@ function PoolCard({ pool }: { pool: any }) {
 
 // ─── Yield Management Tab ────────────────────────────────────────
 
-function YieldTab({ zones }: { zones: any[] }) {
+function YieldTab({ zones }: { zones: ParkingZone[] }) {
   return (
     <div className="space-y-4">
       <div>
@@ -477,9 +576,9 @@ function YieldTab({ zones }: { zones: any[] }) {
   );
 }
 
-function YieldZoneCard({ zone }: { zone: any }) {
+function YieldZoneCard({ zone }: { zone: ParkingZone }) {
   const capacity = trpc.parkingZones.capacity.useQuery({ zoneId: zone.id });
-  const c = capacity.data;
+  const c = capacity.data as ParkingCapacityState | undefined;
 
   return (
     <Card className="bg-card/50 border-border/30">
@@ -581,7 +680,7 @@ function SessionsTab() {
                 </tr>
               </thead>
               <tbody>
-                {sessions.data.map((s: any) => (
+                {sessions.data.map((s: ParkingSession) => (
                   <tr key={s.id} className="border-b border-border/10">
                     <td className="py-2 px-2 font-mono text-xs">{s.licensePlate || "—"}</td>
                     <td className="py-2 px-2">
@@ -634,7 +733,7 @@ function PermitsTab() {
         </Card>
       ) : (
         <div className="space-y-2">
-          {permits.data?.map((permit: any) => (
+          {permits.data?.map((permit: ParkingPermit) => (
             <Card key={permit.id} className="bg-card/50 border-border/30">
               <CardContent className="p-4 flex items-center justify-between">
                 <div className="flex items-center gap-3">
@@ -706,7 +805,7 @@ function AccessLogTab() {
                   </tr>
                 </thead>
                 <tbody>
-                  {accessLog.data.map((log: any) => (
+                  {accessLog.data.map((log: ParkingAccessLogEntry) => (
                     <tr key={log.id} className="border-b border-border/10">
                       <td className="py-2 px-2 text-xs">{new Date(Number(log.timestamp)).toLocaleTimeString("nl-NL", { hour: "2-digit", minute: "2-digit", second: "2-digit" })}</td>
                       <td className="py-2 px-2 text-xs">{log.direction === "entry" ? "↗ In" : "↙ Uit"}</td>
